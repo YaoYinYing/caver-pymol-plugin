@@ -27,7 +27,7 @@ from pymol import stored
 import time
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
-from .utils.ui_tape import set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape
+from .utils.ui_tape import set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box
 
 THIS_DIR=os.path.dirname(__file__)
 CONFIG_TXT=os.path.join(THIS_DIR,"config", "config.txt")
@@ -206,6 +206,7 @@ class CaverConfig:
             if len(parsed) <= 1:
                 print('skipping ' + key)
 
+            # update keys that only exists in the txt file
             elif hasattr(self, key):
                 self_val=getattr(self, key)
                 _val_type=type(self_val)
@@ -223,11 +224,6 @@ class CaverConfig:
         with open(txt_file, 'w') as f:
             f.write('\n'.join(new_txt_contents))
             
-
-
-
-
-    
 
 defaults = CaverConfig()
 
@@ -379,8 +375,6 @@ class PyJava:
 
 
 
-
-
 class AnBeKoM(QtWidgets.QWidget):
     config_bindings: Dict[str, str]={
         'lineEdit_output_dir': 'output_dir',
@@ -398,7 +392,7 @@ class AnBeKoM(QtWidgets.QWidget):
     }
 
     def pop_error(self, msg):
-        error_dialog = Pmw.MessageDialog(self.parent, title = 'Error',message_text = msg)
+        notify_box(msg)
 
 
     def bind_config(self):
@@ -457,8 +451,6 @@ class AnBeKoM(QtWidgets.QWidget):
         self.window = None
         self.config= CaverConfig()
         
-
-
         
         parent = app.root
         self.parent = parent
@@ -477,11 +469,6 @@ class AnBeKoM(QtWidgets.QWidget):
         #self.stdam_list = [ 'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL', 'ASX', 'CYX', 'GLX', 'HI0', 'HID', 'HIE', 'HIM', 'HIP', 'MSE', 'ACE', 'ASH', 'CYM', 'GLH', 'LYN', 'NME']
         self.stdam_list = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
 
-        def quickFileValidation(s):
-            if s == '': return Pmw.PARTIAL
-            elif os.path.isfile(s): return Pmw.OK
-            elif os.path.exists(s): return Pmw.PARTIAL
-            else: return Pmw.PARTIAL
 
         self.caver3locationAbsolute = CAVER3_LOCATION
         # hide the location field, not sure whether this is a good step, should not be visible at least read-only?
@@ -505,68 +492,9 @@ class AnBeKoM(QtWidgets.QWidget):
         self.conflocationDefault = os.path.join(self.caver3locationAbsolute,"config.txt")
         self.DEFCONF = "(default config used)"
         self.conflocation = tk.Label(self.configgroup.interior(),text = self.DEFCONF)
-        #self.conflocation = Pmw.EntryField(self.configgroup.interior(),
-        #                             labelpos='w',
-        #                             value = self.DEFCONF,
-        #                             label_text = 'Config location:')
-        self.conflocation.pack(side=LEFT, padx=4,pady=1)
-
-        self.configfilesave = tk.Button(self.configgroup.interior(), text = 'Save settings', command = self.configout)
-        self.configfilesave.pack(side=RIGHT,padx=4,pady=1)
-        self.configfileload = tk.Button(self.configgroup.interior(), text = 'Load settings', command = self.configin)
-        self.configfileload.pack(side=RIGHT,padx=4,pady=1)
-
-        self.configgroup.pack(expand="yes", fill="x")
-
-        self.javaHeap = Pmw.EntryField(self.dialog.interior(),
-                                     labelpos='w',
-                                     value = defaults["default_java_heap"],
-                                     label_text = 'Maximum Java heap size (MB):')
-        self.javaHeap.pack(fill='x',padx=4,pady=1) # vertical
-        self.tunnelsProbe = Pmw.EntryField(self.dialog.interior(),
-                                     labelpos='w',
-                                     value = defaults["probe_radius"],
-                                     label_text = 'Minimum probe radius:')
 
 
-        self.tunnelsProbe.pack(fill='x',padx=4,pady=1) # vertical
-        self.shellDepth = Pmw.EntryField(self.dialog.interior(),
-                                     labelpos='w',
-                                     value = defaults["shell_depth"],
-                                     label_text = 'Shell depth:')
-
-
-        self.shellDepth.pack(fill='x',padx=4,pady=1) # vertical
-        self.shellRadius = Pmw.EntryField(self.dialog.interior(),
-                                     labelpos='w',
-                                     value = defaults["shell_radius"],
-                                     label_text = 'Shell radius:')
-
-
-        self.shellRadius.pack(fill='x',padx=4,pady=1) # vertical
-        self.clusteringThreshold = Pmw.EntryField(self.dialog.interior(),
-                                     labelpos='w',
-                                     value = defaults["clustering_threshold"],
-                                     label_text = 'Clustering threshold:')
-
-
-        self.clusteringThreshold.pack(fill='x',padx=4,pady=1) # vertical
-        self.approxLbl = Label(self.dialog.interior(), text="Number of approximating balls:")
-        self.approxLbl.pack()
-        self.approxVar = StringVar()
-        self.approxVar.set("4") #default value
-        self.approxSph = OptionMenu(self.dialog.interior(), self.approxVar, "4", "6", "8", "12", "20")
-        #self.approxVar.set(DEFAULTVALUE_OPTION)
-        self.approxSph.pack()
-
-        labframe0 = tk.Frame(self.dialog.interior())
-        labframe0.pack(fill='x',padx=4,pady=2)
-
-        self.varremovewater = IntVar()
-
-        self.removewaterbutton = Checkbutton(labframe0, text="Ignore waters", variable=self.varremovewater)
-        self.varremovewater.set(1)
-
+        
         self.inModelGroup = Pmw.Group(self.dialog.interior(), tag_text='Input model:')
         self.listbox1 = tk.Listbox(self.inModelGroup.interior(), width=25, height=6,exportselection=0)
         self.listbox1.bind('<<ListboxSelect>>',self.inputAnalyseWrap)
@@ -597,93 +525,8 @@ class AnBeKoM(QtWidgets.QWidget):
 
         self.s = dict()
         self.s[self.AAKEY] = IntVar()
-        #print("reinitialise&inputAnalyse")
-        #self.reinitialise()
-        #initialise should be done after config load
 
 
-
-
-        groupstart = Pmw.Group(self.dialog.interior(),tag_text='Starting point')
-
-        self.surroundingsvar = tk.IntVar()
-
-        radioframe = tk.Frame(groupstart.interior())
-        group1 = Pmw.Group(radioframe,
-                tag_text='Convert surroundings to x,y,x coordinates of starting point')
-
-        group1.pack(side='top',expand = 'yes',fill='x')
-        self.selectionlist = Pmw.EntryField(group1.interior(),
-                                  labelpos='w',
-                                  label_text='Specify selection: ',
-                                  value=defaults['surroundings'],
-                                  entry_width=50
-                                  )
-        self.selectionlist.pack(fill='x',expand='yes',padx=4,pady=1) # vertical
-
-        self.convertButton = tk.Button(group1.interior(), text = 'Convert to x,y,z', command = self.convert)
-        self.convertButton.pack(fill='x',expand='yes',padx=4,pady=1)
-
-        group2 = Pmw.Group(radioframe,
-                tag_text='x, y, z coordinates of starting point')
-        group2.pack(fill = 'x', expand = 1, side='top')
-        radioframe.pack(side='left',expand='yes',fill='x')
-#-------------
-        groupstart.pack(padx=4,pady=1,expand='yes',fill='x')
-
-
-        self.xlocfr = tk.Frame(group2.interior())
-        labX = Label(self.xlocfr,text="x")
-        self.xlocation = Entry(self.xlocfr,textvariable=self.xlocvar,width=10)
-        self.scrX=Scrollbar(self.xlocfr,orient="horizontal",command=self.changeValueX)
-
-        self.ylocfr = tk.Frame(group2.interior())
-        labY = Label(self.ylocfr,text="y")
-        self.ylocation = Entry(self.ylocfr,textvariable=self.ylocvar,width=10)
-        self.scrY=Scrollbar(self.ylocfr,orient="horizontal",command=self.changeValueY)
-
-        self.zlocfr = tk.Frame(group2.interior())
-        labZ = Label(self.zlocfr,text="z")
-        self.zlocation = Entry(self.zlocfr,textvariable=self.zlocvar,width=10)
-        self.scrZ=Scrollbar(self.zlocfr,orient="horizontal",command=self.changeValueZ)
-
-        labX.pack(side=LEFT)
-        self.xlocation.pack(side=LEFT)
-        self.scrX.pack(side=LEFT)
-        self.xlocfr.pack(side=LEFT,fill='x',padx=4,pady=1) # vertical
-        labY.pack(side=LEFT)
-        self.ylocation.pack(side=LEFT)
-        self.scrY.pack(side=LEFT)
-        self.ylocfr.pack(side=LEFT,fill='x',padx=4,pady=1) # vertical
-        labZ.pack(side=LEFT)
-        self.zlocation.pack(side=LEFT)
-        self.scrZ.pack(side=LEFT)
-        self.zlocfr.pack(side=LEFT,fill='x',padx=4,pady=1) # vertical
-
-        self.OpGroup = Pmw.Group(radioframe,tag_text = "Starting point optimization")
-        self.OpGroup.pack(fill='x')
-        self.optimizeLabel = tk.Label(self.OpGroup.interior(),text = 'Maximum distance (A): ')
-        self.optimizeLabel.pack(side=LEFT)
-
-        self.optimizeNear = tk.Entry(self.OpGroup.interior(),textvariable=self.optimizeNearValue,justify='right', width=10)
-        self.optimizeNear.pack(side=LEFT,padx=4,pady=1)
-        self.optimizeLabel2 = tk.Label(self.OpGroup.interior(),text="Desired radius (A):")
-        self.optimizeLabel2.pack(side=LEFT, padx=0, pady=1)
-        self.optimizeNear = tk.Entry(self.OpGroup.interior(),textvariable=self.optimizeRadius,justify='right', width=10)
-        self.optimizeNear.pack(side=LEFT,padx=4,pady=1)
-        #self.optimizeButton = tk.Button(self.OpGroup.interior(), text = 'Optimize', command = self.optimize)
-        #self.optimizeButton.pack(side=LEFT,padx=5,pady=1)
-        #self.UoptimizeButton = tk.Button(self.OpGroup.interior(), text = 'Undo', command = self.uoptimize)
-        #self.UoptimizeButton.pack(side=LEFT,padx=1,pady=1)
-        self.egroup = Pmw.Group(self.dialog.interior(),tag_text = "Computation result")
-        self.egroup.pack(fill='x')
-        self.aftercomp = tk.Label(self.egroup.interior(),text="test",justify='right')
-        self.aftercomp.pack(side=LEFT,padx=4,pady=1)
-        self.afterbutt = tk.Button(self.egroup.interior(), text='Details', command=self.details, width = 5)
-        self.afterbutt.pack(side=RIGHT,padx=4,pady=1)
-        self.afterbutt.config(state=DISABLED)
-    #hide group for now
-        self.egroup.pack_forget()
 
         cf = self.getConfLoc()
         self.configLoad(cf)
@@ -698,7 +541,7 @@ class AnBeKoM(QtWidgets.QWidget):
             return cf
     def showCrisscross(self):
         cmd.delete("crisscross")
-        self.crisscross(self.config.start_point_x,self.config.start_point_y,self.config.start_point_z,0.5,"crisscross")
+        AnBeKoM.crisscross(self.config.start_point_x,self.config.start_point_y,self.config.start_point_z,0.5,"crisscross")
 
 #win/linux
     def changeCoords(self,*args):
@@ -788,138 +631,107 @@ class AnBeKoM(QtWidgets.QWidget):
 
 
     def execute(self, result):
-        #elif result == defaults["warn_command"]:
-            #self.wtext = tk.Text(root, height=26, width=50)
-            #scroll = Scrollbar(root, command=text.yview)
-            #text.configure(yscrollcommand=scroll.set)
-            #handler = open(self.caver3locationAbsolute + "/out/warnings.txt")
-            #lines = handler.readlines()
-            #wresult = ""
-            #for line in lines:
-            #  wresult += line
-            #error_dialog = Pmw.MessageDialog(self.parent,title = 'Information', message_text = wresult,)
-        if result == defaults["compute_command"]:
 
-            if self.coordinatesNotSet():
-                self.pop_error("Please specify starting point - e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.")
-                return
+        if self.coordinatesNotSet():
+            self.pop_error("Please specify starting point - e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.")
+            return
 
 
-            self.showCrisscross()
+        self.showCrisscross()
 
-            #input
-            sel1index = self.listbox1.curselection()[0]
-            sel1text = self.listbox1.get(sel1index)
-
-
-            self.whichModelSelect = sel1text
-
-            #print('selected ' + self.whichModelSelect)
-            sel=cmd.get_model(self.whichModelSelect)
-
-            self.initialize_out_dir()
-
-            # create subdirectory for inputs
-            outdirInputs = self.out_dir + "/" + self.inputsSubdir
-            self.CreateDirectory(outdirInputs)
-
-            self.stdamString = "+".join(self.stdam_list)
-            # jen to zaskrtnute
-            generatedString = ""
-            for key in self.s:
-                if self.s[key].get() == 1:
-                # pak pouzit do vyberu:
-                    if key == self.AAKEY:
-                        generatedString = generatedString + "+" + self.stdamString
-                    else:
-                        generatedString = generatedString + "+" + key
-
-            generatedString = generatedString[1:]
-            #print("Checked: " + generatedString)
-
-            mmodel = cmd.get_model(self.whichModelSelect)
-            #print(self.whichModelSelect + " asize: " + str(len(mmodel.atom)))
-            #newmodel = Indexed()
-            #for matom in mmodel.atom:
-                #if generatedString.find(matom.resn) > -1:
-                    #print(matom.resn)
-                    #newmodel.atom.append(matom)
+        #input
+        sel1index = self.listbox1.curselection()[0]
+        sel1text = self.listbox1.get(sel1index)
 
 
-            #cmd.load_model(newmodel,"tmpCaverModel")
-            #cmd.label("example","name")
+        self.whichModelSelect = sel1text
 
-            input = "%s/%s.pdb" % (outdirInputs, self.whichModelSelect)
-            cmd.set('retain_order',1)
-            cmd.sort()
-            cmd.save(input, self.whichModelSelect) # to by ulozilo cely model whichModelSelect.
-            #cmd.save(input, "tmpCaverModel")
+        #print('selected ' + self.whichModelSelect)
+        sel=cmd.get_model(self.whichModelSelect)
 
-            #cmd.delete("tmpCaverModel")
+        self.initialize_out_dir()
 
-            cesta = os.getcwd()
+        # create subdirectory for inputs
+        outdirInputs = self.out_dir + "/" + self.inputsSubdir
+        self.CreateDirectory(outdirInputs)
+
+        self.stdamString = "+".join(self.stdam_list)
+        # jen to zaskrtnute
+        generatedString = ""
+        for key in self.s:
+            if self.s[key].get() == 1:
+            # pak pouzit do vyberu:
+                if key == self.AAKEY:
+                    generatedString = generatedString + "+" + self.stdamString
+                else:
+                    generatedString = generatedString + "+" + key
+
+        generatedString = generatedString[1:]
+        #print("Checked: " + generatedString)
+
+        mmodel = cmd.get_model(self.whichModelSelect)
+        #print(self.whichModelSelect + " asize: " + str(len(mmodel.atom)))
+        #newmodel = Indexed()
+        #for matom in mmodel.atom:
+            #if generatedString.find(matom.resn) > -1:
+                #print(matom.resn)
+                #newmodel.atom.append(matom)
 
 
-            # set ignore waters to false -- the model is already filtered by input model and aminos
-            self.varremovewater.set(0)
+        #cmd.load_model(newmodel,"tmpCaverModel")
+        #cmd.label("example","name")
 
-            caverfolder = "%s" % (self.caver3locationAbsolute)
-            caverjar = caverfolder + "/" + "caver.jar"
+        input = "%s/%s.pdb" % (outdirInputs, self.whichModelSelect)
+        cmd.set('retain_order',1)
+        cmd.sort()
+        cmd.save(input, self.whichModelSelect) # to by ulozilo cely model whichModelSelect.
+        #cmd.save(input, "tmpCaverModel")
 
-            cfg = self.getConfLoc()
+        #cmd.delete("tmpCaverModel")
 
-            # create new config
-            cfgTimestamp = time.strftime("%Y-%m-%d-%H-%M")
-            cfgnew = outdirInputs + "/config_" + cfgTimestamp + ".txt"
-            self.configSave(cfgnew, cfg)
+        cesta = os.getcwd()
 
-            # set correct java options
-            #javaOpts = JOPTS.replace("@", self.javaHeap.getvalue())
 
-            pj = PyJava(self.javaHeap.getvalue(), caverfolder, caverjar, outdirInputs, cfgnew, self.out_dir)
-            if pj.java_missing:
-                return
+        caverfolder = "%s" % (self.caver3locationAbsolute)
+        caverjar = caverfolder + "/" + "caver.jar"
 
-            pj.run_caver()
+        cfg = self.getConfLoc()
 
-            if pj.insufficient_memory:
-                self.pop_error("Available memory (" + str(pj.xmx) + " MB) is not sufficient to analyze this structure. Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
+        # create new config
+        cfgTimestamp = time.strftime("%Y-%m-%d-%H-%M")
+        cfgnew = outdirInputs + "/config_" + cfgTimestamp + ".txt"
+        self.configSave(cfgnew, cfg)
 
-            self.printErrorMessages(self.out_dir)
-            prevDir = os.getcwd()
-            print(prevDir)
+        # set correct java options
+        #javaOpts = JOPTS.replace("@", self.javaHeap.getvalue())
 
-            runview = "run " + self.out_dir + "/pymol/view_plugin.py"
-            print(runview)
-            cmd.do(runview)
-            # adjust gui to display warnings & group
-            self.egroup.pack(fill="x")
+        pj = PyJava(self.javaHeap.getvalue(), caverfolder, caverjar, outdirInputs, cfgnew, self.out_dir)
+        if pj.java_missing:
+            return
 
-            err = "%s/warnings.txt" % (self.out_dir)
-            if os.path.exists(err) and os.stat(err)[6] == 0:
-                self.aftercomp.config(text="Computation finished succesfully")
-                self.afterbutt.config(state=DISABLED)
-            else:
-                self.aftercomp.config(text="Warnings detected during computation")
-                self.afterbutt.config(state=ACTIVE)
+        pj.run_caver()
 
-            #pass
-            #self.deleteTemporaryFiles()
+        if pj.insufficient_memory:
+            self.pop_error("Available memory (" + str(pj.xmx) + " MB) is not sufficient to analyze this structure. Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
+
+        self.printErrorMessages(self.out_dir)
+        prevDir = os.getcwd()
+        print(prevDir)
+
+        runview = "run " + self.out_dir + "/pymol/view_plugin.py"
+        print(runview)
+        cmd.do(runview)
+        # adjust gui to display warnings & group
+        self.egroup.pack(fill="x")
+
+        err = "%s/warnings.txt" % (self.out_dir)
+        if os.path.exists(err) and os.stat(err)[6] == 0:
+            self.aftercomp.config(text="Computation finished succesfully")
+            self.afterbutt.config(state=DISABLED)
         else:
-            #
-            # Doing it this way takes care of clicking on the x in the top of the
-            # window, which as result set to None.
-            #
-            if __name__ == '__main__':
-                    #
-                    # dies with traceback, but who cares
-                    #
-                self.parent.destroy()
-            else:
-                #self.dialog.deactivate(result)
-                #global CAVER_BINARY_LOCATION
-                #CAVER_BINARY_LOCATION = self.out_dir
-                self.dialog.withdraw()
+            self.aftercomp.config(text="Warnings detected during computation")
+            self.afterbutt.config(state=ACTIVE)
+
 
     def CreateDirectory(self,dir):
         if os.path.isdir(dir):
@@ -927,8 +739,8 @@ class AnBeKoM(QtWidgets.QWidget):
         parent, base = os.path.split(dir)
         self.CreateDirectory(parent)
         os.mkdir(dir)
-    # simple fix precision of a string or a number (conversion)
-    def fixPrecision(self, numberStr):
+    @staticmethod
+    def fixPrecision( numberStr):
         return math.floor(float(numberStr) * 1000) / 1000
     def convert(self):
 
@@ -937,22 +749,21 @@ class AnBeKoM(QtWidgets.QWidget):
         for a in sel.atom:
             cnt+=1
         if cnt == 0:
-            error_dialog = Pmw.MessageDialog(self.parent,title = 'Error',message_text = 'ERROR: No molecule loaded.',)
-        #try:
-        if 1:
-            startpoint=[]
-            s = self.selectionlist.getvalue()
-            #startpoint=self.computecenter(s)
-            startpoint = self.compute_center(s)
-            if None == startpoint:
-                return
-            self.xlocvar.set(self.fixPrecision(startpoint[0]))
-            self.ylocvar.set(self.fixPrecision(startpoint[1]))
-            self.zlocvar.set(self.fixPrecision(startpoint[2]))
-            self.crisscross(startpoint[0],startpoint[1],startpoint[2],0.5,"crisscross")
-            self.showCrisscross()
-        #except:
-        #    error_dialog = Pmw.MessageDialog(self.parent,title = 'Error',message_text = 'ERROR: Invalid selection name',)
+            notify_box("No atoms selected", ValueError)
+
+
+        startpoint=[]
+        s = self.selectionlist.getvalue()
+
+        startpoint = self.compute_center(s)
+        if None == startpoint:
+            return
+        self.ui.doubleSpinBox_x.setValue(AnBeKoM.fixPrecision(startpoint[0]))
+        self.ui.doubleSpinBox_y.setValue(AnBeKoM.fixPrecision(startpoint[1]))
+        self.ui.doubleSpinBox_z.setValue(AnBeKoM.fixPrecision(startpoint[2]))
+
+        AnBeKoM.crisscross(startpoint[0],startpoint[1],startpoint[2],0.5,"crisscross")
+        self.showCrisscross()
 
     def containsValue(self, array, value):
         for v in array:
@@ -961,18 +772,18 @@ class AnBeKoM(QtWidgets.QWidget):
         return 0
 
     def configin(self):
-
-        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json )")
+        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
-        self.config=CaverConfig.from_json(filepath)
+
+        self.config=CaverConfig.from_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
 
         self.conflocation.config(text=filepath)
         self.configLoad(self.getConfLoc())
         self.configJustLoaded = 1
     def configout(self):
-        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json )")
+        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
-        self.config.to_json(filepath)
+        self.config.to_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
 
         self.configSave(filepath, self.getConfLoc())
     #perform actual config parse here
@@ -1426,7 +1237,8 @@ class AnBeKoM(QtWidgets.QWidget):
         gcentz/=gcnt
         return (gcentx,gcenty,gcentz)
 
-    def crisscross(self,x,y,z,d,name="crisscross"):
+    @staticmethod
+    def crisscross(x,y,z,d,name="crisscross"):
 
         obj = [
         LINEWIDTH, 3,

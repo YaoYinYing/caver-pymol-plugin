@@ -249,6 +249,26 @@ def refresh_window():
     QtWidgets.QApplication.processEvents()
 
 
+@overload
+def notify_box(
+    message: str = "",
+    error_type: Union[None, Type[Warning]] = None,
+    details: Optional[str] = None
+) -> None:
+    ...
+
+# Overload #2: Exception => NoReturn
+
+
+@overload
+def notify_box(
+    message: str,
+    error_type: Type[Exception],
+    details: Optional[str] = None
+) -> NoReturn:
+    ...
+
+
 def notify_box(
     message: str = "",
     error_type: Optional[Type[Exception]] = None,
