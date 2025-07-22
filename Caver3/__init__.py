@@ -32,20 +32,6 @@ from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_va
 THIS_DIR=os.path.dirname(__file__)
 CONFIG_TXT=os.path.join(THIS_DIR,"config", "config.txt")
 
-def import_file(full_path_to_module):
-    import os
-    module_dir, module_file = os.path.split(full_path_to_module)
-    module_name, module_ext = os.path.splitext(module_file)
-
-    if module_name in sys.modules:
-        del(sys.modules[module_name])
-
-    save_cwd = os.getcwd()
-    os.chdir(module_dir)
-    module_obj = __import__(module_name)
-    module_obj.__file__ = full_path_to_module
-    globals()[module_name] = module_obj
-    os.chdir(save_cwd)
 
 VERS_M = "3"
 VERS_0 = "0"
@@ -53,14 +39,12 @@ VERS_1 = "3"
 #JOPTS = "-Xmx@m" # @ is going to be replaced by user-specified value
 #JHEAP = 1100
 
-VERSION = "%s.%s.%s" % (VERS_M,VERS_0,VERS_1)
-VERSION_ = "%s_%s_%s" % (VERS_M,VERS_0,VERS_1)
+VERSION = '4.0.0'
 
 CAVER3_LOCATION = os.path.dirname(__file__)
 
 OUTPUT_LOCATION = os.path.abspath(".")
 
-LABEL_TEXT = "Caver directory:"
 
 #
 
@@ -99,6 +83,14 @@ class CaverConfig:
     max_distance: float = 4.0
     desired_radius: float = 1.8
 
+    def has(self,key:str)->bool:
+        return hasattr(self,key)
+    
+    def get(self,key:str)->Any:
+        return getattr(self,key)
+    
+    def set(self,key:str,value:Any):
+        setattr(self,key,value)
 
     @classmethod
     def from_json(cls, json_file: str) -> 'CaverConfig':
@@ -443,6 +435,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.window.show()
 
 
+
     def __init__(self,parent):
         super().__init__()
         # global reference to avoid garbage collection of our dialog
@@ -470,13 +463,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
 
         self.updateList()
-        #fill with data
-        #self.listbox1.insert(0,"all")
-        #self.listbox1.selection_set(0, 0) # Default sel
-        #tindex = 1
-        #for item in cmd.get_object_list():
-        #  self.listbox1.insert(tindex,str(item))
-        #  tindex = tindex + 1
+
 
         self.s = dict()
         self.s[self.AAKEY] = IntVar()
@@ -714,14 +701,12 @@ class AnBeKoM(QtWidgets.QWidget):
         if not filepath: return
 
         self.config=CaverConfig.from_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
-
-        self.conflocation.config(text=filepath)
-        self.configLoad(self.getConfLoc())
-        self.configJustLoaded = 1
-    def configout(self):
-        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
+        # refresh window wiget from input config
+        self.refresh_window_from_cfg()
+    def configout(self, filepath: Optional[str]=None):
+        filepath = filepath or getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
-        self.config.to_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
+        self.config.to_json(filepath) if filepath.endswith(".json") else CaverConfig.to_txt(filepath)
 
         self.configSave(filepath, self.getConfLoc())
     #perform actual config parse here
@@ -756,27 +741,31 @@ class AnBeKoM(QtWidgets.QWidget):
                     val = " ".join(parsed[1:len(parsed)])
                     self.dataStructure.add(key, val, 0)
 
-        # check for specific problematic definitions in config
+        conflict_flags={
+            'starting_point_coordinates': ['starting_point_atom', 'starting_point_residue']
+        }
+        for primary_flag, conflict_flag_list in conflict_flags.items():
+            if not self.config.has(primary_flag):
+                continue
+            for flag in conflict_flag_list:
+                if self.config.has(flag):
+                    notify_box(
+                    f'Conflict between {primary_flag} and {flag}',
+                    details=f'Simultaneous usage of {primary_flag} parameter with {flag} parameters is not supported by plugin. Now ignoring atom.')
+                    delattr(self.config, flag)
 
 
-        if self.dataStructure.indexOf('starting_point_coordinates') != -1 and self.dataStructure.indexOf('starting_point_atom') != -1:
-            Pmw.MessageDialog(self.parent,title = 'Information',message_text = 'Simultaneous usage of starting_point_coordinates parameter with starting_point_atom parameters is not supported by plugin. Please, use only one of these parameters. Now ignoring atom.')
-            self.dataStructure.remove('starting_point_atom')
-        if self.dataStructure.indexOf('starting_point_coordinates') != -1 and self.dataStructure.indexOf('starting_point_residue') != -1:
-            Pmw.MessageDialog(self.parent,title = 'Information',message_text = 'Simultaneous usage of starting_point_coordinates parameter with starting_point_residue parameters is not supported by plugin. Please, use only one of these parameters. Now ignoring residue.')
-            self.dataStructure.remove('starting_point_residue')
-        if self.dataStructure.indexOf('starting_point_coordinates') == -1:
+        if not self.config.has('starting_point_coordinates'):
             #perform harakiri with selecting model and pre-loading coordinates with the command similar to the one below
             #cmd.select('starting_point','id 573+658 & structure | resi 120+24 & structure')
             selector = []
             rids = ""
             aids = ""
-            if self.dataStructure.indexOf('starting_point_residue') != -1:
-                rids = "+".join(self.dataStructure.get('starting_point_residue').split(" "))
-            if self.dataStructure.indexOf('starting_point_atom') != -1:
-                aids = "+".join(self.dataStructure.get('starting_point_atom').split(" "))
-            #print(aids)
-            #print(rids)
+            if self.config.has('starting_point_residue'):
+                rids = "+".join(self.config.get('starting_point_residue').split(" "))
+            if self.config.has('starting_point_atom'):
+                aids = "+".join(self.config.get('starting_point_atom').split(" "))
+
             sel1index = self.listbox1.curselection()
             if (sel1index):
                 sel1text = self.listbox1.get(sel1index[0])
@@ -872,23 +861,7 @@ class AnBeKoM(QtWidgets.QWidget):
             key = keys[i]
             val = values[i]
             #print(key + "->" + val)
-            if key == "probe_radius":
-                self.tunnelsProbe.setvalue(str(val))
-            elif key == "java_heap":
-                self.javaHeap.setvalue(str(val))
-            elif key == "shell_depth":
-                self.shellDepth.setvalue(str(val))
-            elif key == "shell_radius":
-                self.shellRadius.setvalue(str(val))
-            elif key == "clustering_threshold":
-                self.clusteringThreshold.setvalue(str(val))
-            elif key == "number_of_approximating_balls":
-                self.approxVar.set(str(val))
-            elif key == "max_distance":
-                self.optimizeNearValue.set(str(val))
-            elif key == "desired_radius":
-                self.optimizeRadius.set(str(val))
-            elif key == "include_residue_names":
+            if key == "include_residue_names":
                 self.s = dict()
                 self.s.clear()
                 ress = (str(val)).split(" ")
