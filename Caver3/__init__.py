@@ -45,6 +45,7 @@ CAVER3_LOCATION = os.path.dirname(__file__)
 
 OUTPUT_LOCATION = os.path.abspath(".")
 
+THE_20s=['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
 
 #
 
@@ -457,11 +458,6 @@ class AnBeKoM(QtWidgets.QWidget):
         #ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$",r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
-        #self.stdam_list = [ 'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL', 'ASX', 'CYX', 'GLX', 'HI0', 'HID', 'HIE', 'HIM', 'HIP', 'MSE', 'ACE', 'ASH', 'CYM', 'GLH', 'LYN', 'NME']
-        self.stdam_list = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
-
-
-
         self.updateList()
 
 
@@ -509,9 +505,6 @@ class AnBeKoM(QtWidgets.QWidget):
         import webbrowser
         webbrowser.open(url)
 
-    def details(self):
-        fc = self.loadFileContent("%s/warnings.txt" % (self.out_dir))
-        error_dialog = Pmw.MessageDialog(self.parent,title = 'Information', message_text = fc,)
 
     def loadFileContent(self, file):
         handler = open(file)
@@ -562,18 +555,6 @@ class AnBeKoM(QtWidgets.QWidget):
         b = float(self.xlocvar.get()) == 0 and float(self.ylocvar.get()) == 0 and float(self.zlocvar.get()) == 0
         return b
 
-    def printErrorMessages(self, dir):
-        f = dir + '/messages.txt'
-        m = ""
-        if os.path.exists(f):
-            if 0 < os.path.getsize(f):
-                handler = open(f)
-                lines = handler.readlines()
-                for line in lines:
-                    m = m + line + "\n"
-                handler.close()
-                self.pop_error(m)
-
 
     def execute(self, result):
 
@@ -601,7 +582,7 @@ class AnBeKoM(QtWidgets.QWidget):
         outdirInputs = os.path.join(self.out_dir , 'input')
         os.makedirs(outdirInputs, exist_ok=True)
 
-        self.stdamString = "+".join(self.stdam_list)
+        self.stdamString = "+".join(THE_20s)
         # jen to zaskrtnute
         generatedString = ""
         for key in self.s:
@@ -647,7 +628,6 @@ class AnBeKoM(QtWidgets.QWidget):
         if pj.insufficient_memory:
             self.pop_error("Available memory (" + str(pj.xmx) + " MB) is not sufficient to analyze this structure. Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
 
-        self.printErrorMessages(self.out_dir)
         prevDir = os.getcwd()
         print(prevDir)
 
@@ -868,7 +848,7 @@ class AnBeKoM(QtWidgets.QWidget):
                 aa_added = 0
                 for idx in range(0, len(ress)):
                     fromconf = ress[idx]
-                    if fromconf in self.stdam_list:
+                    if fromconf in THE_20s:
                         if aa_added == 0:
                             self.s[self.AAKEY] = IntVar()
                             self.s[self.AAKEY].set(1)
@@ -892,11 +872,7 @@ class AnBeKoM(QtWidgets.QWidget):
         #check-boxed residues
         result = ""
         for item in self.s.keys():
-            #print("ITEM: " + item)
-            # do not print(all amino acids, just the item 20_AA)
-            #if item == self.AAKEY and self.s[item].get() == 1:
-            #    result = result + " " + string.join(self.stdam_list, " ")
-            #elif self.s[item].get() == 1:
+
             if self.s[item].get() == 1:
                 result = result + " " + item
         self.dataStructure.replace("include_residue_names", result, 0)
@@ -910,7 +886,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.dataStructure.replace("starting_point_coordinates",asit, 0)
 
     def stdamMessage(self):
-        Pmw.MessageDialog(self.parent,title = 'Information',message_text = self.AAKEY + ': Standard amino acids: \n ' + ", ".join(self.stdam_list))
+        Pmw.MessageDialog(self.parent,title = 'Information',message_text = self.AAKEY + ': Standard amino acids: \n ' + ", ".join(THE_20s))
 
     def inputAnalyseWrap(self, args):
             #print(self.listbox1.curselection()[0] # aby to fungovalo, musi byt bindnute na <<ListboxSelect>>)
@@ -934,7 +910,7 @@ class AnBeKoM(QtWidgets.QWidget):
             #cntr = 0
             for a in sel.atom:
                 if not a.resn in self.s:
-                    if (self.containsValue(self.stdam_list, a.resn)):
+                    if (self.containsValue(THE_20s, a.resn)):
                         self.s[self.AAKEY] = IntVar()
                         self.s[self.AAKEY].set(1)
                     else:
