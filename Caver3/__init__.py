@@ -27,7 +27,7 @@ from pymol import stored
 import time
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
-from .utils.ui_tape import set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box
+from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box
 
 THIS_DIR=os.path.dirname(__file__)
 CONFIG_TXT=os.path.join(THIS_DIR,"config", "config.txt")
@@ -394,7 +394,6 @@ class AnBeKoM(QtWidgets.QWidget):
     def pop_error(self, msg):
         notify_box(msg)
 
-
     def bind_config(self):
         for wn in self.config_bindings:
             widget=getattr(self.ui, wn)
@@ -432,8 +431,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.doubleSpinBox_x.valueChanged.connect(self.changeCoords)
         self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
         self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
-
-
+        self.ui.pushButton_openOutputDir.clicked.connect(lambda: self.ui.lineEdit_outputDir.setText(getExistingDirectory()))
 
         return main_window
 
@@ -470,49 +468,6 @@ class AnBeKoM(QtWidgets.QWidget):
         self.stdam_list = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
 
 
-        self.caver3locationAbsolute = CAVER3_LOCATION
-        # hide the location field, not sure whether this is a good step, should not be visible at least read-only?
-        if (0):
-            self.caver3location = Pmw.EntryField(self.dialog.interior(),
-                                         labelpos='w',
-                                         value = CAVER3_LOCATION,
-                                         label_text = LABEL_TEXT)
-
-
-            self.caver3location.pack(fill='x',padx=4,pady=1) # vertical
-#win/linux
-        self.binlocation = Pmw.EntryField(self.dialog.interior(),
-                                     labelpos='w',
-                                     value = OUTPUT_LOCATION,
-                                     label_text = 'Output directories:')
-
-
-        self.binlocation.pack(fill='x',padx=4,pady=1) # vertical
-        self.configgroup = Pmw.Group(self.dialog.interior(), tag_text='Configuration save/load')
-        self.conflocationDefault = os.path.join(self.caver3locationAbsolute,"config.txt")
-        self.DEFCONF = "(default config used)"
-        self.conflocation = tk.Label(self.configgroup.interior(),text = self.DEFCONF)
-
-
-        
-        self.inModelGroup = Pmw.Group(self.dialog.interior(), tag_text='Input model:')
-        self.listbox1 = tk.Listbox(self.inModelGroup.interior(), width=25, height=6,exportselection=0)
-        self.listbox1.bind('<<ListboxSelect>>',self.inputAnalyseWrap)
-        yscroll1 = tk.Scrollbar(self.inModelGroup.interior(),command=self.listbox1.yview, orient=tk.VERTICAL)
-        self.listbox1.pack(side=LEFT)
-        yscroll1.pack(side=LEFT, fill='y')
-        self.listbox1.configure(yscrollcommand=yscroll1.set)
-        self.reloadListButton = tk.Button(self.inModelGroup.interior(), text = 'Reload', command = self.updateList)
-        self.reloadListButton.pack(side=LEFT)
-        self.inModelGroup.pack()
-
-
-
-
-        self.filterGroup = Pmw.Group(self.dialog.interior(), tag_text='Input atoms:')
-        self.filterGroup.pack()
-        self.checklist = []
-        self.buttonlist = []
 
         self.updateList()
         #fill with data
@@ -587,29 +542,32 @@ class AnBeKoM(QtWidgets.QWidget):
                 return True
             else:
                 return False
+            
 
-    def initialize_out_dir(self):
-        dir = self.binlocation.getvalue()
-        if not os.path.exists(dir):
-            os.mkdir(dir)
+
+    def initialize_out_dir(self, ):
+        
+        dir=self.config.output_dir
+        
+        if not dir == "":
+            notify_box("Output directory does not exist. ", FileNotFoundError)
+        
+        os.makedirs(dir, exist_ok=True)
+
+        
         dir = dir.replace("\\","/")
         if (dir.endswith("/")):
             dir = dir[:-1]
-        out_home = dir + "/caver_output/"
-        if not os.path.exists(out_home):
-            os.mkdir(out_home)
 
-        max = 0
-        ls = os.listdir(out_home)
-        for f in ls:
-            fn = os.path.basename(f)
-            if fn.isdigit():
-                i = int(fn)
-                if max < i:
-                    max = i
+        out_home = os.path.join(dir,"caver_output")
+        os.makedirs(out_home, exist_ok=True)
 
-        new_dir = out_home + str(max + 1)
-        self.CreateDirectory(new_dir)
+        idxs=map(int, [x for x in os.listdir(out_home) if x.isdigit()] or [0])
+        max_idx=max(idxs)
+
+        new_dir = os.path.join(out_home + str(max_idx + 1))
+        os.makedirs(new_dir)
+
         self.out_dir = new_dir
         print("Output will be stored in " + self.out_dir)
 
@@ -652,8 +610,9 @@ class AnBeKoM(QtWidgets.QWidget):
         self.initialize_out_dir()
 
         # create subdirectory for inputs
-        outdirInputs = self.out_dir + "/" + self.inputsSubdir
-        self.CreateDirectory(outdirInputs)
+
+        outdirInputs = os.path.join(self.out_dir , 'input')
+        os.makedirs(outdirInputs, exist_ok=True)
 
         self.stdamString = "+".join(self.stdam_list)
         # jen to zaskrtnute
@@ -667,27 +626,14 @@ class AnBeKoM(QtWidgets.QWidget):
                     generatedString = generatedString + "+" + key
 
         generatedString = generatedString[1:]
-        #print("Checked: " + generatedString)
 
         mmodel = cmd.get_model(self.whichModelSelect)
-        #print(self.whichModelSelect + " asize: " + str(len(mmodel.atom)))
-        #newmodel = Indexed()
-        #for matom in mmodel.atom:
-            #if generatedString.find(matom.resn) > -1:
-                #print(matom.resn)
-                #newmodel.atom.append(matom)
 
-
-        #cmd.load_model(newmodel,"tmpCaverModel")
-        #cmd.label("example","name")
 
         input = "%s/%s.pdb" % (outdirInputs, self.whichModelSelect)
         cmd.set('retain_order',1)
         cmd.sort()
         cmd.save(input, self.whichModelSelect) # to by ulozilo cely model whichModelSelect.
-        #cmd.save(input, "tmpCaverModel")
-
-        #cmd.delete("tmpCaverModel")
 
         cesta = os.getcwd()
 
@@ -731,14 +677,6 @@ class AnBeKoM(QtWidgets.QWidget):
         else:
             self.aftercomp.config(text="Warnings detected during computation")
             self.afterbutt.config(state=ACTIVE)
-
-
-    def CreateDirectory(self,dir):
-        if os.path.isdir(dir):
-            return
-        parent, base = os.path.split(dir)
-        self.CreateDirectory(parent)
-        os.mkdir(dir)
     @staticmethod
     def fixPrecision( numberStr):
         return math.floor(float(numberStr) * 1000) / 1000
@@ -834,9 +772,9 @@ class AnBeKoM(QtWidgets.QWidget):
             rids = ""
             aids = ""
             if self.dataStructure.indexOf('starting_point_residue') != -1:
-               rids = "+".join(self.dataStructure.get('starting_point_residue').split(" "))
+                rids = "+".join(self.dataStructure.get('starting_point_residue').split(" "))
             if self.dataStructure.indexOf('starting_point_atom') != -1:
-               aids = "+".join(self.dataStructure.get('starting_point_atom').split(" "))
+                aids = "+".join(self.dataStructure.get('starting_point_atom').split(" "))
             #print(aids)
             #print(rids)
             sel1index = self.listbox1.curselection()
@@ -859,32 +797,21 @@ class AnBeKoM(QtWidgets.QWidget):
 
         # test include/exclude
         if self.hasIncludeExclude():
-           Pmw.MessageDialog(self.parent,title = 'Information',message_text = 'include_ and exclude_ parameters are not supported by plugin. Please, use the plugin to specify residues to be analyzed.')
-
+            notify_box('include_ and exclude_ parameters are not supported by plugin. Please, use the plugin to specify residues to be analyzed.')
+        
         #print("reading done...")
         #now, all read in the structure. Multi-line params merged into one-liners
         #Traverse the structure and update gui controls
         self.structureLoad()
-    def clearGUI(self):
-        self.javaHeap.setvalue(defaults["default_java_heap"])
-        self.tunnelsProbe.setvalue("")
-        self.shellDepth.setvalue("")
-        self.shellRadius.setvalue("")
-        self.clusteringThreshold.setvalue("")
-        self.approxVar.set("")
-        self.optimizeNearValue.set("")
-        self.optimizeRadius.set("")
-        self.xlocvar.set(0)
-        self.ylocvar.set(0)
-        self.zlocvar.set(0)
+
     def hasIncludeExclude(self):
         notAllowed = [ "include_residue_names", "include_residue_ids", "include_atom_numbers", "exclude_residue_names", "exclude_residue_ids", "exclude_atom_numbers"]
         sk = self.dataStructure.getKeys()
         for i in range (0, len(sk)):
             key = sk[i]
             if key != "include *" and key in notAllowed:
-                return 1
-        return 0
+                return True
+        return False
 
     #consider all properties in the gui and store them into config file supplied
     # load file "readfile" and store params into new config file "file"
@@ -1006,11 +933,9 @@ class AnBeKoM(QtWidgets.QWidget):
         self.dataStructure.remove("starting_point_residue")
         self.dataStructure.remove("starting_point_atom")
 
-        asit = str(self.xlocvar.get()) + " " + str(self.ylocvar.get()) + " " + str(self.zlocvar.get())
+        asit = str(self.config.start_point_x) + " " + str(self.config.start_point_x) + " " + str(self.config.start_point_x)
         self.dataStructure.replace("starting_point_coordinates",asit, 0)
-        self.dataStructure.replace("max_distance",self.optimizeNearValue.get(), 0)
-        self.dataStructure.replace("desired_radius",self.optimizeRadius.get(), 0)
-        #print("len" + str(len(self.dataStructure.getKeys()))  + str(len(self.dataStructure.getValues())))
+
     def stdamMessage(self):
         Pmw.MessageDialog(self.parent,title = 'Information',message_text = self.AAKEY + ': Standard amino acids: \n ' + ", ".join(self.stdam_list))
 

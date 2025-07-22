@@ -236,6 +236,14 @@ def widget_signal_tape(widget: QtWidgets.QWidget, event):
             f"{widget} {type(widget)} is not supported yet"
         )
 
+def getExistingDirectory():
+    return QtWidgets.QFileDialog.getExistingDirectory(  # type: ignore
+        None,
+        "Open Directory",
+        os.path.expanduser("~"),
+        QtWidgets.QFileDialog.ShowDirsOnly | QtWidgets.QFileDialog.DontResolveSymlinks,  # type: ignore
+    )
+
 def refresh_window():
     """
     Refresh the application window by processing all pending events.
