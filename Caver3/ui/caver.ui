@@ -97,7 +97,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_output_dir"/>
+          <widget class="QLineEdit" name="lineEdit_outputDir"/>
          </item>
         </layout>
        </item>
@@ -263,6 +263,19 @@
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_ignoreWater">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Ignore water</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="pushButton_help">

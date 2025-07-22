@@ -7,41 +7,30 @@
 from __future__ import division
 from __future__ import generators
 
+import json
+import logging
 import re
 import os,math
 
-try:
-    import tkinter as tk
-    from tkinter import *
-except:
-    import Tkinter as tk
-    from Tkinter import *
-
-try:
-    from tkinter import filedialog
-except:
-    import tkFileDialog as filedialog
-
+from dataclasses import dataclass
+from typing import Any, Dict, Literal, Optional, Tuple
+from functools import partial
 import Pmw
-import distutils.spawn # used for find_executable
-from pymol import cmd,selector
+from pymol import cmd
+from pymol.Qt import QtWidgets
 import sys
-from pymol.cmd import _feedback,fb_module,fb_mask,is_list,_cmd
-from pymol.cgo import *
-from chempy.models import Indexed
-from chempy import Bond, Atom
-import threading
-#import subprocess
 
-import shutil
+from pymol.cgo import *
+
+
 from pymol import stored
 import time
-#
-# Global config variables
-#
 
-#win/linux ========================
-# 1 for windows, 0 for linux
+from .ui.Ui_caver import Ui_CaverUI as CaverUI
+from .utils.ui_tape import set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape
+
+THIS_DIR=os.path.dirname(__file__)
+CONFIG_TXT=os.path.join(THIS_DIR,"config", "config.txt")
 
 def import_file(full_path_to_module):
     import os
@@ -74,28 +63,6 @@ OUTPUT_LOCATION = os.path.abspath(".")
 LABEL_TEXT = "Caver directory:"
 
 #
-# Cheap hack for testing purposes
-#
-try:
-    import pymol
-    REAL_PYMOL = True
-except ImportError:
-    REAL_PYMOL = False
-    class pymol:
-        class cmd:
-            def load(self,name,sel=''):
-                pass
-            def get_names(self):
-                return ['mol1','mol2','map1','map2']
-            def get_type(self,thing):
-                if thing.startswith('mol'):
-                    return 'object:molecule'
-                else:
-                    return 'object:map'
-                f.close()
-        cmd = cmd()
-    pymol = pymol()
-
 
 # pridani do menu
 def __init__(self):
@@ -107,27 +74,165 @@ def __init__(self):
 
 
 
+@dataclass
+class CaverConfig:
 
-defaults = {
-    "startingpoint": ('0','0','0'),
-    "compute_command": 'Compute tunnels',
-    "warn_command": 'Show warnings',
-    "exit_command": 'Exit',
-    "default_shell_depth": '2',
-    "default_shell_radius": '3.0',
-    "default_tunnels_probe": '0.7',
-    "default_java_heap": '6000',
-    "default_clustering_threshold": '1.5',
-    "surroundings" : 'sele',
-    "startingacids":('117','283','54'),
-    "default_block": '10.0'
-    }
+    # connect to wigets
+    output_dir: str = ""
+
+    default_java_heap: int=6000
+
+    shell_radius: float=3.0
+    shell_depth: int=2
+    probe_radius: float=0.7
+    clustering_threshold: float=1.5
+
+    number_of_approximating_balls: Literal[4, 6, 8, 12, 20] = 4
+    ignore_water: bool= False
+
+    selection_name: str='sele'
+
+    start_point_x: float = 0.0
+    start_point_y: float = 0.0
+    start_point_z: float = 0.0
+
+    max_distance: float = 4.0
+    desired_radius: float = 1.8
+
+
+    @classmethod
+    def from_json(cls, json_file: str) -> 'CaverConfig':
+        return cls(**json.load(open(json_file)))
+    
+    def to_json(self, json_file: str):
+        json.dump(self.__dict__, open(json_file, 'w'))
+
+    def set_value(self, key: str, value: Any):
+        setattr(self, key, value)
+
+    @classmethod
+    def from_txt(cls, txt_file: Optional[str]=None):
+        '''
+        comment:
+            - started by #: ignored
+        bool: 
+            - True: yes
+            - False: no
+        str: 
+            - quoted by "" if has space
+            
+        list: 
+            - space separated
+
+        '''
+        new_self=cls()
+        with open(txt_file or CONFIG_TXT, "r" ) as f:
+            for l in f.readlines():
+                l = l.strip()
+                # 'option yes # comment' -> 'option yes'
+                if '#' in l and not l.startswith('#'):
+                    l = l[0:l.rfind("#")-1]
+                if l.startswith("#") or not l: continue
+
+                parsed = l.split(' ')
+                key = parsed[0]
+                if len(parsed) <= 1:
+                    print('skipping ' + key)
+                    continue
+                
+                new_self._set_value(key, parsed[1])
+        
+        return new_self
+
+
+    def _set_value(self,key: str, new_value: str):
+        if hasattr(self, key):
+            v_type=type(getattr(self, key))
+            # align to the self variable type
+            setattr(self, key, v_type(new_value) if v_type != bool else CaverConfig._true_or_false(new_value))
+            return
+        # unknown variable, just set it as str
+        setattr(self, key, new_value)
+
+    
+    def _get_value(self, key: str) -> str:
+        value=getattr(self, key)
+        v_type=type(value)
+        if v_type == bool:
+            return CaverConfig._yes_or_no(value)
+        return CaverConfig._need_quote(str(value))
+
+
+    @staticmethod
+    def _yes_or_no( v: bool) -> str:
+        return 'yes' if v else 'no'
+    
+    @staticmethod
+    def _true_or_false(v: str) -> bool:
+        return True if v == 'yes' else False
+    
+    @staticmethod
+    def _need_quote( v: str) -> str:
+        return '"' + v + '"' if ' ' in v else v
+    
+    def to_txt(self, txt_file: str):
+        ...
+        '''
+        bool: 
+            - True: yes
+            - False: no
+        str: 
+            - quoted by "" if has space
+            
+        list: 
+            - space separated
+
+        '''
+        new_txt_contents=[]
+        with open(CONFIG_TXT,'r') as template_f:
+            template = template_f.readlines()
+        for l in template:
+            l = l.strip()
+            if l.startswith('#') or not l:
+                # direct append comment and empty lines
+                new_txt_contents.append(l)
+                continue
+            if '#' in l and not l.startswith('#'):
+                # remove everything after last occurence of # char
+                l = l[0:l.rfind("#")-1]
+
+            parsed = l.split(' ')
+            key = parsed[0]
+            if len(parsed) <= 1:
+                print('skipping ' + key)
+
+            elif hasattr(self, key):
+                self_val=getattr(self, key)
+                _val_type=type(self_val)
+                if _val_type == bool:
+                    new_txt_contents.append(f'{key} {CaverConfig._yes_or_no(self_val)}')
+                elif _val_type == str:
+                    new_txt_contents.append(f'{key} {CaverConfig._need_quote(self_val)}')
+                elif _val_type == float:
+                    new_txt_contents.append(f'{key} {self_val:.1f}')
+                else:
+                    new_txt_contents.append(f'{key} {str(self_val)}')
+                
+
+        os.makedirs(os.path.dirname(txt_file), exist_ok=True)
+        with open(txt_file, 'w') as f:
+            f.write('\n'.join(new_txt_contents))
+            
+
+
+
+
+    
+
+defaults = CaverConfig()
 
 url = "http://www.caver.cz/index.php?sid=123"
 
-class MyThread (threading.Thread):
-    def run (self):
-        os.system("start " + url)
 
 
 class DataStruct:
@@ -236,7 +341,6 @@ class PyJava:
                     self.xmx = xmx
                     print("Xmx: " + str(self.xmx))
         print("*** Memory for Java: " + str(self.xmx) + " MB ***")
-        print
 
     def execute_old(self, cmd):
         p = os.popen(cmd)
@@ -273,14 +377,89 @@ class PyJava:
         if 'OutOfMemory' in output:
             self.insufficient_memory = True
 
-class AnBeKoM:
+
+
+
+
+class AnBeKoM(QtWidgets.QWidget):
+    config_bindings: Dict[str, str]={
+        'lineEdit_output_dir': 'output_dir',
+        'spinBox_maxJavaHeapSize': 'default_java_heap',
+        'doubleSpinBox_maxProRad': 'probe_radius',
+        'doubleSpinBox_shellRad': 'shell_radius',
+        'spinBox_shellDepth': 'shell_depth',
+        'doubleSpinBox_clusterThreshold':'clustering_threshold',
+        'comboBox_numApproxBalls': 'number_of_approximating_balls',
+        'checkBox_ignoreWater': 'ignore_water',
+        'lineEdit_startPointSele': 'selection_name',
+        'doubleSpinBox_x': 'start_point_x',
+        'doubleSpinBox_y': 'start_point_y',
+        'doubleSpinBox_z' : 'start_point_z',
+    }
 
     def pop_error(self, msg):
         error_dialog = Pmw.MessageDialog(self.parent, title = 'Error',message_text = msg)
 
 
+    def bind_config(self):
+        for wn in self.config_bindings:
+            widget=getattr(self.ui, wn)
+            widget_signal_tape(widget, partial(self._wiget_link, wn))
 
-    def __init__(self,app):
+    def _wiget_link(self, widget_name):
+        config_item=self.config_bindings.get(widget_name)
+        if not hasattr(self.config, config_item): 
+            raise AttributeError(f'{config_item} not found in config')
+        
+        pv=getattr(self.config, config_item)
+        nv=get_widget_value(widget)
+        self.config.set_value(config_item, nv)
+
+        uv=getattr(self.config, config_item)
+        logging.info(f'{widget_name} {pv} -> {nv} -> {uv}')
+
+    def refresh_window_from_cfg(self):
+        for wn in self.config_bindings:
+            widget=getattr(self.ui, wn)
+            set_widget_value(widget, getattr(self.config, wn))
+
+
+    def make_window(self):
+        main_window = QtWidgets.QMainWindow()  
+        self.ui = CaverUI()
+        self.ui.setupUi(main_window)
+
+        self.ui.pushButton_help.clicked.connect(self.launchHelp)
+        self.bind_config()
+        self.ui.pushButton_compute.clicked.connect(self.execute)
+        self.ui.pushButton_convertStartPointSele.clicked.connect(self.convert)
+        self.ui.pushButton_reloadInputModel.clicked.connect(self.updateList)
+
+        self.ui.doubleSpinBox_x.valueChanged.connect(self.changeCoords)
+        self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
+        self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
+
+
+
+        return main_window
+
+
+    def run_plugin_gui(self):
+        """PyMOL entry for running the plugin"""
+        if self.window is None:
+            self.window = self.make_window()
+        self.window.show()
+
+
+    def __init__(self,parent):
+        super().__init__()
+        # global reference to avoid garbage collection of our dialog
+        self.window = None
+        self.config= CaverConfig()
+        
+
+
+        
         parent = app.root
         self.parent = parent
         # workaround for list binding
@@ -290,35 +469,10 @@ class AnBeKoM:
 
         self.dataStructure = DataStruct()
 
-        self.optimizeNearValue = StringVar()
-        self.optimizeNearValue.set("4.0")
-        self.optimizeRadius = StringVar()
-        self.optimizeRadius.set("1.8")
+
         self.AAKEY = "20_AA"
-        self.inputsSubdir = "inputs"
         #ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$",r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
-
-        # Create the dialog.
-        self.dialog = Pmw.Dialog(parent,
-                                 buttons = (defaults["compute_command"], defaults["exit_command"]),
-                                 #defaultbutton = 'Run CAVER',
-                                 title = 'Caver ' + VERSION,
-                                 command = self.execute)
-        self.dialog.withdraw()
-        lbb = "Caver %s" % (VERSION,)
-
-        w = tk.Label(self.dialog.interior(),
-                                text = lbb ,
-                                background = 'orange',
-                                foreground = 'white',
-                                #padx = 100,
-                                )
-        #w.config(font=labelfont)
-        w.pack(expand = 1, fill = 'both', padx = 4, pady = 4)
-        ww = tk.Button(self.dialog.interior(), text = 'Help and how to cite', command = self.launchHelp)
-        ww.pack()
-
 
         #self.stdam_list = [ 'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL', 'ASX', 'CYX', 'GLX', 'HI0', 'HID', 'HIE', 'HIM', 'HIP', 'MSE', 'ACE', 'ASH', 'CYM', 'GLH', 'LYN', 'NME']
         self.stdam_list = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
@@ -371,28 +525,28 @@ class AnBeKoM:
         self.javaHeap.pack(fill='x',padx=4,pady=1) # vertical
         self.tunnelsProbe = Pmw.EntryField(self.dialog.interior(),
                                      labelpos='w',
-                                     value = defaults["default_tunnels_probe"],
+                                     value = defaults["probe_radius"],
                                      label_text = 'Minimum probe radius:')
 
 
         self.tunnelsProbe.pack(fill='x',padx=4,pady=1) # vertical
         self.shellDepth = Pmw.EntryField(self.dialog.interior(),
                                      labelpos='w',
-                                     value = defaults["default_shell_depth"],
+                                     value = defaults["shell_depth"],
                                      label_text = 'Shell depth:')
 
 
         self.shellDepth.pack(fill='x',padx=4,pady=1) # vertical
         self.shellRadius = Pmw.EntryField(self.dialog.interior(),
                                      labelpos='w',
-                                     value = defaults["default_shell_radius"],
+                                     value = defaults["shell_radius"],
                                      label_text = 'Shell radius:')
 
 
         self.shellRadius.pack(fill='x',padx=4,pady=1) # vertical
         self.clusteringThreshold = Pmw.EntryField(self.dialog.interior(),
                                      labelpos='w',
-                                     value = defaults["default_clustering_threshold"],
+                                     value = defaults["clustering_threshold"],
                                      label_text = 'Clustering threshold:')
 
 
@@ -477,12 +631,6 @@ class AnBeKoM:
 #-------------
         groupstart.pack(padx=4,pady=1,expand='yes',fill='x')
 
-        self.xlocvar=DoubleVar()
-        self.xlocvar.set(float(defaults["startingpoint"][0]))
-        self.ylocvar=DoubleVar()
-        self.ylocvar.set(float(defaults["startingpoint"][1]))
-        self.zlocvar=DoubleVar()
-        self.zlocvar.set(float(defaults["startingpoint"][2]))
 
         self.xlocfr = tk.Frame(group2.interior())
         labX = Label(self.xlocfr,text="x")
@@ -549,27 +697,12 @@ class AnBeKoM:
         else:
             return cf
     def showCrisscross(self):
-        startpoint=(float(self.xlocvar.get()),float(self.ylocvar.get()),float(self.zlocvar.get()))
         cmd.delete("crisscross")
-        self.crisscross(startpoint[0],startpoint[1],startpoint[2],0.5,"crisscross")
+        self.crisscross(self.config.start_point_x,self.config.start_point_y,self.config.start_point_z,0.5,"crisscross")
 
 #win/linux
-    def changeValueX(self, *args):
-            a = args[0] if len(args) == 1 else args[1]
-            val=float(self.xlocvar.get())+float(a)*0.2
-            self.xlocvar.set(val)
-            self.showCrisscross()
-    def changeValueY(self, *args):
-            a = args[0] if len(args) == 1 else args[1]
-            val=float(self.ylocvar.get())+float(a)*0.2
-            self.ylocvar.set(val)
-            self.showCrisscross()
-    def changeValueZ(self, *args):
-            a = args[0] if len(args) == 1 else args[1]
-            val=float(self.zlocvar.get())+float(a)*0.2
-            self.zlocvar.set(val)
-            self.showCrisscross()
-
+    def changeCoords(self,*args):
+        self.showCrisscross()
 
 
     def showAppModal(self):
@@ -581,18 +714,10 @@ class AnBeKoM:
                 return 1
         return 0
     def updateList(self):
-        #print("updateList")
-        self.listbox1.delete(0, tk.END)
-        #fill with data
-        self.listbox1.selection_set(0, 0) # Default sel
-        tindex = 0
-        for item in cmd.get_object_list():
-            stri = str(item)
-            if not self.structureIgnored(stri):
-                self.listbox1.insert(tindex,str(item))
-                tindex = tindex + 1
-        #select first by default
-        self.listbox1.select_set(0)
+        self.ui.listWidget_inputModel.clear()
+        self.ui.listWidget_inputModel.addItems([str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))])
+        self.ui.listWidget_inputModel.setCurrentIndex(0)
+
         self.inputAnalyse()
 
     def launchHelp(self):
@@ -836,16 +961,19 @@ class AnBeKoM:
         return 0
 
     def configin(self):
-        indi = os.path.dirname(self.getConfLoc())
-        filepath = filedialog.askopenfilename(title="Open config file", initialdir=indi, filetypes=[("config txt file","*.txt"), ("all files","*.*")])
+
+        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json )")
         if not filepath: return
+        self.config=CaverConfig.from_json(filepath)
+
         self.conflocation.config(text=filepath)
         self.configLoad(self.getConfLoc())
         self.configJustLoaded = 1
     def configout(self):
-        indi = os.path.dirname(self.getConfLoc())
-        filepath = filedialog.asksaveasfilename(title="Save config file", initialdir=indi,filetypes=[("config txt file","*.txt"), ("all files","*.*")], defaultextension='.txt')
+        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json )")
         if not filepath: return
+        self.config.to_json(filepath)
+
         self.configSave(filepath, self.getConfLoc())
     #perform actual config parse here
     def configLoad(self, file):
@@ -862,6 +990,7 @@ class AnBeKoM:
         for line in lines:
             liner = line.strip()
             # remove everything after last occurence of # char
+            # 'option yes # comment' -> 'option yes'
             if '#' in liner and not liner.startswith('#'):
                 liner = liner[0:liner.rfind("#")-1]
             if liner.startswith('#'):
@@ -1162,11 +1291,6 @@ class AnBeKoM:
             tmpButton.grid(sticky=W, row = int(cntr/5), column = (cntr % 5))
             self.checklist.append(tmpButton)
 
-                # zaridit balloon help -- neni potreba kdyz je tlacitko
-                #if key == "AA":
-                #  balloon = Pmw.Balloon(self.parent)
-                #  balloon.bind(tmpButton, 'STanDard AMino acids: \n ' + string.join(self.stdam_list, ", "), 'STanDard AMino acids')
-
             # kdyz je tam pridano STDAM, vlozit tam  tedy i napovedu
             if key == self.AAKEY:
                 self.xButton = tk.Button(self.filterGroup.interior(), text='?', command=self.stdamMessage, width = 5)
@@ -1177,18 +1301,6 @@ class AnBeKoM:
 
             cntr = cntr + 1
 
-
-        ##print("size: " + str(len(self.checklist)))
-        #aButton = tk.Button(self.filterGroup.interior(), text='Reload', command=self.inputAnalyse)
-
-
-
-        ## zarovnat
-        #if not cntr % 3 == 0:
-        #  cntr = cntr + 3 - (cntr % 3)
-        ##analyse,save,load
-        #aButton.grid(row = int(cntr/3), column = (cntr % 3))
-        #self.buttonlist.append(aButton)
 
     def getAtoms(self, selection="(all)"):
         return cmd.identify(selection, 0)
