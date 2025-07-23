@@ -56,7 +56,7 @@ class CaverConfig:
     probe_radius: float=0.7
     clustering_threshold: float=1.5
 
-    number_of_approximating_balls: Literal[4, 6, 8, 12, 20] = 4
+    number_of_approximating_balls: int = 4
     ignore_water: bool= False
 
     selection_name: str=''
@@ -82,7 +82,14 @@ class CaverConfig:
 
     @classmethod
     def from_json(cls, json_file: str) -> 'CaverConfig':
-        return cls(**json.load(open(json_file)))
+        json_data=json.load(open(json_file))
+        # filter dataclass keys with fixed typing
+        new_self=cls(**{k:cls.__dict__['__dataclass_fields__'][k].type(v) for k,v in json_data.items() if k in cls.__dict__['__match_args__']})
+        for k,v in json_data.items():
+            if  k in cls.__dict__['__match_args__']:
+                continue
+            new_self.set(k,v)
+        return new_self
     
     def to_json(self, json_file: str):
         json.dump(self.__dict__, open(json_file, 'w'))
@@ -414,12 +421,9 @@ class AnBeKoM(QtWidgets.QWidget):
         for line in lines:
             wresult += line
         return wresult
-    def initialize_out_dir(self, ):
+    def initialize_out_dir(self):
         
         dir=self.config.output_dir
-        
-        if not dir == "":
-            notify_box("Output directory does not exist. ", FileNotFoundError)
         
         os.makedirs(dir, exist_ok=True)
 
