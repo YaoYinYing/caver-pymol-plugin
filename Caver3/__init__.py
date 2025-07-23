@@ -33,12 +33,6 @@ THIS_DIR=os.path.dirname(__file__)
 CONFIG_TXT=os.path.join(THIS_DIR,"config", "config.txt")
 
 
-VERS_M = "3"
-VERS_0 = "0"
-VERS_1 = "3"
-#JOPTS = "-Xmx@m" # @ is going to be replaced by user-specified value
-#JHEAP = 1100
-
 VERSION = '4.0.0'
 
 CAVER3_LOCATION = os.path.dirname(__file__)
@@ -339,28 +333,27 @@ class PyJava:
         return 1
 
     def execute(self, args, silent):
-        if True:
-            import subprocess
-            try:
-                p = subprocess.check_output(args, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
-                if not silent:
-                    print(p.decode('UTF-8'))
-            except subprocess.CalledProcessError as e:
-                if not silent:
-                    print(e)
-                    print(e.cmd)
-                    print(e.output)
-                self.analyze(e.output.decode('UTF-8'))
-                return e.returncode
-            except OSError as e:
-                error_dialog = Pmw.MessageDialog(title='Error',
-                    message_text="Can't execute " + str(args) + "\n\n" + str(e))
-                return -1
-            except Exception as e:
-                error_dialog = Pmw.MessageDialog(title='Error',
-                    message_text="Unknown error: " + str(e))
-                return -2
-            return 0
+
+        import subprocess
+        try:
+            p = subprocess.check_output(args, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+            if not silent:
+                print(p.decode('UTF-8'))
+        except subprocess.CalledProcessError as e:
+            if not silent:
+                print(e)
+                print(e.cmd)
+                print(e.output)
+            self.analyze(e.output.decode('UTF-8'))
+            return e.returncode
+        except OSError as e:
+            notify_box(f'Failed to execute command: {str(args)}', details=str(e))
+
+        except Exception as e:
+            notify_box(f'Unknown error occurs:  {str(args)}', details=str(e))
+
+            return -2
+        return 0
 
     def analyze(self, output):
         if 'OutOfMemory' in output:
@@ -693,8 +686,8 @@ class AnBeKoM(QtWidgets.QWidget):
     def configLoad(self, file):
         self.dataStructure.clear()
         print('cleared datastruct')
-        self.clearGUI()
-        #Pmw.MessageDialog(self.parent,title = 'Information',message_text = file)
+
+
         # do nothing if file not exists
         if not os.path.isfile(file):
             return
