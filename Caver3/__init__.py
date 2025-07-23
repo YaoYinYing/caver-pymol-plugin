@@ -84,7 +84,10 @@ class CaverConfig:
     def from_json(cls, json_file: str) -> 'CaverConfig':
         json_data=json.load(open(json_file))
         # filter dataclass keys with fixed typing
+        # `__match_args__` has all dataclass keys
+        # `__dataclass_fields__` has all dataclass key fields
         new_self=cls(**{k:cls.__dict__['__dataclass_fields__'][k].type(v) for k,v in json_data.items() if k in cls.__dict__['__match_args__']})
+        # add extra keys that come from json
         for k,v in json_data.items():
             if  k in cls.__dict__['__match_args__']:
                 continue
@@ -119,6 +122,9 @@ class CaverConfig:
                 # 'option yes # comment' -> 'option yes'
                 if '#' in l and not l.startswith('#'):
                     l = l[0:l.rfind("#")-1]
+                    # remove trailing whitespaces
+                    l.rstrip(' ')
+                
                 if l.startswith("#") or not l: continue
 
                 parsed = l.split(' ', 1)
@@ -172,6 +178,16 @@ class CaverConfig:
     
     @staticmethod
     def _need_quote( v: str) -> str:
+        if ' ' not in v:
+            return v
+        # simple digit int array
+        if all(_v.isdigit() for _v in v.split(' ') if v):
+            return v
+        # complex float array
+        if all(re.match(r'^\d+(\.?\d+)?$', _v) for _v in v.split(' ') if v):
+            return v
+        
+        # normal string by lacking quotes
         return '"' + v + '"' if ' ' in v and ( v[0] != '"' and v[-1] !='"') else v
     
     def to_txt(self, txt_file: str):
@@ -199,6 +215,8 @@ class CaverConfig:
             if '#' in l and not l.startswith('#'):
                 # remove everything after last occurence of # char
                 l = l[0:l.rfind("#")-1]
+                # remove trailing whitespaces
+                l.rstrip(' ')
 
             parsed = l.split(' ', 1)
             key = parsed[0]
@@ -438,7 +456,7 @@ class AnBeKoM(QtWidgets.QWidget):
         idxs=map(int, [x for x in os.listdir(out_home) if x.isdigit()] or [0])
         max_idx=max(idxs)
 
-        new_dir = os.path.join(out_home + str(max_idx + 1))
+        new_dir = os.path.join(out_home, str(max_idx + 1))
         os.makedirs(new_dir)
 
         self.out_dir = new_dir
