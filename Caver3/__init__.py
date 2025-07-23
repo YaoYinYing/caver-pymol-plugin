@@ -473,7 +473,7 @@ class AnBeKoM(QtWidgets.QWidget):
     def coordinatesNotSet(self) -> bool:
         return all(self.config.get(f'start_point_{i}') == 0 for i in 'xyz')
 
-    def execute(self, result):
+    def execute(self):
 
         if self.coordinatesNotSet:
             notify_box(
@@ -561,6 +561,7 @@ class AnBeKoM(QtWidgets.QWidget):
         # refresh window wiget from input config
         self.refresh_window_from_cfg()
         self.refresh_start_point_from_cfg()
+        set_widget_value(self.ui.label_configStatus, f'Loaded from {os.path.basename(filepath)}')
 
     def refresh_start_point_from_cfg(self):
 
@@ -579,6 +580,7 @@ class AnBeKoM(QtWidgets.QWidget):
         filepath = filepath or getSaveFileNameWithExt(self.window, "Select configuration file", filter="JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
         self.config.to_json(filepath) if filepath.endswith(".json") else self.config.to_txt(filepath)
+        set_widget_value(self.ui.label_configStatus, f'Saved as {os.path.basename(filepath)}')
 
     def config_post_process(self):
 

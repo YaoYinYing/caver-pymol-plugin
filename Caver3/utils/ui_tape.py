@@ -38,7 +38,8 @@ def set_widget_value(widget: QtWidgets.QGridLayout, value: str): ...
 def set_widget_value(widget: Union[
     QtWidgets.QLineEdit,
     QtWidgets.QLCDNumber,
-    QtWidgets.QCheckBox
+    QtWidgets.QCheckBox,
+    QtWidgets.QLabel
 ], value: Any): ...
 
 
@@ -55,6 +56,7 @@ def set_widget_value(widget, value):
     - QSpinBox: Supports int, float, list or tuple (for setting range).
     - QComboBox: Supports str, list, tuple, dict.
     - QLineEdit: Supports str.
+    - QLabel: Supports str.
     - QProgressBar: Supports int, list or tuple (for setting range).
     - QLCDNumber: Supports any value (converted to string for display).
     - QCheckBox: Supports bool.
@@ -94,7 +96,7 @@ def set_widget_value(widget, value):
                 widget.addItem(v, k)
         else:
             widget.setCurrentText(str(value))
-    elif isinstance(widget, QtWidgets.QLineEdit):
+    elif isinstance(widget, QtWidgets.QLineEdit) or isinstance(widget, QtWidgets.QLabel):
         widget.setText(str(value))
     elif isinstance(widget, QtWidgets.QProgressBar):
         if isinstance(value, int):
