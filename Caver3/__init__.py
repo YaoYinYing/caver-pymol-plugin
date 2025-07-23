@@ -13,7 +13,7 @@ import re
 import os,math
 
 from dataclasses import dataclass
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 from functools import partial
 import Pmw
 from pymol import cmd
@@ -27,7 +27,7 @@ from pymol import stored
 import time
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
-from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box
+from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box, CheckableListView
 
 THIS_DIR=os.path.dirname(__file__)
 CONFIG_TXT=os.path.join(THIS_DIR,"config", "config.txt")
@@ -462,6 +462,12 @@ class AnBeKoM(QtWidgets.QWidget):
         #ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$",r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
+
+        self.checktable_aa=CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
+        self.ui.pushButton_allAA.clicked.connect(self.checktable_aa.check_all)
+        self.ui.pushButton_noneAA.clicked.connect(self.checktable_aa.uncheck_all)
+        self.ui.pushButton_reverseAAsel.clicked.connect(self.checktable_aa.reverse_check)
+
         self.updateList()
 
 
@@ -474,6 +480,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.configLoad(cf)
 
         self.inputAnalyse()
+
     def getConfLoc(self):
         cf = self.conflocation.cget("text")
         if cf == self.DEFCONF:
@@ -837,28 +844,10 @@ class AnBeKoM(QtWidgets.QWidget):
                 f.write("\n")
         f.close()
     def structureLoad(self):
-        keys = self.dataStructure.getKeys()
-        values = self.dataStructure.getValues()
-        for i in range(0, len(keys)):
-            key = keys[i]
-            val = values[i]
-            #print(key + "->" + val)
-            if key == "include_residue_names":
-                self.s = dict()
-                self.s.clear()
-                ress = (str(val)).split(" ")
-                aa_added = 0
-                for idx in range(0, len(ress)):
-                    fromconf = ress[idx]
-                    if fromconf in THE_20s:
-                        if aa_added == 0:
-                            self.s[self.AAKEY] = IntVar()
-                            self.s[self.AAKEY].set(1)
-                            aa_added = 1
-                    elif fromconf.strip() != "":
-                        self.s[fromconf] = IntVar()
-                        self.s[fromconf].set(1)
-                self.reinitialiseFromConfig()
+        if self.config.has("include_residue_names"):
+            aa_from_config: List[str]=self.config.get("include_residue_names").split(" ")
+            if aa_from_config:
+                self.checktable_aa.check_these(aa_from_config)
     def structureUpdateFromGui(self):
         self.dataStructure.replace("probe_radius", self.tunnelsProbe.getvalue(), 0)
         self.dataStructure.replace("java_heap", self.javaHeap.getvalue(), 0)

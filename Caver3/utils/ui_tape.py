@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Iterable, List, NoReturn, Optional, Type, Union, overload
+from typing import Any, Dict, Iterable, List, NoReturn, Optional, Type, Union, overload
 import warnings
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -332,3 +332,141 @@ def raise_error(error_type: Type[Exception], message: str) -> NoReturn:
     - message: str, the error message.
     """
     raise error_type(message)
+
+
+
+class CheckableListView(QtWidgets.QWidget):
+    """
+    Checkable list view widget, allowing users to check items in the list.
+
+    Attributes:
+        list_view: The QListView instance this widget operates on.
+        model: The data model instance used by the list view.
+    """
+
+    def __init__(self, list_view, items: Dict[str, str] = {}, parent=None):
+        """
+        Initializes the CheckableListView instance.
+
+        Parameters:
+            listView: The QListView instance to use.
+            items: Optional list of item texts to add to the list.
+            separators: Optional list of separator texts, used to categorize items.
+            parent: The parent widget, defaults to None.
+        """
+        super().__init__(parent)
+
+        # Use the existing list view
+        self.list_view = list_view
+
+        # Set up the model (use existing one if set, otherwise create a new one)
+        if self.list_view.model() is None:
+            self.model = QtGui.QStandardItemModel(self.list_view)
+            self.list_view.setModel(self.model)
+        else:
+            self.model = self.list_view.model()
+
+        # Clear the model before adding new items
+        self.model.clear()
+
+        # Add items to the model with optional separators
+        if not items:
+            return
+
+        self.items = items
+
+        for k, v in items.items():
+            if not v:
+                # Add as a separator
+                separator_item = QtGui.QStandardItem(k)
+                separator_item.setEnabled(False)  # Non-interactive
+                separator_item.setSelectable(False)  # Non-selectable
+                separator_item.setCheckable(False)  # Non-checkable
+                separator_item.setForeground(QtGui.QBrush(QtCore.Qt.yellow))
+                separator_item.setBackground(QtGui.QBrush(QtCore.Qt.blue))   # Different background
+                separator_item.setFont(QtGui.QFont("Arial", weight=QtGui.QFont.Bold))  # Bold text
+                self.model.appendRow(separator_item)
+            else:
+                # Add as a regular checkable item
+                item = QtGui.QStandardItem(k)
+                item.setCheckable(True)
+                item.setCheckState(QtCore.Qt.Unchecked)   # Default unchecked
+                self.model.appendRow(item)
+
+    def _get_items_by_check_state(self, check_state):
+        """
+        Helper function to get items based on their check state.
+
+        Args:
+            check_state (int): The check state to filter items by (e.g., QtCore.Qt.Checked).
+
+        Returns:
+            A list of strings representing the texts of items with the specified check state.
+        """
+        items = []
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            if item.isCheckable() and item.checkState() == check_state:
+                items.append(self.items.get(item.text(), None))
+        return items
+
+    def get_checked_items(self):
+        """
+        Returns a list of all checked items' text.
+
+        Returns:
+            A list of strings representing the texts of all checked items.
+        """
+        checked_items = self._get_items_by_check_state(QtCore.Qt.Checked)
+        logging.debug(f'Checked: {checked_items}')
+        return checked_items
+
+    def get_unchecked_items(self):
+        """
+        Returns a list of all unchecked items' text.
+
+        Returns:
+            A list of strings representing the texts of all unchecked items.
+        """
+        return self._get_items_by_check_state(QtCore.Qt.Unchecked)
+
+    def check_all(self):
+        """
+        Check all items in the list, excluding separators.
+        """
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            if item.isCheckable() and item.text() != 'Test':
+                item.setCheckState(QtCore.Qt.Checked)
+
+    def uncheck_all(self):
+        """
+        Uncheck all items in the list, excluding separators.
+        """
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            if item.isCheckable():
+                item.setCheckState(QtCore.Qt.Unchecked)
+
+    def reverse_check(self):
+        """
+        Reverse the check state of all items in the list, excluding separators.
+        """
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            if item.isCheckable():
+                if item.checkState() == QtCore.Qt.Checked:
+                    item.setCheckState(QtCore.Qt.Unchecked)
+                else:
+                    item.setCheckState(QtCore.Qt.Checked)
+
+    def check_these(self, items):
+        """
+        Selects the items in the list.
+        """
+        self.uncheck_all()
+        for item in items:
+            if not item in self.items.items():
+                logging.warning("Item %s not found in list." % item)
+                continue
+            self.model.itemFromIndex(item).setCheckState(QtCore.Qt.Checked)
