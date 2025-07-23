@@ -260,7 +260,7 @@ class PyJava:
 
         print("\n*** Testing if Java is installed ***")
         if not self.java_present:
-            return
+            notify_box("Java is not installed. Please install Java and try again.", RuntimeError)
 
         print("\n*** Optimizing memory allocation for Java ***")
         self.optimize_memory(customized_memory_heap)
@@ -505,9 +505,6 @@ class AnBeKoM(QtWidgets.QWidget):
         # javaOpts = JOPTS.replace("@", self.javaHeap.getvalue())
 
         pj = PyJava(self.config.customized_java_heap, THIS_DIR, caverjar, outdirInputs, cfgnew, self.out_dir)
-        if not pj.java_present:
-            notify_box('Java is not present. Please install Java.')
-            return
 
         ret = pj.run_caver()
 

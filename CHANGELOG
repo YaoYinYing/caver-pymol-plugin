@@ -1,3 +1,5 @@
+v4.0.0 (NG for next generation)
+  * rewrite the GUI from tkinter to PyQt5 to support modern version of PyMOL.
 v3.0.3
   * add support for PyMOL >= 2.0
   * simplify installation procedure (patch provided by Thomas Holder, Schrodinger Inc.)
