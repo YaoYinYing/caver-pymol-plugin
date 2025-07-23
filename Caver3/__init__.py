@@ -81,6 +81,9 @@ class CaverConfig:
     def has(self,key:str)->bool:
         return hasattr(self,key)
     
+    def delete(self,key:str):
+        delattr(self,key)
+    
     def get(self,key:str)->Any:
         return getattr(self,key)
     
@@ -467,20 +470,23 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_allAA.clicked.connect(self.checktable_aa.check_all)
         self.ui.pushButton_noneAA.clicked.connect(self.checktable_aa.uncheck_all)
         self.ui.pushButton_reverseAAsel.clicked.connect(self.checktable_aa.reverse_check)
+        self.checktable_aa.checkStateChanged.connect(self._update_aa_sel)
 
         self.updateList()
-
-
-        self.s = dict()
-        self.s[self.AAKEY] = IntVar()
-
-
 
         cf = self.getConfLoc()
         self.configLoad(cf)
 
         self.inputAnalyse()
 
+    def _update_aa_sel(self, aa_sel: Optional[List[str]]):
+        if not aa_sel:
+            if not self.config.has('include_residue_names'):
+                return
+            self.config.delete('include_residue_names')
+            return
+        self.config.set('include_residue_names', ' '.join(aa_sel))
+        return
     def getConfLoc(self):
         cf = self.conflocation.cget("text")
         if cf == self.DEFCONF:
@@ -903,7 +909,7 @@ class AnBeKoM(QtWidgets.QWidget):
                         self.s[a.resn] = IntVar()
                         # uncheck all ligands by default
                         self.s[a.resn].set(0)
-        self.reinitialise()
+
 
     def reinitialiseFromConfig(self):
         ksorted = sorted(self.s.keys())
@@ -937,40 +943,6 @@ class AnBeKoM(QtWidgets.QWidget):
                 tmpButton.grid(sticky=W, row = int(cntr/5), column = (cntr % 5))
                 self.checklist.append(tmpButton)
                 cntr = cntr + 1
-    def reinitialise(self):
-        #if 1: return
-        #TODO: pouzivat zde uz setrideny
-        ksorted = sorted(self.s.keys())
-
-        #print("calling initialise")
-        for xs in self.checklist:
-            xs.grid_remove()
-        self.checklist = []
-
-        for xs in self.buttonlist:
-            xs.grid_remove()
-        self.buttonlist = []
-
-        cntr = 0
-        # tady uz setrideny, se STDAM a STDRNA na zacatku
-        for key in ksorted:
-            #
-            #if cntr == 1:
-            #    cntr = cntr + 4
-            tmpButton = tk.Checkbutton(self.filterGroup.interior(), text=key, variable=self.s[key])
-            tmpButton.var = self.s[key]
-            tmpButton.grid(sticky=W, row = int(cntr/5), column = (cntr % 5))
-            self.checklist.append(tmpButton)
-
-            # kdyz je tam pridano STDAM, vlozit tam  tedy i napovedu
-            if key == self.AAKEY:
-                self.xButton = tk.Button(self.filterGroup.interior(), text='?', command=self.stdamMessage, width = 5)
-                self.xButton.grid(sticky=W, row = 0, column=1) # 0,1 = stdam, 0,2 = help
-                self.buttonlist.append(self.xButton)
-                cntr = cntr + 4
-
-
-            cntr = cntr + 1
 
 
     def getAtoms(self, selection="(all)"):

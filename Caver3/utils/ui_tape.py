@@ -343,6 +343,8 @@ class CheckableListView(QtWidgets.QWidget):
         list_view: The QListView instance this widget operates on.
         model: The data model instance used by the list view.
     """
+    # Custom signal, emits (item_text: str, new_state: Qt.CheckState)
+    checkStateChanged = QtCore.pyqtSignal(list)
 
     def __init__(self, list_view, items: Dict[str, str] = {}, parent=None):
         """
@@ -365,6 +367,9 @@ class CheckableListView(QtWidgets.QWidget):
             self.list_view.setModel(self.model)
         else:
             self.model = self.list_view.model()
+        
+        # Connect to model's itemChanged signal to detect check state changes
+        self.model.itemChanged.connect(self._on_item_changed)
 
         # Clear the model before adding new items
         self.model.clear()
@@ -393,6 +398,13 @@ class CheckableListView(QtWidgets.QWidget):
                 item.setCheckState(QtCore.Qt.Unchecked)   # Default unchecked
                 self.model.appendRow(item)
 
+    def _on_item_changed(self):
+        """
+        Internal slot: triggered when an item's state changes.
+        Emits the checkStateChanged signal only for checkable items.
+        """
+        self.checkStateChanged.emit(self.get_checked_items())
+        
     def _get_items_by_check_state(self, check_state):
         """
         Helper function to get items based on their check state.
