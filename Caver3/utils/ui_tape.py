@@ -378,25 +378,9 @@ class CheckableListView(QtWidgets.QWidget):
         if not items:
             return
 
-        self.items = items
+        self.items = {}
 
-        for k, v in items.items():
-            if not v:
-                # Add as a separator
-                separator_item = QtGui.QStandardItem(k)
-                separator_item.setEnabled(False)  # Non-interactive
-                separator_item.setSelectable(False)  # Non-selectable
-                separator_item.setCheckable(False)  # Non-checkable
-                separator_item.setForeground(QtGui.QBrush(QtCore.Qt.yellow))
-                separator_item.setBackground(QtGui.QBrush(QtCore.Qt.blue))   # Different background
-                separator_item.setFont(QtGui.QFont("Arial", weight=QtGui.QFont.Bold))  # Bold text
-                self.model.appendRow(separator_item)
-            else:
-                # Add as a regular checkable item
-                item = QtGui.QStandardItem(k)
-                item.setCheckable(True)
-                item.setCheckState(QtCore.Qt.Unchecked)   # Default unchecked
-                self.model.appendRow(item)
+        self.update(items)
 
     def _on_item_changed(self):
         """
@@ -482,3 +466,24 @@ class CheckableListView(QtWidgets.QWidget):
                 logging.warning("Item %s not found in list." % item)
                 continue
             self.model.itemFromIndex(item).setCheckState(QtCore.Qt.Checked)
+
+    def update(self, new_items: Dict):
+        for k, v in new_items.items():
+            if not v:
+                # Add as a separator
+                separator_item = QtGui.QStandardItem(k)
+                separator_item.setEnabled(False)  # Non-interactive
+                separator_item.setSelectable(False)  # Non-selectable
+                separator_item.setCheckable(False)  # Non-checkable
+                separator_item.setForeground(QtGui.QBrush(QtCore.Qt.yellow))
+                separator_item.setBackground(QtGui.QBrush(QtCore.Qt.blue))   # Different background
+                separator_item.setFont(QtGui.QFont("Arial", weight=QtGui.QFont.Bold))  # Bold text
+                self.model.appendRow(separator_item)
+            else:
+                # Add as a regular checkable item
+                item = QtGui.QStandardItem(k)
+                item.setCheckable(True)
+                item.setCheckState(QtCore.Qt.Unchecked)   # Default unchecked
+                self.model.appendRow(item)
+
+        self.items.update(new_items)

@@ -432,6 +432,9 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
         self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
         self.ui.pushButton_openOutputDir.clicked.connect(lambda: self.ui.lineEdit_outputDir.setText(getExistingDirectory()))
+        self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_sel_resn)
+
+        self.ui.listWidget_inputModel.itemActivated.connect()
 
         return main_window
 
@@ -441,7 +444,6 @@ class AnBeKoM(QtWidgets.QWidget):
         if self.window is None:
             self.window = self.make_window()
         self.window.show()
-
 
 
     def __init__(self,parent):
@@ -466,6 +468,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ignoreStructures = [r"^origins$",r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
 
+        # aa bias
         self.checktable_aa=CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
         self.ui.pushButton_allAA.clicked.connect(self.checktable_aa.check_all)
         self.ui.pushButton_noneAA.clicked.connect(self.checktable_aa.uncheck_all)
@@ -477,7 +480,11 @@ class AnBeKoM(QtWidgets.QWidget):
         cf = self.getConfLoc()
         self.configLoad(cf)
 
-        self.inputAnalyse()
+        self._analysis_sel_resn()
+
+    def _update_pymol_sel(self, selection: str):
+        set_widget_value(self.ui.lineEdit_startPointSele, selection)
+        
 
     def _update_aa_sel(self, aa_sel: Optional[List[str]]):
         if not aa_sel:
@@ -511,7 +518,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.listWidget_inputModel.addItems([str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))])
         self.ui.listWidget_inputModel.setCurrentIndex(0)
 
-        self.inputAnalyse()
+        self._analysis_sel_resn()
 
     def launchHelp(self):
         import webbrowser
@@ -880,43 +887,18 @@ class AnBeKoM(QtWidgets.QWidget):
     def stdamMessage(self):
         Pmw.MessageDialog(self.parent,title = 'Information',message_text = self.AAKEY + ': Standard amino acids: \n ' + ", ".join(THE_20s))
 
-    def inputAnalyseWrap(self, args):
-            #print(self.listbox1.curselection()[0] # aby to fungovalo, musi byt bindnute na <<ListboxSelect>>)
-            #print("calling from wrap")
-        if self.configJustLoaded == 1:
-            self.configJustLoaded = 0
-        else:
-            self.inputAnalyse()
 
-    def inputAnalyse(self):
-        sel1list = self.listbox1.curselection()
-        if sel1list:
-            sel1index = sel1list[0]
-            sel1text = self.listbox1.get(sel1index)
-            self.whichModelSelect = sel1text
-            sel=cmd.get_model(self.whichModelSelect)
-        #pripravit kontrolni strukturu pro nalezene
-        
-        
-        if not sel1list:
+    def _analysis_sel_resn(self):
+        if not self.config.selection_name:
             return
-        
-        aa_sel=self.checktable_aa.get_checked_items()
-        
-        self.s = dict()
-        self.s.clear()
-        #cntr = 0
 
+        sel=cmd.get_model(self.config.selection_name)
+        
         for a in sel.atom:
-            if not a.resn in self.s:
-                if (self.containsValue(THE_20s, a.resn)):
-                    self.s[self.AAKEY] = IntVar()
-                    self.s[self.AAKEY].set(1)
-                else:
-                    self.s[a.resn] = IntVar()
-                    # uncheck all ligands by default
-                    self.s[a.resn].set(0)
-
+            if a.resn in self.checktable_aa.items:
+                continue
+            if  a.resn not in THE_20s:
+                self.checktable_aa.update({a.resn:a.resn})
 
     def reinitialiseFromConfig(self):
         ksorted = sorted(self.s.keys())
