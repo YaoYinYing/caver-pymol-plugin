@@ -13,10 +13,13 @@ import re
 import os,math
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from functools import partial, cached_property
 from pymol import cmd
-from pymol.Qt import QtWidgets
+if TYPE_CHECKING:
+    from PyQt5 import  QtWidgets
+else:
+    from pymol.Qt import QtWidgets
 from pymol.plugins import addmenuitemqt
 from pymol.cgo import *
 
