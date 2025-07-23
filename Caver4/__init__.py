@@ -40,9 +40,6 @@ CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
 
 VERSION = '4.0.0'
 
-CAVER3_LOCATION = os.path.dirname(__file__)
-
-OUTPUT_LOCATION = os.path.abspath(".")
 
 THE_20s=['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
 
@@ -249,7 +246,6 @@ class CaverConfig:
             f.write('\n'.join(new_txt_contents))
 
 
-defaults = CaverConfig()
 
 url = "http://www.caver.cz/index.php?sid=123"
 
@@ -362,7 +358,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_openOutputDir.clicked.connect(
             lambda: self.ui.lineEdit_outputDir.setText(
                 getExistingDirectory()))
-        self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_sel_resn)
+        self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_model_resn)
 
         return main_window
 
@@ -391,9 +387,9 @@ class AnBeKoM(QtWidgets.QWidget):
 
         self.updateList()
 
-        self.config_post_process()
+        
 
-        self._analysis_sel_resn()
+        self._analysis_model_resn()
 
     def _update_pymol_sel(self, selection: str):
         set_widget_value(self.ui.lineEdit_startPointSele, selection)
@@ -431,7 +427,7 @@ class AnBeKoM(QtWidgets.QWidget):
             [str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))])
         self.ui.listWidget_inputModel.setCurrentItem(self.ui.listWidget_inputModel.item(0))
 
-        self._analysis_sel_resn()
+        self._analysis_model_resn()
 
     def launchHelp(self):
         import webbrowser
@@ -559,6 +555,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.refresh_window_from_cfg()
         self.refresh_start_point_from_cfg()
         set_widget_value(self.ui.label_configStatus, f'Loaded from {os.path.basename(filepath)}')
+        self.config_post_process()
 
     def refresh_start_point_from_cfg(self):
 
@@ -567,8 +564,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
         coords_from_config = tuple(map(float, self.config.get('starting_point_coordinates').split(' ')))
         if not len(coords_from_config) == 3:
-            notify_box("Invalid starting point coordinates in configuration file")
-            return
+            notify_box("Invalid starting point coordinates in configuration file", ValueError)
 
         for i, axis, j, coord in zip(enumerate('xyz'), enumerate(coords_from_config)):
             set_widget_value(getattr(self.ui, f'doubleSpinBox_{axis}'), coord)
@@ -613,11 +609,8 @@ class AnBeKoM(QtWidgets.QWidget):
             if aa_from_config:
                 self.checktable_aa.check_these(aa_from_config)
 
-    def _analysis_sel_resn(self):
-        if not self.config.selection_name:
-            return
-
-        sel = cmd.get_model(self.config.selection_name)
+    def _analysis_model_resn(self):
+        sel = cmd.get_model('(all)')
 
         for a in sel.atom:
             if a.resn in self.checktable_aa.items:
