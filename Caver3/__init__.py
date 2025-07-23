@@ -896,19 +896,26 @@ class AnBeKoM(QtWidgets.QWidget):
             self.whichModelSelect = sel1text
             sel=cmd.get_model(self.whichModelSelect)
         #pripravit kontrolni strukturu pro nalezene
+        
+        
+        if not sel1list:
+            return
+        
+        aa_sel=self.checktable_aa.get_checked_items()
+        
         self.s = dict()
         self.s.clear()
-        if sel1list:
-            #cntr = 0
-            for a in sel.atom:
-                if not a.resn in self.s:
-                    if (self.containsValue(THE_20s, a.resn)):
-                        self.s[self.AAKEY] = IntVar()
-                        self.s[self.AAKEY].set(1)
-                    else:
-                        self.s[a.resn] = IntVar()
-                        # uncheck all ligands by default
-                        self.s[a.resn].set(0)
+        #cntr = 0
+
+        for a in sel.atom:
+            if not a.resn in self.s:
+                if (self.containsValue(THE_20s, a.resn)):
+                    self.s[self.AAKEY] = IntVar()
+                    self.s[self.AAKEY].set(1)
+                else:
+                    self.s[a.resn] = IntVar()
+                    # uncheck all ligands by default
+                    self.s[a.resn].set(0)
 
 
     def reinitialiseFromConfig(self):
