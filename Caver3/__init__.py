@@ -123,7 +123,7 @@ class CaverConfig:
                 if '#' in l and not l.startswith('#'):
                     l = l[0:l.rfind("#")-1]
                     # remove trailing whitespaces
-                    l.rstrip(' ')
+                    l=l.rstrip(' ')
                 
                 if l.startswith("#") or not l: continue
 
@@ -184,7 +184,7 @@ class CaverConfig:
         if all(_v.isdigit() for _v in v.split(' ') if v):
             return v
         # complex float array
-        if all(re.match(r'^\d+(\.?\d+)?$', _v) for _v in v.split(' ') if v):
+        if all(re.match(r'^(-)?\d+(\.?\d+)?$', _v) for _v in v.split(' ') if v):
             return v
         
         # normal string by lacking quotes
@@ -203,6 +203,10 @@ class CaverConfig:
             - space separated
 
         '''
+        if any(getattr(self, f'start_point_{a}') != 0 for a in 'xyz'):
+            self.set('starting_point_coordinates', " ".join(str(getattr(self, f'start_point_{a}')) for a in 'xyz'))
+            logging.debug(f"starting point: {self.get('starting_point_coordinates')}")
+
         new_txt_contents=[]
         with open(CONFIG_TXT,'r') as template_f:
             template = template_f.readlines()
@@ -216,7 +220,7 @@ class CaverConfig:
                 # remove everything after last occurence of # char
                 l = l[0:l.rfind("#")-1]
                 # remove trailing whitespaces
-                l.rstrip(' ')
+                l=l.rstrip(' ')
 
             parsed = l.split(' ', 1)
             key = parsed[0]
