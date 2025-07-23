@@ -25,7 +25,8 @@ from pymol import stored
 import time
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
-from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box, CheckableListView
+from pymol.Qt.utils import getSaveFileNameWithExt
+from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_value,widget_signal_tape,notify_box, CheckableListView,getOpenFileNameWithExt
 from .utils.live_run import run_command
 
 
@@ -113,7 +114,7 @@ class CaverConfig:
                     l = l[0:l.rfind("#")-1]
                 if l.startswith("#") or not l: continue
 
-                parsed = l.split(' ')
+                parsed = l.split(' ', 1)
                 key = parsed[0]
                 if len(parsed) <= 1:
                     print('skipping ' + key)
@@ -192,7 +193,7 @@ class CaverConfig:
                 # remove everything after last occurence of # char
                 l = l[0:l.rfind("#")-1]
 
-            parsed = l.split(' ')
+            parsed = l.split(' ', 1)
             key = parsed[0]
             if len(parsed) <= 1:
                 print('skipping ' + key)
@@ -399,7 +400,7 @@ class AnBeKoM(QtWidgets.QWidget):
     def updateList(self):
         self.ui.listWidget_inputModel.clear()
         self.ui.listWidget_inputModel.addItems([str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))])
-        self.ui.listWidget_inputModel.setCurrentIndex(0)
+        # self.ui.listWidget_inputModel.setCurrentIndex(0)
 
         self._analysis_sel_resn()
 
@@ -515,7 +516,7 @@ class AnBeKoM(QtWidgets.QWidget):
         return math.floor(float(numberStr) * 1000) / 1000
     def convert_sele_to_coords(self):
 
-        if len(a for a in cmd.get_model('(all)').atom) == 0:
+        if len([a for a in cmd.get_model('(all)').atom]) == 0:
             notify_box("Session is empty", ValueError)
 
         # prohibit pymol selection syntax, explicitly.
@@ -535,7 +536,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.showCrisscross()
 
     def configin(self, filepath: Optional[str]=None):
-        filepath = filepath or getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
+        filepath = filepath or getOpenFileNameWithExt(self.window, "Select configuration file", filter="JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
 
         self.config=CaverConfig.from_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
@@ -557,9 +558,9 @@ class AnBeKoM(QtWidgets.QWidget):
             set_widget_value(getattr(self.ui, f'doubleSpinBox_{axis}'), coord)
         notify_box(f"Starting point coordinates loaded from configuration file: {coords_from_config}")
     def configout(self, filepath: Optional[str]=None):
-        filepath = filepath or getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
+        filepath = filepath or getSaveFileNameWithExt(self.window, "Select configuration file", filter="JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
-        self.config.to_json(filepath) if filepath.endswith(".json") else CaverConfig.to_txt(filepath)
+        self.config.to_json(filepath) if filepath.endswith(".json") else self.config.to_txt(filepath)
 
     def config_post_process(self):
 
@@ -570,7 +571,7 @@ class AnBeKoM(QtWidgets.QWidget):
             if not self.config.has(primary_flag):
                 continue
             for flag in conflict_flag_list:
-                if self.config.has(flag):
+                if self.config.has(flag) and self.config.get(flag) != '???':
                     notify_box(
                     f'Conflict between {primary_flag} and {flag}',
                     details=f'Simultaneous usage of {primary_flag} parameter with {flag} parameters is not supported by plugin. Now ignoring atom.')

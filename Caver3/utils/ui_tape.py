@@ -4,24 +4,6 @@ from typing import Any, Dict, Iterable, List, NoReturn, Optional, Type, Union, o
 import warnings
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-def getOpenFileNameWithExt(*args, **kwargs):
-    """
-    Return a file name, append extension from filter if no extension provided.
-    """
-    import re
-
-    fname, filter = QtWidgets.QFileDialog.getOpenFileName(*args, **kwargs)  # type: ignore
-
-    if not fname:
-        return ""
-
-    if "." not in os.path.split(fname)[-1]:
-        m = re.search(r"\*(\.[\w\.]+)", filter)
-        if m:
-            # append first extension from filter
-            fname += m.group(1)
-
-    return fname
 
 
 @overload
@@ -485,3 +467,26 @@ class CheckableListView(QtWidgets.QWidget):
                 self.model.appendRow(item)
 
         self.items.update(new_items)
+
+
+
+
+def getOpenFileNameWithExt(*args, **kwargs):
+    """
+    Return a file name, append extension from filter if no extension provided.
+    """
+    import re
+
+    fname, filter = QtWidgets.QFileDialog.getOpenFileName(*args, **kwargs)  # type: ignore
+
+    if not fname:
+        return ""
+
+    if "." not in os.path.split(fname)[-1]:
+        m = re.search(r"\*(\.[\w\.]+)", filter)
+        if m:
+            # append first extension from filter
+            fname += m.group(1)
+
+    return fname
+
