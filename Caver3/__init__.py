@@ -15,11 +15,9 @@ import os,math
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Tuple
 from functools import partial, cached_property
-import Pmw
 from pymol import cmd
 from pymol.Qt import QtWidgets
-import sys
-
+from pymol.plugins import addmenuitemqt
 from pymol.cgo import *
 
 
@@ -28,7 +26,7 @@ import time
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box, CheckableListView
-from .utils.live_run import LiveProcessResult, run_command
+from .utils.live_run import run_command
 
 
 THIS_DIR=os.path.dirname(__file__)
@@ -42,17 +40,6 @@ CAVER3_LOCATION = os.path.dirname(__file__)
 OUTPUT_LOCATION = os.path.abspath(".")
 
 THE_20s=['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
-
-#
-
-# pridani do menu
-def __init__(self):
-    lbb = "Caver %s" % (VERSION,)
-    self.menuBar.addmenuitem('Plugin', 'command',
-                             'Launch Caver '  + VERSION,
-                             label=lbb,
-                             command = lambda s=self: AnBeKoM(s))
-
 
 
 @dataclass
@@ -313,6 +300,7 @@ class AnBeKoM(QtWidgets.QWidget):
             raise AttributeError(f'{config_item} not found in config')
         
         pv=getattr(self.config, config_item)
+        widget=getattr(self.ui, widget_name)
         nv=get_widget_value(widget)
         self.config.set_value(config_item, nv)
 
@@ -762,4 +750,14 @@ class AnBeKoM(QtWidgets.QWidget):
         view = cmd.get_view()
         cmd.load_cgo(obj,name)
         cmd.set_view(view)
+
+
+
+def __init_plugin__(app=None):
+    """
+    Add an entry to the PyMOL "Plugin" menu
+    """
+
+    plugin = AnBeKoM()
+    addmenuitemqt("Caver NG", plugin.run_plugin_gui)
 
