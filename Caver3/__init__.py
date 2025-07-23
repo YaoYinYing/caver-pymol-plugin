@@ -130,6 +130,18 @@ class CaverConfig:
                 new_self._set_value(key, parsed[1])
         
         return new_self
+    
+
+    @property
+    def has_include_exclude(self) -> bool:
+        not_allowed = [ 
+            "include_residue_names", 
+            "include_residue_ids", 
+            "include_atom_numbers", 
+            "exclude_residue_names", 
+            "exclude_residue_ids", 
+            "exclude_atom_numbers"]
+        return any(self.has(key=k) for k in not_allowed)
 
 
     def _set_value(self,key: str, new_value: str):
@@ -463,7 +475,6 @@ class AnBeKoM(QtWidgets.QWidget):
         self.configLoad(cf)
 
         self.inputAnalyse()
-        self.showAppModal()
     def getConfLoc(self):
         cf = self.conflocation.cget("text")
         if cf == self.DEFCONF:
@@ -474,13 +485,9 @@ class AnBeKoM(QtWidgets.QWidget):
         cmd.delete("crisscross")
         AnBeKoM.crisscross(self.config.start_point_x,self.config.start_point_y,self.config.start_point_z,0.5,"crisscross")
 
-#win/linux
     def changeCoords(self,*args):
         self.showCrisscross()
 
-
-    def showAppModal(self):
-        self.dialog.show()
 
     def structureIgnored(self, name):
         for key in self.ignoreStructures:
@@ -544,16 +551,17 @@ class AnBeKoM(QtWidgets.QWidget):
         self.out_dir = new_dir
         print("Output will be stored in " + self.out_dir)
 
-    def coordinatesNotSet(self):
-        b = float(self.xlocvar.get()) == 0 and float(self.ylocvar.get()) == 0 and float(self.zlocvar.get()) == 0
-        return b
-
+    @property
+    def coordinatesNotSet(self) -> bool:
+        return all(self.config.get(f'start_point_{i}') == 0 for i in 'xyz')
 
     def execute(self, result):
 
-        if self.coordinatesNotSet():
-            self.pop_error("Please specify starting point - e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.")
-            return
+        if self.coordinatesNotSet:
+            notify_box(
+                "Please specify starting point - "
+                "e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.",
+                ValueError)
 
 
         self.showCrisscross()
@@ -758,22 +766,15 @@ class AnBeKoM(QtWidgets.QWidget):
                     self.convert()
 
         # test include/exclude
-        if self.hasIncludeExclude():
-            notify_box('include_ and exclude_ parameters are not supported by plugin. Please, use the plugin to specify residues to be analyzed.')
+        if self.config.has_include_exclude:
+            notify_box(
+                'include_ and exclude_ parameters are not supported by plugin. '
+                'Please use the plugin to specify residues to be analyzed.')
         
         #print("reading done...")
         #now, all read in the structure. Multi-line params merged into one-liners
         #Traverse the structure and update gui controls
         self.structureLoad()
-
-    def hasIncludeExclude(self):
-        notAllowed = [ "include_residue_names", "include_residue_ids", "include_atom_numbers", "exclude_residue_names", "exclude_residue_ids", "exclude_atom_numbers"]
-        sk = self.dataStructure.getKeys()
-        for i in range (0, len(sk)):
-            key = sk[i]
-            if key != "include *" and key in notAllowed:
-                return True
-        return False
 
     #consider all properties in the gui and store them into config file supplied
     # load file "readfile" and store params into new config file "file"
