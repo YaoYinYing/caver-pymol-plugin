@@ -14,7 +14,7 @@ import os,math
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Tuple
-from functools import partial
+from functools import partial, cached_property
 import Pmw
 from pymol import cmd
 from pymol.Qt import QtWidgets
@@ -28,6 +28,8 @@ import time
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .utils.ui_tape import getExistingDirectory, set_widget_value, get_widget_value, getOpenFileNameWithExt,widget_signal_tape,notify_box, CheckableListView
+from .utils.live_run import LiveProcessResult, run_command
+
 
 THIS_DIR=os.path.dirname(__file__)
 CONFIG_TXT=os.path.join(THIS_DIR,"config", "config.txt")
@@ -280,27 +282,14 @@ class DataStruct:
         self.values = []
 
 class PyJava:
-
-    def status(self, r):
-        if 0 == r:
-            print("OK")
-        else:
-            print("FAIL")
-
     def __init__(self, customized_memory_heap, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
-        self.insufficient_memory = False
         self.jar = caverjar
-        print("")
-        print("*** Testing if Java is installed ***")
-        r = self.java_present()
-        self.status(r)
 
-        self.java_missing = bool(r)
-        if r:
+        print("\n*** Testing if Java is installed ***")
+        if not self.java_present:
             return
 
-        print("")
-        print("*** Optimizing memory allocation for Java ***")
+        print("\n*** Optimizing memory allocation for Java ***")
         self.optimize_memory(customized_memory_heap)
         self.cmd = [
             "java",
@@ -316,13 +305,12 @@ class PyJava:
         print(" ".join([ '"%s"' % t if t != "java" and t[0] != "-" else t for t in self.cmd]))
         print("******************************************")
 
+    @cached_property
     def java_present(self):
-        cmd = ["java", "-version"]
-        r = self.execute(cmd, False)
-        return r
+        return run_command(["java", "-version"], verbose=True).returncode ==0
 
     def run_caver(self):
-        self.execute(self.cmd, False)
+        return run_command(self.cmd, verbose=True)
 
     def optimize_memory(self, customized_memory_heap):
         customized_memory_heap = int(customized_memory_heap)
@@ -334,44 +322,12 @@ class PyJava:
         for heap_level in memory_allocate_options:
             if int(heap_level) <= customized_memory_heap:
                 cmd = ["java", "-Xmx%dm" % heap_level, "-jar", self.jar, "do_nothing"]
-                code = self.execute(cmd, True)
-                if code==0:
+                heap_level_test=run_command(cmd)
+
+                if heap_level_test.returncode==0:
                     self.memory_heap_level = heap_level
                     print("Memory heap level: " + str(self.memory_heap_level))
         print("*** Memory for Java: " + str(self.memory_heap_level) + " MB ***")
-
-    def execute_old(self, cmd):
-        p = os.popen(cmd)
-        for line in p.readlines():
-            print(line.rstrip())
-        p.close()
-        return 1
-
-    def execute(self, args, silent):
-
-        import subprocess
-        try:
-            p = subprocess.check_output(args, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
-            if not silent:
-                print(p.decode('UTF-8'))
-        except subprocess.CalledProcessError as e:
-            if not silent:
-                print(e)
-                print(e.cmd)
-                print(e.output)
-            self.check_output_from_memory_issue(e.output.decode('UTF-8'))
-            return e.returncode
-        except OSError as e:
-            notify_box(f'Failed to execute command: {str(args)}', details=str(e))
-
-        except Exception as e:
-            notify_box(f'Unknown error occurs:  {str(args)}', details=str(e))
-
-            return -2
-        return 0
-
-    def check_output_from_memory_issue(self, output):
-        self.insufficient_memory = 'OutOfMemory' in output
 
 
 
@@ -422,7 +378,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_help.clicked.connect(self.launchHelp)
         self.bind_config()
         self.ui.pushButton_compute.clicked.connect(self.execute)
-        self.ui.pushButton_convertStartPointSele.clicked.connect(self.convert)
+        self.ui.pushButton_convertStartPointSele.clicked.connect(self.convert_sele_to_coords)
         self.ui.pushButton_reloadInputModel.clicked.connect(self.updateList)
 
         self.ui.doubleSpinBox_x.valueChanged.connect(self.changeCoords)
@@ -474,7 +430,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
         self.updateList()
 
-        cf = self.getConfLoc()
+
         self.configLoad(cf)
 
         self._analysis_sel_resn()
@@ -593,31 +549,13 @@ class AnBeKoM(QtWidgets.QWidget):
         os.makedirs(outdirInputs, exist_ok=True)
 
         self.stdamString = "+".join(THE_20s)
-        # jen to zaskrtnute
-        generatedString = ""
-        for key in self.s:
-            if self.s[key].get() == 1:
-            # pak pouzit do vyberu:
-                if key == self.AAKEY:
-                    generatedString = generatedString + "+" + self.stdamString
-                else:
-                    generatedString = generatedString + "+" + key
 
-        generatedString = generatedString[1:]
-
-        mmodel = cmd.get_model(self.whichModelSelect)
-
-
-        input = "%s/%s.pdb" % (outdirInputs, self.whichModelSelect)
+        input = os.path.join(outdirInputs, f'{self.whichModelSelect}.pdb')
         cmd.set('retain_order',1)
         cmd.sort()
         cmd.save(input, self.whichModelSelect) # to by ulozilo cely model whichModelSelect.
 
-        cesta = os.getcwd()
-
-
-        caverfolder = "%s" % (self.caver3locationAbsolute)
-        caverjar = caverfolder + "/" + "caver.jar"
+        caverjar = os.path.join(THIS_DIR, "caver.jar")
 
 
         # create new config
@@ -628,13 +566,15 @@ class AnBeKoM(QtWidgets.QWidget):
         # set correct java options
         #javaOpts = JOPTS.replace("@", self.javaHeap.getvalue())
 
-        pj = PyJava(self.config.customized_java_heap, caverfolder, caverjar, outdirInputs, cfgnew, self.out_dir)
-        if pj.java_missing:
+        pj = PyJava(self.config.customized_java_heap, THIS_DIR, caverjar, outdirInputs, cfgnew, self.out_dir)
+        if not pj.java_present:
+            notify_box('Java is not present. Please install Java.')
             return
 
-        pj.run_caver()
+        ret=pj.run_caver()
+        
 
-        if pj.insufficient_memory:
+        if 'OutOfMemory' in ret.stdout or 'OutOfMemory' in ret.stderr:
             notify_box('Insufficient memory.',
                         details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
                         "Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. "
@@ -646,34 +586,22 @@ class AnBeKoM(QtWidgets.QWidget):
         runview = "run " + self.out_dir + "/pymol/view_plugin.py"
         print(runview)
         cmd.do(runview)
-        # adjust gui to display warnings & group
-        self.egroup.pack(fill="x")
-
-        err = "%s/warnings.txt" % (self.out_dir)
-        if os.path.exists(err) and os.stat(err)[6] == 0:
-            self.aftercomp.config(text="Computation finished succesfully")
-            self.afterbutt.config(state=DISABLED)
-        else:
-            self.aftercomp.config(text="Warnings detected during computation")
-            self.afterbutt.config(state=ACTIVE)
     @staticmethod
     def fixPrecision( numberStr: Any) -> float:
         return math.floor(float(numberStr) * 1000) / 1000
-    def convert(self):
+    def convert_sele_to_coords(self):
 
-        sel=cmd.get_model('(all)')
-        cnt=0
-        for a in sel.atom:
-            cnt+=1
-        if cnt == 0:
-            notify_box("No atoms selected", ValueError)
+        if len(a for a in cmd.get_model('(all)').atom) == 0:
+            notify_box("Session is empty", ValueError)
 
+        # prohibit pymol selection syntax, explicitly.
+        if not self.config.selection_name in cmd.get_names('selections'):
+            notify_box("Selection does not exist. If you are using PyMOL selection syntax, "
+            "please create a new selection in PyMOL, then refresh the list", ValueError)
+        
 
-        startpoint=[]
-        s = self.selectionlist.getvalue()
-
-        startpoint = self.compute_center(s)
-        if None == startpoint:
+        startpoint = self.compute_center(self.config.selection_name)
+        if not startpoint:
             return
         self.ui.doubleSpinBox_x.setValue(AnBeKoM.fixPrecision(startpoint[0]))
         self.ui.doubleSpinBox_y.setValue(AnBeKoM.fixPrecision(startpoint[1]))
@@ -715,8 +643,6 @@ class AnBeKoM(QtWidgets.QWidget):
         if not filepath: return
         self.config.to_json(filepath) if filepath.endswith(".json") else CaverConfig.to_txt(filepath)
 
-        self.configSave(filepath, self.getConfLoc())
-    #perform actual config parse here
     def configLoad(self, file):
         self.dataStructure.clear()
         print('cleared datastruct')
@@ -789,7 +715,7 @@ class AnBeKoM(QtWidgets.QWidget):
                     # set field value
                     self.selectionlist.setvalue('starting_point')
                     # call conversion to xyz
-                    self.convert()
+                    self.convert_sele_to_coords()
 
         # test include/exclude
         if self.config.has_include_exclude:
@@ -801,59 +727,6 @@ class AnBeKoM(QtWidgets.QWidget):
         #now, all read in the structure. Multi-line params merged into one-liners
         #Traverse the structure and update gui controls
         self.structureLoad()
-
-    #consider all properties in the gui and store them into config file supplied
-    # load file "readfile" and store params into new config file "file"
-    def configSave(self, file, readfile):
-        #load config to structure and then replace with gui params
-        self.dataStructure.clear()
-        handler = open(readfile)
-        lines = handler.readlines()
-        for line in lines:
-            liner = line.strip()
-            # remove everything after last occurence of # char
-            if '#' in liner and not liner.startswith('#'):
-                liner = liner[0:liner.rfind("#")-1]
-            if liner.startswith('#'):
-                self.dataStructure.add("#", liner, 1)
-            elif liner == "":
-                self.dataStructure.add("#EMPTY#", liner, 1)
-            else:
-                parsed = liner.split(' ')
-                key = parsed[0]
-                val = " ".join(parsed[1:len(parsed)])
-                self.dataStructure.add(key, val, 0)
-        handler.close()
-        #print("reading done...")
-        #now, all read in the structure. Multi-line params merged into one-liners
-        #Traverse the structure and update gui controls
-
-        self.structureUpdateFromGui()
-        # now, gui is sync with data structure
-        f = open(file, 'w')
-        keys = self.dataStructure.getKeys()
-        values = self.dataStructure.getValues()
-        for idx in range (0, len(keys)):
-            key = keys[idx]
-            value = values[idx]
-            #print("saving value/key " + key + " " + value + " " + str(len(keys)))
-            if value == "":
-                # do nothing for empty values (do not save to config, caver uses default values
-                noop = 1 #noop
-            elif key == "#":
-                f.write(value)
-                f.write("\n")
-            elif key == "REMOVED":
-                # do nothing
-                noop = 1 #noop
-            elif key == "#EMPTY#":
-                f.write("\n")
-            else:
-                f.write(key)
-                f.write(" ")
-                f.write(value)
-                f.write("\n")
-        f.close()
     def structureLoad(self):
         if self.config.has("include_residue_names"):
             aa_from_config: List[str]=self.config.get("include_residue_names").split(" ")
@@ -867,12 +740,8 @@ class AnBeKoM(QtWidgets.QWidget):
         self.dataStructure.replace("clustering_threshold",self.clusteringThreshold.getvalue(), 0)
         self.dataStructure.replace("number_of_approximating_balls",self.approxVar.get(), 0)
         #check-boxed residues
-        result = ""
-        for item in self.s.keys():
-
-            if self.s[item].get() == 1:
-                result = result + " " + item
-        self.dataStructure.replace("include_residue_names", result, 0)
+        
+        self.dataStructure.replace("include_residue_names", self.config.get("include_residue_names"), 0)
 
         #active site:
         #remove other starting point definitions except those with atoms
@@ -995,14 +864,6 @@ class AnBeKoM(QtWidgets.QWidget):
             sumz += center[2]
         print('Starting point: ' + str(sumx) + " " + str(sumy) + " " + str(sumz) + " " + str(l))
         return (sumx/l, sumy/l, sumz/l)
-        # Ts = []
-        # detect all residues in selection => SET1
-        # detect all atoms in selection => SET2
-        # foreach residue, detect all its atoms
-        #    if all atoms are in SET2, attach computeCenter(S1) to Ts
-        #    if at least one atom is not in SET1, traverse these atoms again and !only! those in SET2 add to Ts
-        # computeCenter(Ts)
-        # return
 
     # compute center for given selection
     def computecenterRA(self,selection="(all)"):
