@@ -172,8 +172,6 @@ def get_widget_value(widget: QtWidgets.QWidget) -> Any:
     """
     if isinstance(widget, QtWidgets.QDoubleSpinBox) or isinstance(widget, QtWidgets.QSpinBox):
         return widget.value()
-    elif isinstance(widget, MultiCheckableComboBox):
-        return widget.get_checked_items()
     elif isinstance(widget, QtWidgets.QComboBox):
         return widget.currentText()
     elif isinstance(widget, QtWidgets.QLineEdit):

@@ -308,9 +308,9 @@ class AnBeKoM(QtWidgets.QWidget):
         logging.info(f'{widget_name} {pv} -> {nv} -> {uv}')
 
     def refresh_window_from_cfg(self):
-        for wn in self.config_bindings:
+        for wn,cn in self.config_bindings.items():
             widget=getattr(self.ui, wn)
-            set_widget_value(widget, getattr(self.config, wn))
+            set_widget_value(widget, getattr(self.config, cn))
 
 
     def make_window(self):
@@ -545,7 +545,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
     def refresh_start_point_from_cfg(self):
 
-        if not self.config.has('starting_point_coordinates'):
+        if not self.config.has('starting_point_coordinates') or self.config.get('starting_point_coordinates') == '???':
             return
         
         coords_from_config = tuple(map(float, self.config.get('starting_point_coordinates').split(' ')))
