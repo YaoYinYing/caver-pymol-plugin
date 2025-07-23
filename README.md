@@ -10,16 +10,17 @@ Website: <https://www.caver.cz>
 * Human Computer Interaction Laboratory Faculty of Informatics, Masaryk University
 * Loschmidt Laboratories, Department of Experimental Biology and Research Centre for Toxic Compounds in the Environment Faculty of Science, Masaryk University
 * Thomas Holder, Schrodinger Inc.
+* Yinying Yao, Huazhong Agricultural University
 
 
 ## Requirements
-* PyMOL  >=  1.7
-* Java   ==  1.8
+* PyMOL  >=  2.5
+* OpenJDK
 
 ## Installation instructions
 
-1. Install Java 8 (www.java.com)
-2. Download [plugin](https://github.com/loschmidt/caver-pymol-plugin/archive/master.zip)
+1. Install OpenJDK: e.g.: `brew install openjdk`, then add it to PATH according to the instructions output with HomeBrew.
+2. Download [plugin](https://github.com/YaoYinYing/caver-pymol-plugin/archive/refs/heads/master.zip)
 3. Start PyMOL
 4. Open Plugin manager (Plugin -> Plugin manager)
 5. Install plugin (Install new plugin -> Choose file... and select downloaded zip file)
