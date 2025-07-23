@@ -275,7 +275,7 @@ class PyJava:
 
 class AnBeKoM(QtWidgets.QWidget):
     config_bindings: Dict[str, str]={
-        'lineEdit_output_dir': 'output_dir',
+        'lineEdit_outputDir': 'output_dir',
         'spinBox_maxJavaHeapSize': 'customized_java_heap',
         'doubleSpinBox_maxProRad': 'probe_radius',
         'doubleSpinBox_shellRad': 'shell_radius',
@@ -314,7 +314,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
 
     def make_window(self):
-        main_window = QtWidgets.QWidget
+        main_window = QtWidgets.QWidget()
         self.ui = CaverUI()
         self.ui.setupUi(main_window)
 
@@ -333,33 +333,26 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_openOutputDir.clicked.connect(lambda: self.ui.lineEdit_outputDir.setText(getExistingDirectory()))
         self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_sel_resn)
 
-        self.ui.listWidget_inputModel.itemActivated.connect()
+        self.ui.listWidget_inputModel.itemActivated.connect(lambda x: set_widget_value(self.ui.lineEdit_startPointSele, x))
 
         return main_window
 
 
     def run_plugin_gui(self):
         """PyMOL entry for running the plugin"""
-        if self.window is None:
-            self.window = self.make_window()
-        self.window.show()
-
-
-    def __init__(self,parent):
         super().__init__()
         # global reference to avoid garbage collection of our dialog
         self.window = None
         self.config= CaverConfig()
         
-        self.parent = parent
-        # workaround for list binding
-        self.configJustLoaded = 0
-        #by default select all
-        self.xButton = "empty"
 
         #ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$",r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
+
+        if self.window is None:
+            self.window = self.make_window()
+        self.window.show()
 
         # aa bias
         self.checktable_aa=CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
@@ -376,6 +369,8 @@ class AnBeKoM(QtWidgets.QWidget):
 
         self._analysis_sel_resn()
 
+        
+        
     def _update_pymol_sel(self, selection: str):
         set_widget_value(self.ui.lineEdit_startPointSele, selection)
         
