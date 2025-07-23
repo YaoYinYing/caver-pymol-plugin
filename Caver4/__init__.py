@@ -313,7 +313,10 @@ class AnBeKoM(QtWidgets.QWidget):
         'doubleSpinBox_x': 'start_point_x',
         'doubleSpinBox_y': 'start_point_y',
         'doubleSpinBox_z': 'start_point_z',
+        'doubleSpinBox_maxDist': 'max_distance',
+        'doubleSpinBox_desiredDist': 'desired_radius'
     }
+    
 
     def bind_config(self):
         for wn in self.config_bindings:
@@ -566,7 +569,7 @@ class AnBeKoM(QtWidgets.QWidget):
         if not len(coords_from_config) == 3:
             notify_box("Invalid starting point coordinates in configuration file", ValueError)
 
-        for i, axis, j, coord in zip(enumerate('xyz'), enumerate(coords_from_config)):
+        for (i, axis), (j, coord) in zip(enumerate('xyz'), enumerate(coords_from_config)):
             set_widget_value(getattr(self.ui, f'doubleSpinBox_{axis}'), coord)
         notify_box(f"Starting point coordinates loaded from configuration file: {coords_from_config}")
 
