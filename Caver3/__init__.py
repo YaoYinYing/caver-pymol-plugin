@@ -165,7 +165,7 @@ class CaverConfig:
     
     @staticmethod
     def _need_quote( v: str) -> str:
-        return '"' + v + '"' if ' ' in v else v
+        return '"' + v + '"' if ' ' in v and ( v[0] != '"' and v[-1] !='"') else v
     
     def to_txt(self, txt_file: str):
         '''
@@ -330,11 +330,9 @@ class AnBeKoM(QtWidgets.QWidget):
 
         self.ui.doubleSpinBox_x.valueChanged.connect(self.changeCoords)
         self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
-        self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
+        self.ui.doubleSpinBox_z.valueChanged.connect(self.changeCoords)
         self.ui.pushButton_openOutputDir.clicked.connect(lambda: self.ui.lineEdit_outputDir.setText(getExistingDirectory()))
         self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_sel_resn)
-
-        self.ui.listWidget_inputModel.itemActivated.connect(lambda x: set_widget_value(self.ui.lineEdit_startPointSele, x))
 
         return main_window
 
@@ -400,7 +398,7 @@ class AnBeKoM(QtWidgets.QWidget):
     def updateList(self):
         self.ui.listWidget_inputModel.clear()
         self.ui.listWidget_inputModel.addItems([str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))])
-        # self.ui.listWidget_inputModel.setCurrentIndex(0)
+        self.ui.listWidget_inputModel.setCurrentItem(self.ui.listWidget_inputModel.item(0))
 
         self._analysis_sel_resn()
 
@@ -456,16 +454,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
 
         self.showCrisscross()
-
-        #input
-        sel1index = self.listbox1.curselection()[0]
-        sel1text = self.listbox1.get(sel1index)
-
-
-        self.whichModelSelect = sel1text
-
-        #print('selected ' + self.whichModelSelect)
-        sel=cmd.get_model(self.whichModelSelect)
+        selected_model=self.ui.listWidget_inputModel.currentItem().text()
 
         self.initialize_out_dir()
 
@@ -475,10 +464,10 @@ class AnBeKoM(QtWidgets.QWidget):
         os.makedirs(outdirInputs, exist_ok=True)
 
 
-        input = os.path.join(outdirInputs, f'{self.whichModelSelect}.pdb')
+        input = os.path.join(outdirInputs, f'{selected_model}.pdb')
         cmd.set('retain_order',1)
         cmd.sort()
-        cmd.save(input, self.whichModelSelect) # to by ulozilo cely model whichModelSelect.
+        cmd.save(input, selected_model) # to by ulozilo cely model selected_model.
 
         caverjar = os.path.join(THIS_DIR, "caver.jar")
 

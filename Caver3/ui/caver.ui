@@ -346,7 +346,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab_convert">
      <attribute name="title">
@@ -399,7 +399,7 @@
        <rect>
         <x>10</x>
         <y>20</y>
-        <width>281</width>
+        <width>339</width>
         <height>31</height>
        </rect>
       </property>
@@ -423,6 +423,12 @@
            </property>
            <property name="decimals">
             <number>1</number>
+           </property>
+           <property name="minimum">
+            <double>-100000.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>100000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -452,6 +458,12 @@
            <property name="decimals">
             <number>1</number>
            </property>
+           <property name="minimum">
+            <double>-100000.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>100000.000000000000000</double>
+           </property>
           </widget>
          </item>
         </layout>
@@ -479,6 +491,12 @@
            </property>
            <property name="decimals">
             <number>1</number>
+           </property>
+           <property name="minimum">
+            <double>-100000.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>100000.000000000000000</double>
            </property>
           </widget>
          </item>
