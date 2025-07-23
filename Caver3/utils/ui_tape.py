@@ -1,12 +1,13 @@
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NoReturn, Optional, Type, Union, overload
 import warnings
+from typing import (TYPE_CHECKING, Any, Dict, Iterable, List, NoReturn,
+                    Optional, Type, Union, overload)
+
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
 else:
     from pymol.Qt import QtCore, QtGui, QtWidgets
-
 
 
 @overload
@@ -22,8 +23,6 @@ def set_widget_value(widget: Union[
     QtWidgets.QDoubleSpinBox,
     QtWidgets.QSpinBox],
     value: Union[int, float, list[str], tuple[str, str]]): ...
-
-
 
 
 @overload
@@ -107,7 +106,7 @@ def set_widget_value(widget, value):
         widget.display(str(value))
     elif isinstance(widget, QtWidgets.QCheckBox):
         widget.setChecked(bool(value))
-    
+
     else:
         set_value_error(widget, value)
 
@@ -133,7 +132,6 @@ def get_widget_value(widget: Union[  # type: ignore
 def get_widget_value(widget: Union[  # type: ignore
     QtWidgets.QSpinBox,
     QtWidgets.QProgressBar]) -> int: ...
-
 
 
 def get_widget_value(widget: QtWidgets.QWidget) -> Any:
@@ -221,6 +219,7 @@ def widget_signal_tape(widget: QtWidgets.QWidget, event):
             f"{widget} {type(widget)} is not supported yet"
         )
 
+
 def getExistingDirectory():
     return QtWidgets.QFileDialog.getExistingDirectory(  # type: ignore
         None,
@@ -228,6 +227,7 @@ def getExistingDirectory():
         os.path.expanduser("~"),
         QtWidgets.QFileDialog.ShowDirsOnly | QtWidgets.QFileDialog.DontResolveSymlinks,  # type: ignore
     )
+
 
 def refresh_window():
     """
@@ -319,7 +319,6 @@ def raise_error(error_type: Type[Exception], message: str) -> NoReturn:
     raise error_type(message)
 
 
-
 class CheckableListView(QtWidgets.QWidget):
     """
     Checkable list view widget, allowing users to check items in the list.
@@ -352,7 +351,7 @@ class CheckableListView(QtWidgets.QWidget):
             self.list_view.setModel(self.model)
         else:
             self.model = self.list_view.model()
-        
+
         # Connect to model's itemChanged signal to detect check state changes
         self.model.itemChanged.connect(self._on_item_changed)
 
@@ -373,7 +372,7 @@ class CheckableListView(QtWidgets.QWidget):
         Emits the checkStateChanged signal only for checkable items.
         """
         self.checkStateChanged.emit(self.get_checked_items())
-        
+
     def _get_items_by_check_state(self, check_state):
         """
         Helper function to get items based on their check state.
@@ -447,7 +446,7 @@ class CheckableListView(QtWidgets.QWidget):
         """
         self.uncheck_all()
         for item in items:
-            if not item in self.items.items():
+            if item not in self.items.items():
                 logging.warning("Item %s not found in list." % item)
                 continue
             self.model.itemFromIndex(item).setCheckState(QtCore.Qt.Checked)
@@ -474,8 +473,6 @@ class CheckableListView(QtWidgets.QWidget):
         self.items.update(new_items)
 
 
-
-
 def getOpenFileNameWithExt(*args, **kwargs):
     """
     Return a file name, append extension from filter if no extension provided.
@@ -494,4 +491,3 @@ def getOpenFileNameWithExt(*args, **kwargs):
             fname += m.group(1)
 
     return fname
-

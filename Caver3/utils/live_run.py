@@ -1,5 +1,3 @@
-
-
 import io
 import logging
 import os
@@ -86,5 +84,3 @@ def run_command(
         stdout=stdout_text,
         stderr=stderr_text,
     )
-
-# Additional widget for extra selection
