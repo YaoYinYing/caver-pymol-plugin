@@ -391,9 +391,6 @@ class AnBeKoM(QtWidgets.QWidget):
         'doubleSpinBox_z' : 'start_point_z',
     }
 
-    def pop_error(self, msg):
-        notify_box(msg)
-
     def bind_config(self):
         for wn in self.config_bindings:
             widget=getattr(self.ui, wn)
@@ -485,7 +482,6 @@ class AnBeKoM(QtWidgets.QWidget):
     def _update_pymol_sel(self, selection: str):
         set_widget_value(self.ui.lineEdit_startPointSele, selection)
         
-
     def _update_aa_sel(self, aa_sel: Optional[List[str]]):
         if not aa_sel:
             if not self.config.has('include_residue_names'):
@@ -623,7 +619,6 @@ class AnBeKoM(QtWidgets.QWidget):
         caverfolder = "%s" % (self.caver3locationAbsolute)
         caverjar = caverfolder + "/" + "caver.jar"
 
-        cfg = self.getConfLoc()
 
         # create new config
         cfgTimestamp = time.strftime("%Y-%m-%d-%H-%M")
@@ -640,7 +635,10 @@ class AnBeKoM(QtWidgets.QWidget):
         pj.run_caver()
 
         if pj.insufficient_memory:
-            self.pop_error("Available memory (" + str(pj.memory_heap_level) + " MB) is not sufficient to analyze this structure. Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
+            notify_box('Insufficient memory.',
+                        details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
+                        "Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. "
+                        "Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
 
         prevDir = os.getcwd()
         print(prevDir)
@@ -950,19 +948,19 @@ class AnBeKoM(QtWidgets.QWidget):
         for p in pairs:
             names.add(p[0])
         if 0 == len(names):
-            self.pop_error("Selection is empty.")
+            notify_box("Selection is empty.")
         elif 1 == len(names):
             name = names.pop()
         else:
             s = "Starting point selection need to be limited to one object. Currently, it includes these objects: "
             for n in names:
                 s += n + ' '
-            self.pop_error(s)
+            notify_box(s)
         return name
 
     def compute_center(self,selection="(all)"):
         if not selection in cmd.get_names("selections") and not selection in cmd.get_names("objects"):
-            self.pop_error("Selection '" + selection + "' does not exist, using all atoms.")
+            notify_box(f"Selection '{selection}' does not exist, using all atoms.")
             selection = "all"
         object = self.getObjectName(selection)
         if None == object:
