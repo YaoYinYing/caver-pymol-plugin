@@ -1,8 +1,11 @@
 import logging
 import os
-from typing import Any, Dict, Iterable, List, NoReturn, Optional, Type, Union, overload
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NoReturn, Optional, Type, Union, overload
 import warnings
-from PyQt5 import QtCore, QtGui, QtWidgets
+if TYPE_CHECKING:
+    from PyQt5 import QtCore, QtGui, QtWidgets
+else:
+    from pymol.Qt import QtCore, QtGui, QtWidgets
 
 
 
