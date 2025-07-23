@@ -71,7 +71,7 @@ class CaverConfig:
     number_of_approximating_balls: Literal[4, 6, 8, 12, 20] = 4
     ignore_water: bool= False
 
-    selection_name: str='sele'
+    selection_name: str=''
 
     start_point_x: float = 0.0
     start_point_y: float = 0.0
@@ -180,8 +180,8 @@ class CaverConfig:
         return '"' + v + '"' if ' ' in v else v
     
     def to_txt(self, txt_file: str):
-        ...
         '''
+        export to txt file so jar can read it.
         bool: 
             - True: yes
             - False: no
@@ -216,6 +216,8 @@ class CaverConfig:
                 _val_type=type(self_val)
                 if _val_type == bool:
                     new_txt_contents.append(f'{key} {CaverConfig._yes_or_no(self_val)}')
+                elif self_val == '???': # drop unset values
+                    continue
                 elif _val_type == str:
                     new_txt_contents.append(f'{key} {CaverConfig._need_quote(self_val)}')
                 elif _val_type == float:
@@ -233,53 +235,6 @@ defaults = CaverConfig()
 
 url = "http://www.caver.cz/index.php?sid=123"
 
-
-
-class DataStruct:
-    def __init__(self):
-        self.keys = []
-        self.values = []
-    def remove(self, key):
-        idx = self.indexOf(key)
-        if idx != -1: self.keys[idx] = "REMOVED"
-        #self.keys.pop(idx)
-        #self.values.pop(idx)
-    def indexOf(self, key):
-        #for idx in range (0, len(self.keys)):
-        #  if self.keys[idx] == key:
-        #    return idx
-        #return -1
-        if key in self.keys:
-            return self.keys.index(key)
-        else:
-            return -1
-    def add(self, key, value, isComment):
-        idx = self.indexOf(key)
-        if idx == -1 or isComment == 1:
-            self.keys.append(key)
-            self.values.append(value)
-        else:
-            self.values[idx] = self.values[idx] + " " + value
-    def replace(self, key, value, isComment):
-        idx = self.indexOf(key)
-        if idx == -1 or isComment:
-            #print("replacing " + key + " idx " + str(idx))
-            self.keys.append(key)
-            self.values.append(value)
-            #print("size " + str(len(self.keys)))
-        else:
-            #print("Exists " + key + " idx " + str(idx))
-            self.values[idx] = value
-    def get(self, key):
-        idx = self.indexOf(key)
-        return self.values[idx]
-    def getKeys(self):
-        return self.keys
-    def getValues(self):
-        return self.values
-    def clear(self):
-        self.keys = []
-        self.values = []
 
 class PyJava:
     def __init__(self, customized_memory_heap, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
@@ -371,7 +326,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
 
     def make_window(self):
-        main_window = QtWidgets.QMainWindow()  
+        main_window = QtWidgets.QWidget
         self.ui = CaverUI()
         self.ui.setupUi(main_window)
 
@@ -380,6 +335,9 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_compute.clicked.connect(self.execute)
         self.ui.pushButton_convertStartPointSele.clicked.connect(self.convert_sele_to_coords)
         self.ui.pushButton_reloadInputModel.clicked.connect(self.updateList)
+
+        self.ui.pushButton_loadConfig.clicked.connect(self.configin)
+        self.ui.pushButton_saveConfig.clicked.connect(self.configout)
 
         self.ui.doubleSpinBox_x.valueChanged.connect(self.changeCoords)
         self.ui.doubleSpinBox_y.valueChanged.connect(self.changeCoords)
@@ -405,15 +363,11 @@ class AnBeKoM(QtWidgets.QWidget):
         self.window = None
         self.config= CaverConfig()
         
-        
-        parent = app.root
         self.parent = parent
         # workaround for list binding
         self.configJustLoaded = 0
         #by default select all
         self.xButton = "empty"
-
-        self.dataStructure = DataStruct()
 
         #ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$",r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
@@ -426,10 +380,11 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_reverseAAsel.clicked.connect(self.checktable_aa.reverse_check)
         self.checktable_aa.checkStateChanged.connect(self._update_aa_sel)
 
+        self.configin(CONFIG_TXT)
+
         self.updateList()
 
-
-        self.configLoad(cf)
+        self.config_post_process()
 
         self._analysis_sel_resn()
 
@@ -444,12 +399,7 @@ class AnBeKoM(QtWidgets.QWidget):
             return
         self.config.set('include_residue_names', ' '.join(aa_sel))
         return
-    def getConfLoc(self):
-        cf = self.conflocation.cget("text")
-        if cf == self.DEFCONF:
-            return self.conflocationDefault
-        else:
-            return cf
+
     def showCrisscross(self):
         cmd.delete("crisscross")
         AnBeKoM.crisscross(self.config.start_point_x,self.config.start_point_y,self.config.start_point_z,0.5,"crisscross")
@@ -482,12 +432,6 @@ class AnBeKoM(QtWidgets.QWidget):
         for line in lines:
             wresult += line
         return wresult
-
-    def suitable(dir):
-        return not (os.path.exists(dir) and (os.path.exists(dir) and os.listdir(dir)))
-
-
-
     def initialize_out_dir(self, ):
         
         dir=self.config.output_dir
@@ -546,7 +490,6 @@ class AnBeKoM(QtWidgets.QWidget):
         outdirInputs = os.path.join(self.out_dir , 'input')
         os.makedirs(outdirInputs, exist_ok=True)
 
-        self.stdamString = "+".join(THE_20s)
 
         input = os.path.join(outdirInputs, f'{self.whichModelSelect}.pdb')
         cmd.set('retain_order',1)
@@ -608,14 +551,8 @@ class AnBeKoM(QtWidgets.QWidget):
         AnBeKoM.crisscross(startpoint[0],startpoint[1],startpoint[2],0.5,"crisscross")
         self.showCrisscross()
 
-    def containsValue(self, array, value):
-        for v in array:
-            if (v == value):
-                return 1
-        return 0
-
-    def configin(self):
-        filepath = getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
+    def configin(self, filepath: Optional[str]=None):
+        filepath = filepath or getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
 
         self.config=CaverConfig.from_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
@@ -641,36 +578,7 @@ class AnBeKoM(QtWidgets.QWidget):
         if not filepath: return
         self.config.to_json(filepath) if filepath.endswith(".json") else CaverConfig.to_txt(filepath)
 
-    def configLoad(self, file):
-        self.dataStructure.clear()
-        print('cleared datastruct')
-
-
-        # do nothing if file not exists
-        if not os.path.isfile(file):
-            return
-
-        handler = open(file)
-        lines = handler.readlines()
-        for line in lines:
-            liner = line.strip()
-            # remove everything after last occurence of # char
-            # 'option yes # comment' -> 'option yes'
-            if '#' in liner and not liner.startswith('#'):
-                liner = liner[0:liner.rfind("#")-1]
-            if liner.startswith('#'):
-                self.dataStructure.add("#", liner, 1)
-            elif liner == "":
-                self.dataStructure.add("#EMPTY#", liner, 1)
-            else:
-                parsed = liner.split(' ')
-                key = parsed[0]
-                if len(parsed) <= 1:
-                    print('skipping ' + key)
-                    val = ""
-                else:
-                    val = " ".join(parsed[1:len(parsed)])
-                    self.dataStructure.add(key, val, 0)
+    def config_post_process(self):
 
         conflict_flags={
             'starting_point_coordinates': ['starting_point_atom', 'starting_point_residue']
@@ -685,69 +593,20 @@ class AnBeKoM(QtWidgets.QWidget):
                     details=f'Simultaneous usage of {primary_flag} parameter with {flag} parameters is not supported by plugin. Now ignoring atom.')
                     delattr(self.config, flag)
 
-
-        if not self.config.has('starting_point_coordinates'):
-            #perform harakiri with selecting model and pre-loading coordinates with the command similar to the one below
-            #cmd.select('starting_point','id 573+658 & structure | resi 120+24 & structure')
-            selector = []
-            rids = ""
-            aids = ""
-            if self.config.has('starting_point_residue'):
-                rids = "+".join(self.config.get('starting_point_residue').split(" "))
-            if self.config.has('starting_point_atom'):
-                aids = "+".join(self.config.get('starting_point_atom').split(" "))
-
-            sel1index = self.listbox1.curselection()
-            if (sel1index):
-                sel1text = self.listbox1.get(sel1index[0])
-                model = self.listbox1.get(sel1index)
-                if (aids):
-                    selector.append("id " + aids + " & " + model)
-                if (rids):
-                    selector.append("resi " + rids + " & " + model)
-
-                if len(selector) > 0:
-                    selectorStr = " | ".join(selector)
-                    print("updating starting point with: " + selectorStr)
-                    cmd.select('starting_point', selectorStr)
-                    # set field value
-                    self.selectionlist.setvalue('starting_point')
-                    # call conversion to xyz
-                    self.convert_sele_to_coords()
-
         # test include/exclude
         if self.config.has_include_exclude:
             notify_box(
                 'include_ and exclude_ parameters are not supported by plugin. '
                 'Please use the plugin to specify residues to be analyzed.')
         
-        #print("reading done...")
-        #now, all read in the structure. Multi-line params merged into one-liners
-        #Traverse the structure and update gui controls
-        self.structureLoad()
-    def structureLoad(self):
+        
+        self.ensure_residue_names_to_checktable()
+    def ensure_residue_names_to_checktable(self):
         if self.config.has("include_residue_names"):
             aa_from_config: List[str]=self.config.get("include_residue_names").split(" ")
             if aa_from_config:
                 self.checktable_aa.check_these(aa_from_config)
-    def structureUpdateFromGui(self):
-        self.dataStructure.replace("probe_radius", self.tunnelsProbe.getvalue(), 0)
-        self.dataStructure.replace("java_heap", self.javaHeap.getvalue(), 0)
-        self.dataStructure.replace("shell_depth",self.shellDepth.getvalue(), 0)
-        self.dataStructure.replace("shell_radius",self.shellRadius.getvalue(), 0)
-        self.dataStructure.replace("clustering_threshold",self.clusteringThreshold.getvalue(), 0)
-        self.dataStructure.replace("number_of_approximating_balls",self.approxVar.get(), 0)
-        #check-boxed residues
-        
-        self.dataStructure.replace("include_residue_names", self.config.get("include_residue_names"), 0)
 
-        #active site:
-        #remove other starting point definitions except those with atoms
-        self.dataStructure.remove("starting_point_residue")
-        self.dataStructure.remove("starting_point_atom")
-
-        asit = str(self.config.start_point_x) + " " + str(self.config.start_point_x) + " " + str(self.config.start_point_x)
-        self.dataStructure.replace("starting_point_coordinates",asit, 0)
 
     def _analysis_sel_resn(self):
         if not self.config.selection_name:
@@ -904,18 +763,3 @@ class AnBeKoM(QtWidgets.QWidget):
         cmd.load_cgo(obj,name)
         cmd.set_view(view)
 
-
-# Create demo in root window for testing.
-if __name__ == '__main__':
-    class App:
-        def my_show(self,*args,**kwargs):
-            pass
-    app = App()
-    app.root = tk.Tk()
-    Pmw.initialise(app.root)
-    app.root.title('Some Title')
-
-    widget = AnBeKoM(app)
-    exitButton = tk.Button(app.root, text = 'Exit', command = app.root.destroy)
-    exitButton.pack()
-    app.root.mainloop()

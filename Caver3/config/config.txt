@@ -15,10 +15,10 @@ last_frame 100000
 #*****************************
 # TUNNEL CALCULATION
 #*****************************
-
-#starting_point_atom 
-#starting_point_residue
-#starting_point_coordinates
+# used as a template
+starting_point_atom ???
+starting_point_residue ??? 
+starting_point_coordinates ???
 
 probe_radius 0.9
 shell_radius 3
