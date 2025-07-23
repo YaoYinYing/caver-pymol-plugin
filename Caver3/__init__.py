@@ -59,7 +59,7 @@ class CaverConfig:
     # connect to wigets
     output_dir: str = ""
 
-    default_java_heap: int=6000
+    customized_java_heap: int=6000
 
     shell_radius: float=3.0
     shell_depth: int=2
@@ -284,7 +284,7 @@ class PyJava:
         else:
             print("FAIL")
 
-    def __init__(self, maxXmx, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
+    def __init__(self, customized_memory_heap, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
         self.insufficient_memory = False
         self.jar = caverjar
         print("")
@@ -298,10 +298,10 @@ class PyJava:
 
         print("")
         print("*** Optimizing memory allocation for Java ***")
-        self.optimize_memory(maxXmx)
+        self.optimize_memory(customized_memory_heap)
         self.cmd = [
             "java",
-            "-Xmx%dm" % self.xmx,
+            "-Xmx%dm" % self.memory_heap_level,
             "-cp", os.path.join(caverfolder, "lib"),
             "-jar", caverjar,
             "-home", caverfolder,
@@ -321,21 +321,21 @@ class PyJava:
     def run_caver(self):
         self.execute(self.cmd, False)
 
-    def optimize_memory(self, s_max_xmx):
-        max_xmx = int(s_max_xmx)
-        values = [500, 800, 900, 950, 1000, 1050, 1100, 1150, 1200, 1250, 1300, 1400, 1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 14000, 16000, 20000, 32000, 48000, 64000]
-        values.append(max_xmx)
-        values.sort()
+    def optimize_memory(self, customized_memory_heap):
+        customized_memory_heap = int(customized_memory_heap)
+        memory_allocate_options = [500, 800, 900, 950, 1000, 1050, 1100, 1150, 1200, 1250, 1300, 1400, 1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 14000, 16000, 20000, 32000, 48000, 64000]
+        memory_allocate_options.append(customized_memory_heap)
+        memory_allocate_options.sort()
         #sorted(values)
-        self.xmx = values[0]
-        for xmx in values:
-            if int(xmx) <= max_xmx:
-                cmd = ["java", "-Xmx%dm" % xmx, "-jar", self.jar, "do_nothing"]
+        self.memory_heap_level = memory_allocate_options[0]
+        for heap_level in memory_allocate_options:
+            if int(heap_level) <= customized_memory_heap:
+                cmd = ["java", "-Xmx%dm" % heap_level, "-jar", self.jar, "do_nothing"]
                 code = self.execute(cmd, True)
-                if 0 == code:
-                    self.xmx = xmx
-                    print("Xmx: " + str(self.xmx))
-        print("*** Memory for Java: " + str(self.xmx) + " MB ***")
+                if code==0:
+                    self.memory_heap_level = heap_level
+                    print("Memory heap level: " + str(self.memory_heap_level))
+        print("*** Memory for Java: " + str(self.memory_heap_level) + " MB ***")
 
     def execute_old(self, cmd):
         p = os.popen(cmd)
@@ -356,7 +356,7 @@ class PyJava:
                 print(e)
                 print(e.cmd)
                 print(e.output)
-            self.analyze(e.output.decode('UTF-8'))
+            self.check_output_from_memory_issue(e.output.decode('UTF-8'))
             return e.returncode
         except OSError as e:
             notify_box(f'Failed to execute command: {str(args)}', details=str(e))
@@ -367,16 +367,15 @@ class PyJava:
             return -2
         return 0
 
-    def analyze(self, output):
-        if 'OutOfMemory' in output:
-            self.insufficient_memory = True
+    def check_output_from_memory_issue(self, output):
+        self.insufficient_memory = 'OutOfMemory' in output
 
 
 
 class AnBeKoM(QtWidgets.QWidget):
     config_bindings: Dict[str, str]={
         'lineEdit_output_dir': 'output_dir',
-        'spinBox_maxJavaHeapSize': 'default_java_heap',
+        'spinBox_maxJavaHeapSize': 'customized_java_heap',
         'doubleSpinBox_maxProRad': 'probe_radius',
         'doubleSpinBox_shellRad': 'shell_radius',
         'spinBox_shellDepth': 'shell_depth',
@@ -515,14 +514,8 @@ class AnBeKoM(QtWidgets.QWidget):
         return wresult
 
     def suitable(dir):
-        if not os.path.exists(dir):
-            return True
-        else:
-            if os.listdir(dir) == []:
-                return True
-            else:
-                return False
-            
+        return not (os.path.exists(dir) and (os.path.exists(dir) and os.listdir(dir)))
+
 
 
     def initialize_out_dir(self, ):
@@ -614,20 +607,20 @@ class AnBeKoM(QtWidgets.QWidget):
 
         # create new config
         cfgTimestamp = time.strftime("%Y-%m-%d-%H-%M")
-        cfgnew = outdirInputs + "/config_" + cfgTimestamp + ".txt"
-        self.configSave(cfgnew, cfg)
+        cfgnew=os.path.join(outdirInputs, f"config_{cfgTimestamp}.txt")
+        self.configout(cfgnew)
 
         # set correct java options
         #javaOpts = JOPTS.replace("@", self.javaHeap.getvalue())
 
-        pj = PyJava(self.javaHeap.getvalue(), caverfolder, caverjar, outdirInputs, cfgnew, self.out_dir)
+        pj = PyJava(self.config.customized_java_heap, caverfolder, caverjar, outdirInputs, cfgnew, self.out_dir)
         if pj.java_missing:
             return
 
         pj.run_caver()
 
         if pj.insufficient_memory:
-            self.pop_error("Available memory (" + str(pj.xmx) + " MB) is not sufficient to analyze this structure. Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
+            self.pop_error("Available memory (" + str(pj.memory_heap_level) + " MB) is not sufficient to analyze this structure. Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
 
         prevDir = os.getcwd()
         print(prevDir)
@@ -646,7 +639,7 @@ class AnBeKoM(QtWidgets.QWidget):
             self.aftercomp.config(text="Warnings detected during computation")
             self.afterbutt.config(state=ACTIVE)
     @staticmethod
-    def fixPrecision( numberStr):
+    def fixPrecision( numberStr: Any) -> float:
         return math.floor(float(numberStr) * 1000) / 1000
     def convert(self):
 
@@ -684,6 +677,21 @@ class AnBeKoM(QtWidgets.QWidget):
         self.config=CaverConfig.from_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
         # refresh window wiget from input config
         self.refresh_window_from_cfg()
+        self.refresh_start_point_from_cfg()
+
+    def refresh_start_point_from_cfg(self):
+
+        if not self.config.has('starting_point_coordinates'):
+            return
+        
+        coords_from_config = tuple(map(float, self.config.get('starting_point_coordinates').split(' ')))
+        if not len(coords_from_config) == 3: 
+            notify_box("Invalid starting point coordinates in configuration file")
+            return
+        
+        for i,axis, j, coord in zip(enumerate('xyz'),enumerate(coords_from_config)):
+            set_widget_value(getattr(self.ui, f'doubleSpinBox_{axis}'), coord)
+        notify_box(f"Starting point coordinates loaded from configuration file: {coords_from_config}")
     def configout(self, filepath: Optional[str]=None):
         filepath = filepath or getOpenFileNameWithExt(self.window, "Select configuration file", f"JSON ( *.json );;TXT ( *.txt )")
         if not filepath: return
@@ -851,11 +859,6 @@ class AnBeKoM(QtWidgets.QWidget):
                         self.s[fromconf] = IntVar()
                         self.s[fromconf].set(1)
                 self.reinitialiseFromConfig()
-            elif key == "starting_point_coordinates":
-                starr = (str(val)).split(" ")
-                self.xlocvar.set(float(self.fixPrecision(starr[0])))
-                self.ylocvar.set(float(self.fixPrecision(starr[1])))
-                self.zlocvar.set(float(self.fixPrecision(starr[2])))
     def structureUpdateFromGui(self):
         self.dataStructure.replace("probe_radius", self.tunnelsProbe.getvalue(), 0)
         self.dataStructure.replace("java_heap", self.javaHeap.getvalue(), 0)
