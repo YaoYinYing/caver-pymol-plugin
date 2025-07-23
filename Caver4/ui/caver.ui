@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>635</width>
+    <width>553</width>
     <height>624</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <rect>
      <x>20</x>
      <y>20</y>
-     <width>591</width>
+     <width>521</width>
      <height>61</height>
     </rect>
    </property>
@@ -30,7 +30,7 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>561</width>
+      <width>501</width>
       <height>34</height>
      </rect>
     </property>
@@ -38,7 +38,7 @@
      <item>
       <widget class="QLabel" name="label_configStatus">
        <property name="text">
-        <string>Configure Status</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -68,7 +68,7 @@
     <rect>
      <x>20</x>
      <y>80</y>
-     <width>591</width>
+     <width>521</width>
      <height>191</height>
     </rect>
    </property>
@@ -80,7 +80,7 @@
      <rect>
       <x>10</x>
       <y>30</y>
-      <width>561</width>
+      <width>501</width>
       <height>161</height>
      </rect>
     </property>
@@ -292,9 +292,9 @@
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>410</y>
-     <width>331</width>
+     <width>321</width>
      <height>201</height>
     </rect>
    </property>
@@ -306,7 +306,7 @@
      <rect>
       <x>0</x>
       <y>30</y>
-      <width>321</width>
+      <width>311</width>
       <height>161</height>
      </rect>
     </property>
@@ -327,9 +327,9 @@
   <widget class="QGroupBox" name="groupBox_4">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>280</y>
-     <width>331</width>
+     <width>321</width>
      <height>131</height>
     </rect>
    </property>
@@ -341,12 +341,12 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>311</width>
+      <width>301</width>
       <height>101</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_convert">
      <attribute name="title">
@@ -357,7 +357,7 @@
        <rect>
         <x>10</x>
         <y>20</y>
-        <width>281</width>
+        <width>271</width>
         <height>41</height>
        </rect>
       </property>
@@ -399,7 +399,7 @@
        <rect>
         <x>10</x>
         <y>20</y>
-        <width>339</width>
+        <width>271</width>
         <height>31</height>
        </rect>
       </property>
@@ -513,9 +513,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>0</y>
-        <width>281</width>
-        <height>61</height>
+        <y>10</y>
+        <width>271</width>
+        <height>51</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -565,7 +565,7 @@
     <rect>
      <x>350</x>
      <y>560</y>
-     <width>261</width>
+     <width>191</width>
      <height>51</height>
     </rect>
    </property>
@@ -591,7 +591,7 @@
     <rect>
      <x>350</x>
      <y>280</y>
-     <width>261</width>
+     <width>191</width>
      <height>271</height>
     </rect>
    </property>
@@ -603,7 +603,7 @@
      <rect>
       <x>10</x>
       <y>30</y>
-      <width>241</width>
+      <width>171</width>
       <height>231</height>
      </rect>
     </property>
