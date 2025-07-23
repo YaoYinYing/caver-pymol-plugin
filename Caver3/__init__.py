@@ -415,8 +415,6 @@ class AnBeKoM(QtWidgets.QWidget):
 
         self.dataStructure = DataStruct()
 
-
-        self.AAKEY = "20_AA"
         #ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$",r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
@@ -751,10 +749,6 @@ class AnBeKoM(QtWidgets.QWidget):
         asit = str(self.config.start_point_x) + " " + str(self.config.start_point_x) + " " + str(self.config.start_point_x)
         self.dataStructure.replace("starting_point_coordinates",asit, 0)
 
-    def stdamMessage(self):
-        Pmw.MessageDialog(self.parent,title = 'Information',message_text = self.AAKEY + ': Standard amino acids: \n ' + ", ".join(THE_20s))
-
-
     def _analysis_sel_resn(self):
         if not self.config.selection_name:
             return
@@ -766,39 +760,6 @@ class AnBeKoM(QtWidgets.QWidget):
                 continue
             if  a.resn not in THE_20s:
                 self.checktable_aa.update({a.resn:a.resn})
-
-    def reinitialiseFromConfig(self):
-        ksorted = sorted(self.s.keys())
-        #print("calling initialise from config" + str(len(ksorted)))
-        for xs in self.checklist:
-            xs.grid_remove()
-        self.checklist = []
-
-        for xs in self.buttonlist:
-            xs.grid_remove()
-        self.buttonlist = []
-        cntr = 0
-
-        if self.AAKEY in ksorted:
-            tmpButton = tk.Checkbutton(self.filterGroup.interior(), text=self.AAKEY, variable=self.s[self.AAKEY])
-            tmpButton.var = self.s[self.AAKEY]
-            tmpButton.grid(sticky=W, row = int(cntr/5), column = (cntr % 5))
-            self.checklist.append(tmpButton)
-            cntr = cntr + 1
-            tmpButton = tk.Button(self.filterGroup.interior(), text='?', command=self.stdamMessage, width = 5)
-            tmpButton.grid(sticky=W, row = 0, column=1) # 0,1 = stdam, 0,2 = help
-            tmpButton.var = self.s[self.AAKEY]
-            tmpButton.grid(sticky=W, row = int(cntr/5), column = (cntr % 5))
-            self.checklist.append(tmpButton)
-            cntr = cntr + 4
-        for key in ksorted:
-            if key != self.AAKEY:
-                    #print("adding button" + key)
-                tmpButton = tk.Checkbutton(self.filterGroup.interior(), text=key, variable=self.s[key])
-                tmpButton.var = self.s[key]
-                tmpButton.grid(sticky=W, row = int(cntr/5), column = (cntr % 5))
-                self.checklist.append(tmpButton)
-                cntr = cntr + 1
 
 
     def getAtoms(self, selection="(all)"):
