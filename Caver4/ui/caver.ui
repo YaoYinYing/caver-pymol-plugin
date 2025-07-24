@@ -6,9 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>553</width>
+    <width>558</width>
     <height>624</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>558</width>
+    <height>624</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>558</width>
+    <height>624</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Caver - PyQt</string>
@@ -577,13 +589,6 @@
       </property>
      </widget>
     </item>
-    <item>
-     <widget class="QPushButton" name="pushButton_exit">
-      <property name="text">
-       <string>Exit</string>
-      </property>
-     </widget>
-    </item>
    </layout>
   </widget>
   <widget class="QGroupBox" name="groupBox_5">
@@ -603,7 +608,7 @@
      <rect>
       <x>10</x>
       <y>30</y>
-      <width>171</width>
+      <width>179</width>
       <height>231</height>
      </rect>
     </property>
@@ -633,6 +638,27 @@
           <widget class="QPushButton" name="pushButton_reverseAAsel">
            <property name="text">
             <string>Reverse</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="Line" name="line">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_proteinResn">
+           <property name="text">
+            <string>Protein</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_ligandResn">
+           <property name="text">
+            <string>Ligand</string>
            </property>
           </widget>
          </item>

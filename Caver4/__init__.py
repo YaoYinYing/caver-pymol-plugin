@@ -10,6 +10,7 @@ import logging
 import math
 import os
 import re
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property, partial
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
@@ -32,7 +33,9 @@ from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .utils.live_run import run_command
 from .utils.ui_tape import (CheckableListView, get_widget_value,
                             getExistingDirectory, getOpenFileNameWithExt,
-                            notify_box, set_widget_value, widget_signal_tape)
+                            hold_trigger_button, notify_box,
+                            run_worker_thread_with_progress, set_widget_value,
+                            widget_signal_tape)
 
 THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
@@ -83,13 +86,28 @@ class CaverConfig:
 
     @classmethod
     def from_json(cls, json_file: str) -> 'CaverConfig':
+        """
+        Load configuration information from a JSON file and create a CaverConfig object.
+    
+        This method is a class method, which means it can be called directly on the class rather than an instance of the class.
+        It takes a path to a JSON file as input and returns an instance of CaverConfig initialized with the data from the JSON file.
+    
+        Parameters:
+        - json_file: str - The path to the JSON file containing the configuration information.
+    
+        Returns:
+        - CaverConfig: An instance of the CaverConfig class initialized with the data from the JSON file.
+        """
+        # Load JSON data from the specified file path
         json_data = json.load(open(json_file))
         # filter dataclass keys with fixed typing
         # `__match_args__` has all dataclass keys
         # `__dataclass_fields__` has all dataclass key fields
+        # Initialize a new instance of the class using the data from the JSON, converting types as necessary
         new_self = cls(**{k: cls.__dict__['__dataclass_fields__'][k].type(v)
                        for k, v in json_data.items() if k in cls.__dict__['__match_args__']})
         # add extra keys that come from json
+        # Iterate through the JSON data again, adding any extra keys not included in the initial dataclass keys
         for k, v in json_data.items():
             if k in cls.__dict__['__match_args__']:
                 continue
@@ -105,51 +123,55 @@ class CaverConfig:
     @classmethod
     def from_txt(cls, txt_file: Optional[str] = None):
         '''
-        comment:
-            - started by #: ignored
-        bool:
-            - True: yes
-            - False: no
-        str:
-            - quoted by "" if has space
-
-        list:
-            - space separated
-
+        Load configuration from a specified text file or the default configuration file if none is provided.
+        
+        This method reads the configuration from a text file, where each line represents a configuration item.
+        The format of each line is "key value", with the following rules:
+        - Lines starting with "#" are comments and are ignored.
+        - If "#" appears in the middle of a line, the part after "#" is treated as a comment and is ignored.
+        - Boolean values: "yes" represents True, "no" represents False.
+        - String values: If they contain spaces, they must be enclosed in double quotes "".
+        - List values: Space-separated.
+        
+        Parameters:
+        - txt_file (Optional[str]): The path to the text file containing the configuration. If not provided, the default configuration file is used.
+        
+        Returns:
+        - An instance of the class initialized with the configuration read from the file.
         '''
+        # Initialize a new instance of the class
         new_self = cls()
+        
+        # Open the specified configuration file or the default configuration file
         with open(txt_file or CONFIG_TXT) as f:
+            # Read each line of the file
             for l in f.readlines():
+                # Remove leading and trailing whitespace
                 l = l.strip()
-                # 'option yes # comment' -> 'option yes'
+                
+                # If the line contains "#" and does not start with "#", remove the comment part
                 if '#' in l and not l.startswith('#'):
                     l = l[0:l.rfind("#") - 1]
                     # remove trailing whitespaces
                     l = l.rstrip(' ')
-
+                
+                # If the line starts with "#" or is empty, skip it
                 if l.startswith("#") or not l:
                     continue
-
+                
+                # Split the line into key and value parts
                 parsed = l.split(' ', 1)
                 key = parsed[0]
+                # If the key part is empty or there is no value part, skip it
                 if len(parsed) <= 1:
                     print('skipping ' + key)
                     continue
-
+                
+                # Set the value for the key in the new instance
                 new_self._set_value(key, parsed[1])
-
+        
+        # Return the initialized new instance
         return new_self
-
-    # @property
-    # def has_include_exclude(self) -> bool:
-    #     not_allowed = [
-    #         "include_residue_names",
-    #         "include_residue_ids",
-    #         "include_atom_numbers",
-    #         "exclude_residue_names",
-    #         "exclude_residue_ids",
-    #         "exclude_atom_numbers"]
-    #     return any(self.has(key=k) for k in not_allowed)
 
     def _set_value(self, key: str, new_value: str):
         if hasattr(self, key):
@@ -178,73 +200,65 @@ class CaverConfig:
     def _true_or_false(v: str) -> bool:
         return True if v == 'yes' else False
 
-    @staticmethod
-    def _need_quote(v: str) -> str:
-        if ' ' not in v:
-            return v
-        # simple digit int array
-        if all(_v.isdigit() for _v in v.split(' ') if v):
-            return v
-        # complex float array
-        if all(re.match(r'^(-)?\d+(\.?\d+)?$', _v) for _v in v.split(' ') if v):
-            return v
-
-        # normal string by lacking quotes
-        return '"' + v + '"' if ' ' in v and (v[0] != '"' and v[-1] != '"') else v
-
     def to_txt(self, txt_file: str):
         '''
-        export to txt file so jar can read it.
-        bool:
-            - True: yes
-            - False: no
-        str:
-            - quoted by "" if has space
-
-        list:
-            - space separated
-
+        Export the current configuration to a TXT file for the JAR file to read.
+        The format of the TXT file is as follows:
+        - Boolean values are represented by "True" or "False"
+        - List values are separated by spaces
+    
+        Parameters:
+        - txt_file (str): The path to the TXT file to be exported
+    
+        This function does not return any value.
         '''
+        # Set the starting point coordinates if any of the start_point_x, start_point_y, or start_point_z attributes are not 0
         if any(getattr(self, f'start_point_{a}') != 0 for a in 'xyz'):
             self.set('starting_point_coordinates', " ".join(str(getattr(self, f'start_point_{a}')) for a in 'xyz'))
             logging.debug(f"starting point: {self.get('starting_point_coordinates')}")
-
+    
+        # Initialize a new list to store the updated configuration content
         new_txt_contents = []
+        # Read the configuration template file
         with open(CONFIG_TXT) as template_f:
             template = template_f.readlines()
         for l in template:
             l = l.strip()
+            # Directly append comment lines and empty lines to the new configuration content
             if l.startswith('#') or not l:
-                # direct append comment and empty lines
                 new_txt_contents.append(l)
                 continue
+            # Remove everything after the last occurrence of the # character and trailing whitespaces for lines containing inline comments
             if '#' in l and not l.startswith('#'):
-                # remove everything after last occurence of # char
                 l = l[0:l.rfind("#") - 1]
-                # remove trailing whitespaces
                 l = l.rstrip(' ')
-
+    
+            # Split each line into a key-value pair
             parsed = l.split(' ', 1)
             key = parsed[0]
+            # Skip lines with no value set
             if len(parsed) <= 1:
                 print('skipping ' + key)
-
-            # update keys that only exists in the txt file
+            # Update keys that exist in the TXT file but not in the current configuration
             elif hasattr(self, key):
                 self_val = getattr(self, key)
                 _val_type = type(self_val)
+                # Handle boolean values
                 if _val_type == bool:
                     new_txt_contents.append(f'{key} {CaverConfig._yes_or_no(self_val)}')
-                elif self_val == '???':  # drop unset values
+                # Skip unset values
+                elif self_val == '???':
                     continue
-                # elif _val_type == str:
-                #     new_txt_contents.append(f'{key} {CaverConfig._need_quote(self_val)}')
+                # Handle float values
                 elif _val_type == float:
                     new_txt_contents.append(f'{key} {self_val:.1f}')
+                # Handle other types of values
                 else:
                     new_txt_contents.append(f'{key} {str(self_val)}')
-
+    
+        # Create the directory for the TXT file if it does not exist
         os.makedirs(os.path.dirname(txt_file), exist_ok=True)
+        # Write the updated configuration content to the TXT file
         with open(txt_file, 'w') as f:
             f.write('\n'.join(new_txt_contents))
 
@@ -322,21 +336,54 @@ class AnBeKoM(QtWidgets.QWidget):
     
 
     def bind_config(self):
+        """
+        Binds UI widgets to their corresponding configuration items.
+        
+        Iterates through the config_bindings dictionary where keys are widget names 
+        and values are the corresponding configuration item names. For each widget, 
+        it connects the widget's signal to the _wiget_link method using the widget name 
+        as an argument. This ensures that changes in the UI are reflected in the configuration.
+        """
         for wn in self.config_bindings:
             widget = getattr(self.ui, wn)
             widget_signal_tape(widget, partial(self._wiget_link, wn))
 
     def _wiget_link(self, widget_name):
+        """
+        Links a widget's value with the corresponding configuration item.
+    
+        Retrieves the configuration item associated with the widget from the config_bindings dictionary.
+        If the configuration item does not exist in the config object, an AttributeError is raised.
+        
+        Parameters:
+        - widget_name: The name of the widget, used to look up the corresponding configuration item.
+        
+        Raises:
+        - AttributeError: If the configuration item is not found in the config object.
+        """
+        # Retrieve the configuration item associated with the widget
         config_item = self.config_bindings.get(widget_name)
+        
+        # Check if the configuration item exists in the config object
         if not hasattr(self.config, config_item):
             raise AttributeError(f'{config_item} not found in config')
-
+    
+        # Get the current value of the configuration item
         pv = getattr(self.config, config_item)
+        
+        # Get the widget object
         widget = getattr(self.ui, widget_name)
+        
+        # Get the current value of the widget
         nv = get_widget_value(widget)
+        
+        # Update the value of the configuration item with the widget's value
         self.config.set_value(config_item, nv)
-
+    
+        # Get the updated value of the configuration item
         uv = getattr(self.config, config_item)
+        
+        # Log the change in value
         logging.info(f'{widget_name} {pv} -> {nv} -> {uv}')
 
     def refresh_window_from_cfg(self):
@@ -353,7 +400,7 @@ class AnBeKoM(QtWidgets.QWidget):
         self.bind_config()
         self.ui.pushButton_compute.clicked.connect(self.execute)
         self.ui.pushButton_convertStartPointSele.clicked.connect(self.convert_sele_to_coords)
-        self.ui.pushButton_reloadInputModel.clicked.connect(self.updateList)
+        self.ui.pushButton_reloadInputModel.clicked.connect(self.update_model_list)
 
         self.ui.pushButton_loadConfig.clicked.connect(self.configin)
         self.ui.pushButton_saveConfig.clicked.connect(self.configout)
@@ -367,20 +414,32 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_model_resn)
 
         return main_window
+    
+    @contextmanager
+    def freeze_window(self):
+        """
+        Freezes the dialog while the plugin is running.
+        """
+        self.dialog.setEnabled(False)
+        try:
+            yield
+        except Exception as e:
+            logging.error(f"Error occurred: {e}")
+        self.dialog.setEnabled(True)
 
     def run_plugin_gui(self):
         """PyMOL entry for running the plugin"""
         super().__init__()
         # global reference to avoid garbage collection of our dialog
-        self.window = None
+        self.dialog = None
         self.config = CaverConfig()
 
         # ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$", r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
-        if self.window is None:
-            self.window = self.make_window()
-        self.window.show()
+        if self.dialog is None:
+            self.dialog = self.make_window()
+        self.dialog.show()
 
         # aa bias
         self.checktable_aa = CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
@@ -388,12 +447,14 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_noneAA.clicked.connect(self.checktable_aa.uncheck_all)
         self.ui.pushButton_reverseAAsel.clicked.connect(self.checktable_aa.reverse_check)
         self.checktable_aa.checkStateChanged.connect(self._update_aa_sel)
+        self.ui.pushButton_proteinResn.clicked.connect(lambda: self.checktable_aa.check_these(THE_20s, clear_before_check=True))
+        self.ui.pushButton_ligandResn.clicked.connect(
+            lambda: self.checktable_aa.check_these([x for x in self.checktable_aa.items.keys() if x not in THE_20s], clear_before_check=False)
+            )
 
         self.configin(CONFIG_TXT)
 
-        self.updateList()
-
-        
+        self.update_model_list()
 
         self._analysis_model_resn()
 
@@ -427,7 +488,7 @@ class AnBeKoM(QtWidgets.QWidget):
                 return 1
         return 0
 
-    def updateList(self):
+    def update_model_list(self):
         self.ui.listWidget_inputModel.clear()
         self.ui.listWidget_inputModel.addItems(
             [str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))])
@@ -474,93 +535,131 @@ class AnBeKoM(QtWidgets.QWidget):
         return all(self.config.get(f'start_point_{i}') == 0 for i in 'xyz')
 
     def execute(self):
-
+        # Check if coordinates are set, if not, prompt the user to set them
         if self.coordinatesNotSet:
             notify_box(
                 "Please specify starting point - "
                 "e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.",
                 ValueError)
 
-        self.showCrisscross()
-        selected_model = self.ui.listWidget_inputModel.currentItem().text()
+        with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
+            ret=run_worker_thread_with_progress(self._execute)
 
-        self.initialize_out_dir()
-
-        # create subdirectory for inputs
-
-        outdirInputs = os.path.join(self.out_dir, 'input')
-        os.makedirs(outdirInputs, exist_ok=True)
-
-        input = os.path.join(outdirInputs, f'{selected_model}.pdb')
-        cmd.set('retain_order', 1)
-        cmd.sort()
-        cmd.save(input, selected_model)  # to by ulozilo cely model selected_model.
-
-        caverjar = os.path.join(THIS_DIR, "caver.jar")
-
-        # create new config
-        cfgTimestamp = time.strftime("%Y-%m-%d-%H-%M")
-        cfgnew = os.path.join(outdirInputs, f"config_{cfgTimestamp}.txt")
-        self.configout(cfgnew)
-
-        # set correct java options
-        # javaOpts = JOPTS.replace("@", self.javaHeap.getvalue())
-
-        pj = PyJava(self.config.customized_java_heap, THIS_DIR, caverjar, outdirInputs, cfgnew, self.out_dir)
-
-        ret = pj.run_caver()
-
+        # Check for out of memory errors in Caver's output
         if 'OutOfMemory' in ret.stdout or 'OutOfMemory' in ret.stderr:
             notify_box(
                 'Insufficient memory.',
                 details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
                 "Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. "
                 "Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
-
+    
+        # Store the current working directory
         prevDir = os.getcwd()
         print(prevDir)
-
+    
+        # Run the PyMOL view plugin to visualize the results
         runview = "run " + self.out_dir + "/pymol/view_plugin.py"
         print(runview)
         cmd.do(runview)
+    def _execute(self):
+        """
+        Executes the analysis process, including checking prerequisites, preparing the environment,
+        creating configuration files, running Caver through Java, and handling the results.
+        """
+
+        # Display the crisscross structure
+        self.showCrisscross()
+    
+        # Get the selected model's name from the UI list widget
+        selected_model = self.ui.listWidget_inputModel.currentItem().text()
+    
+        # Initialize the output directory
+        self.initialize_out_dir()
+    
+        # Create a subdirectory for inputs
+        outdirInputs = os.path.join(self.out_dir, 'input')
+        os.makedirs(outdirInputs, exist_ok=True)
+    
+        # Save the selected model as a PDB file in the input directory
+        input = os.path.join(outdirInputs, f'{selected_model}.pdb')
+        cmd.set('retain_order', 1)
+        cmd.sort()
+        cmd.save(input, selected_model)  # to by ulozilo cely model selected_model.
+    
+        # Get the path to the Caver JAR file
+        caverjar = os.path.join(THIS_DIR, "caver.jar")
+    
+        # Create a new configuration file with a timestamp
+        cfgTimestamp = time.strftime("%Y-%m-%d-%H-%M")
+        cfgnew = os.path.join(outdirInputs, f"config_{cfgTimestamp}.txt")
+        self.configout(cfgnew)
+    
+        # Initialize and run Caver through the PyJava interface
+        pj = PyJava(self.config.customized_java_heap, THIS_DIR, caverjar, outdirInputs, cfgnew, self.out_dir)
+        return pj.run_caver()
 
     @staticmethod
     def fixPrecision(numberStr: Any) -> float:
         return math.floor(float(numberStr) * 1000) / 1000
+    
 
     def convert_sele_to_coords(self):
-
+        """
+        Converts the current selection to coordinates and displays them.
+        
+        This method calculates the center of the selected area and displays its coordinates in the UI.
+        If the selection does not exist or the session is empty, it will notify the user with a prompt.
+        """
+    
+        # Check if the session is empty
         if len([a for a in cmd.get_model('(all)').atom]) == 0:
             notify_box("Session is empty", ValueError)
-
-        # prohibit pymol selection syntax, explicitly.
+    
+        # Explicitly prohibit PyMOL selection syntax to avoid confusion
         if self.config.selection_name not in cmd.get_names('selections'):
             notify_box("Selection does not exist. If you are using PyMOL selection syntax, "
-                       "please create a new selection in PyMOL, then refresh the list", ValueError)
-
+                       "please create a new selection in PyMOL, then input the correct selection name", ValueError)
+    
+        # Calculate the center of the selection
         startpoint = self.compute_center(self.config.selection_name)
         if not startpoint:
             return
+        # Update the UI with the coordinates of the center
         self.ui.doubleSpinBox_x.setValue(AnBeKoM.fixPrecision(startpoint[0]))
         self.ui.doubleSpinBox_y.setValue(AnBeKoM.fixPrecision(startpoint[1]))
         self.ui.doubleSpinBox_z.setValue(AnBeKoM.fixPrecision(startpoint[2]))
-
+    
+        # Mark the center point in the 3D space
         AnBeKoM.crisscross(startpoint[0], startpoint[1], startpoint[2], 0.5, "crisscross")
         self.showCrisscross()
 
     def configin(self, filepath: Optional[str] = None):
+        """
+        Load configuration from a file. If no filepath is provided, a file dialog will prompt the user to select a file.
+        
+        Parameters:
+        - filepath: Optional[str] - The path to the configuration file. If not provided, the user will be prompted to select a file.
+        
+        Returns:
+        None
+        """
+        # Prompt the user to select a configuration file if no filepath is provided
         filepath = filepath or getOpenFileNameWithExt(
-            self.window,
+            self.dialog,
             "Select configuration file",
             filter="JSON ( *.json );;TXT ( *.txt )")
         if not filepath:
             return
-
+    
+        # Load the configuration from the selected file, depending on its extension
         self.config = CaverConfig.from_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
         # refresh window wiget from input config
         self.refresh_window_from_cfg()
+        # Update the start point based on the loaded configuration
         self.refresh_start_point_from_cfg()
+        # Update the configuration status label with the loaded filename
         set_widget_value(self.ui.label_configStatus, f'Loaded from {os.path.basename(filepath)}')
+        # Perform post-processing on the configuration
         self.config_post_process()
 
     def refresh_start_point_from_cfg(self):
@@ -578,7 +677,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
     def configout(self, filepath: Optional[str] = None):
         filepath = filepath or getSaveFileNameWithExt(
-            self.window,
+            self.dialog,
             "Select configuration file",
             filter="JSON ( *.json );;TXT ( *.txt )")
         if not filepath:
@@ -598,14 +697,10 @@ class AnBeKoM(QtWidgets.QWidget):
                 if self.config.has(flag) and self.config.get(flag) != '???':
                     notify_box(
                         f'Conflict between {primary_flag} and {flag}',
-                        details=f'Simultaneous usage of {primary_flag} parameter with {flag} parameters is not supported by plugin. Now ignoring atom.')
-                    delattr(self.config, flag)
+                        details=f'Simultaneous usage of {primary_flag} parameter with {flag} parameters is not supported by plugin. '
+                        f'{flag} is ignored.')
+                    self.config.delete(flag)
 
-        # test include/exclude
-        # if self.config.has_include_exclude:
-        #     notify_box(
-        #         'include_ and exclude_ parameters are not supported by plugin. '
-        #         'Please use the plugin to specify residues to be analyzed.')
 
         self.ensure_residue_names_to_checktable()
 

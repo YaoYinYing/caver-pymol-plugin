@@ -1,8 +1,15 @@
+'''
+Advanced UI for Caver, originally written by Yinying for REvoDesign Project.
+'''
+
 import logging
+import math
 import os
+import time
 import warnings
-from typing import (TYPE_CHECKING, Any, Dict, Iterable, List, NoReturn,
-                    Optional, Type, Union, overload)
+from contextlib import contextmanager
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
+                    NoReturn, Optional, Type, TypeVar, Union, overload)
 
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
@@ -416,7 +423,7 @@ class CheckableListView(QtWidgets.QWidget):
         """
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
-            if item.isCheckable() and item.text() != 'Test':
+            if item.isCheckable():
                 item.setCheckState(QtCore.Qt.Checked)
 
     def uncheck_all(self):
@@ -440,16 +447,20 @@ class CheckableListView(QtWidgets.QWidget):
                 else:
                     item.setCheckState(QtCore.Qt.Checked)
 
-    def check_these(self, items):
+    def check_these(self, required_items: List[str], clear_before_check: bool = True):
         """
         Selects the items in the list.
         """
-        self.uncheck_all()
-        for item in items:
-            if item not in self.items.items():
-                logging.warning("Item %s not found in list." % item)
+        if not required_items:
+            return
+        if clear_before_check:
+            self.uncheck_all()
+
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            if not (item.isCheckable() and item.text() in required_items):
                 continue
-            self.model.itemFromIndex(item).setCheckState(QtCore.Qt.Checked)
+            item.setCheckState(QtCore.Qt.Checked)
 
     def update(self, new_items: Dict):
         for k, v in new_items.items():
@@ -491,3 +502,205 @@ def getOpenFileNameWithExt(*args, **kwargs):
             fname += m.group(1)
 
     return fname
+
+
+@contextmanager
+def hold_trigger_button(
+    buttons: Union[tuple[QtWidgets.QPushButton, ...], QtWidgets.QPushButton],
+    animation_duration: int = 1000  # Duration of the breathing cycle (in milliseconds)
+):
+    """
+    A context manager for holding and releasing trigger buttons with a breathing effect
+    using the system's accent color.
+
+    Args:
+        buttons: One or more QPushButton objects.
+        animation_duration: Duration of the breathing animation cycle (in milliseconds).
+    """
+    if not isinstance(buttons, (tuple, list, set)):
+        buttons = (buttons,)
+
+    timers = []
+
+    def get_accent_color():
+        color = QtGui.QColor(76, 217, 100)
+        return color
+
+    def start_breathing_animation(button: QtWidgets.QPushButton):
+        accent_color = get_accent_color()
+        base_color = accent_color.lighter(150)  # Start with a lighter shade
+        darker_color = accent_color.darker(150)  # Use a darker shade for the trough
+
+        timer = QtCore.QTimer(button)
+        timer.setInterval(30)  # Update every 30 milliseconds
+        elapsed = 0
+
+        def update_stylesheet():
+            nonlocal elapsed
+            elapsed += timer.interval()
+            t = (elapsed % animation_duration) / animation_duration  # Normalized time [0, 1]
+            # Calculate intermediate intensity using sine wave
+            factor = (1 + math.sin(2 * math.pi * t)) / 2  # Normalized to [0, 1]
+            r = int(base_color.red() * factor + darker_color.red() * (1 - factor))
+            g = int(base_color.green() * factor + darker_color.green() * (1 - factor))
+            b = int(base_color.blue() * factor + darker_color.blue() * (1 - factor))
+            button.setStyleSheet(f"background-color: rgb({r}, {g}, {b});")
+
+        timer.timeout.connect(update_stylesheet)
+        timer.start()
+        timers.append(timer)
+
+    def stop_breathing_animation(button: QtWidgets.QPushButton):
+        # Stop all timers associated with this button
+        for timer in timers:
+            if timer.parent() == button:
+                timer.stop()
+                timers.remove(timer)
+        button.setStyleSheet("")  # Reset the button's style
+
+    try:
+        for b in buttons:
+            b.setEnabled(False)
+            b.setProperty("held", True)  # Mark the button as held
+            b.setProperty("original_style", b.styleSheet() if b.styleSheet() else "")
+            start_breathing_animation(b)
+            logging.debug(f"Held button: {b.text()}: ({b.objectName()})")
+        yield
+    finally:
+        for b in buttons:
+            b.setProperty("held", False)  # Remove the held mark
+            stop_breathing_animation(b)
+            b.setStyleSheet(b.property("original_style") if b.property("original_style") else "")
+            b.setEnabled(True)  # Re-enable the button
+            logging.debug(f"Released button: {b.text()}: ({b.objectName()})")
+
+
+R = TypeVar("R")
+
+
+class WorkerThread(QtCore.QThread):
+    """
+    Custom worker thread for executing a function in a separate thread.
+
+    Attributes:
+    - result_signal (QtCore.pyqtSignal): Signal emitted when the result is available.
+    - finished_signal (QtCore.pyqtSignal): Signal emitted when the thread finishes its execution.
+    - interrupt_signal (QtCore.pyqtSignal): Signal to interrupt the thread.
+
+    Methods:
+    - __init__: Initializes the WorkerThread object.
+    - run: Executes the specified function with arguments and emits the result through signals.
+    - handle_result: Returns the result obtained after the thread execution.
+    - interrupt: Interrupts the execution of the thread.
+
+    Example Usage:
+    ```python
+    def some_function(x, y):
+        return x + y
+
+    worker = WorkerThread(func=some_function, args=(10, 20))
+    worker.result_signal.connect(handle_result_function)
+    worker.finished_signal.connect(handle_finished_function)
+    worker.interrupt_signal.connect(handle_interrupt_function)
+    worker.start()
+    # To interrupt the execution:
+    # worker.interrupt()
+    ```
+    """
+
+    result_signal = QtCore.pyqtSignal(list)
+    finished_signal = QtCore.pyqtSignal()
+    interrupt_signal = QtCore.pyqtSignal()
+
+    def __init__(self, func, args=None, kwargs=None):
+        super().__init__()
+        self.func = func
+        self.args = args or ()
+        self.kwargs = kwargs or {}
+        self.results = None  # Define the results attribute
+
+    def run(self):
+        """
+        Executes the task and handles the results.
+
+        This function checks if an interruption has been requested. If not, it runs the specified function with
+        given arguments and keyword arguments.
+        The result is then emitted through a signal if available, and a completion signal is emitted at the end.
+
+        Parameters:
+        - self: The instance of the class containing this method. It should have the following attributes:
+            - func: The function to be executed.
+            - args: A tuple of positional arguments for the function.
+            - kwargs: A dictionary of keyword arguments for the function.
+            - result_signal: A signal to emit the results.
+            - finished_signal: A signal to indicate the task has finished.
+            - isInterruptionRequested: A method that returns True if an interruption has been requested,
+            otherwise False.
+        """
+        # Check if an interruption has been requested
+        if not self.isInterruptionRequested():
+            # Execute the function with provided arguments and store the result
+            self.results = [self.func(*self.args, **self.kwargs)]
+
+            # Emit the result if it exists
+            if self.results:
+                self.result_signal.emit(self.results)
+
+            # Emit the finished signal
+            self.finished_signal.emit()
+
+    def handle_result(self):
+        """
+        Retrieves the results from the current instance.
+
+        This method returns the 'results' attribute of the current instance.
+        It is used to obtain the result data within other methods of the class.
+        """
+        return self.results
+
+    def interrupt(self):
+        """
+        Emit an interrupt signal.
+
+        This function triggers an interrupt signal.
+        """
+        self.interrupt_signal.emit()
+
+
+@overload
+def run_worker_thread_with_progress(
+    worker_function: Callable[..., R], *args, **kwargs
+) -> R: ...
+
+
+def run_worker_thread_with_progress(
+    worker_function: Callable[..., Optional[R]], *args, **kwargs
+) -> Optional[R]:
+    """
+    Runs a worker function in a separate thread and optionally updates a progress bar.
+
+    This function is designed to execute a given task (worker_function) in a separate thread,
+    allowing the main thread to remain responsive, such as updating a progress bar.
+    After the task is completed, it restores the progress bar's state and returns the result of the task.
+
+    Parameters:
+    - worker_function: The function to execute in a separate thread.
+    - *args, **kwargs: Additional arguments and keyword arguments to pass to the worker function.
+
+    Returns:
+    - The result of the worker function or None if no result is available.
+    """
+
+    # Create and start a worker thread with the given function and parameters
+    work_thread = WorkerThread(worker_function, args=args, kwargs=kwargs)
+    work_thread.start()
+
+    # Keep the main thread running until the worker thread finishes
+    while not work_thread.isFinished():
+        refresh_window()
+        time.sleep(0.01)
+
+    # Obtain and return the result of the worker function
+    result = work_thread.handle_result()
+
+    return result[0] if result else None
