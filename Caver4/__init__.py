@@ -140,16 +140,16 @@ class CaverConfig:
 
         return new_self
 
-    @property
-    def has_include_exclude(self) -> bool:
-        not_allowed = [
-            "include_residue_names",
-            "include_residue_ids",
-            "include_atom_numbers",
-            "exclude_residue_names",
-            "exclude_residue_ids",
-            "exclude_atom_numbers"]
-        return any(self.has(key=k) for k in not_allowed)
+    # @property
+    # def has_include_exclude(self) -> bool:
+    #     not_allowed = [
+    #         "include_residue_names",
+    #         "include_residue_ids",
+    #         "include_atom_numbers",
+    #         "exclude_residue_names",
+    #         "exclude_residue_ids",
+    #         "exclude_atom_numbers"]
+    #     return any(self.has(key=k) for k in not_allowed)
 
     def _set_value(self, key: str, new_value: str):
         if hasattr(self, key):
@@ -161,11 +161,14 @@ class CaverConfig:
         setattr(self, key, new_value)
 
     def _get_value(self, key: str) -> str:
+        # if the variable is a defined slot in this dataclass, return with the correct type
         value = getattr(self, key)
         v_type = type(value)
+
+        # if it's a boolean, return yes or no according to the config.txt
         if v_type == bool:
             return CaverConfig._yes_or_no(value)
-        return CaverConfig._need_quote(str(value))
+        return str(value)
 
     @staticmethod
     def _yes_or_no(v: bool) -> str:
@@ -234,8 +237,8 @@ class CaverConfig:
                     new_txt_contents.append(f'{key} {CaverConfig._yes_or_no(self_val)}')
                 elif self_val == '???':  # drop unset values
                     continue
-                elif _val_type == str:
-                    new_txt_contents.append(f'{key} {CaverConfig._need_quote(self_val)}')
+                # elif _val_type == str:
+                #     new_txt_contents.append(f'{key} {CaverConfig._need_quote(self_val)}')
                 elif _val_type == float:
                     new_txt_contents.append(f'{key} {self_val:.1f}')
                 else:
@@ -599,10 +602,10 @@ class AnBeKoM(QtWidgets.QWidget):
                     delattr(self.config, flag)
 
         # test include/exclude
-        if self.config.has_include_exclude:
-            notify_box(
-                'include_ and exclude_ parameters are not supported by plugin. '
-                'Please use the plugin to specify residues to be analyzed.')
+        # if self.config.has_include_exclude:
+        #     notify_box(
+        #         'include_ and exclude_ parameters are not supported by plugin. '
+        #         'Please use the plugin to specify residues to be analyzed.')
 
         self.ensure_residue_names_to_checktable()
 

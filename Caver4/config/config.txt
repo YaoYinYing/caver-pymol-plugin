@@ -1,3 +1,5 @@
+# used as a template
+
 #*****************************
 # CALCULATION SETUP      
 #*****************************
@@ -15,7 +17,6 @@ last_frame 100000
 #*****************************
 # TUNNEL CALCULATION
 #*****************************
-# used as a template
 starting_point_atom ???
 starting_point_residue ??? 
 starting_point_coordinates ???
@@ -23,6 +24,17 @@ starting_point_coordinates ???
 probe_radius 0.9
 shell_radius 3
 shell_depth 4 
+
+
+#*****************************
+# INCLUDE/EXCLUDE 
+#*****************************
+include_residue_names ???
+include_residue_ids ???
+include_atom_numbers ???
+exclude_residue_names ???
+exclude_residue_ids ???
+exclude_atom_numbers ???
 
 
 #*****************************
