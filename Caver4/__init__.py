@@ -5,6 +5,7 @@
 #
 
 
+from contextlib import contextmanager
 import json
 import logging
 import math
@@ -32,7 +33,7 @@ from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .utils.live_run import run_command
 from .utils.ui_tape import (CheckableListView, get_widget_value,
                             getExistingDirectory, getOpenFileNameWithExt,
-                            notify_box, set_widget_value, widget_signal_tape)
+                            notify_box, set_widget_value, widget_signal_tape, hold_trigger_button, run_worker_thread_with_progress)
 
 THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
@@ -411,20 +412,32 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_model_resn)
 
         return main_window
+    
+    @contextmanager
+    def freeze_window(self):
+        """
+        Freezes the dialog while the plugin is running.
+        """
+        self.dialog.setEnabled(False)
+        try:
+            yield
+        except Exception as e:
+            logging.error(f"Error occurred: {e}")
+        self.dialog.setEnabled(True)
 
     def run_plugin_gui(self):
         """PyMOL entry for running the plugin"""
         super().__init__()
         # global reference to avoid garbage collection of our dialog
-        self.window = None
+        self.dialog = None
         self.config = CaverConfig()
 
         # ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$", r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
-        if self.window is None:
-            self.window = self.make_window()
-        self.window.show()
+        if self.dialog is None:
+            self.dialog = self.make_window()
+        self.dialog.show()
 
         # aa bias
         self.checktable_aa = CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
@@ -432,6 +445,10 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_noneAA.clicked.connect(self.checktable_aa.uncheck_all)
         self.ui.pushButton_reverseAAsel.clicked.connect(self.checktable_aa.reverse_check)
         self.checktable_aa.checkStateChanged.connect(self._update_aa_sel)
+        self.ui.pushButton_proteinResn.clicked.connect(lambda: self.checktable_aa.check_these(THE_20s, clear_before_check=True))
+        self.ui.pushButton_ligandResn.clicked.connect(
+            lambda: self.checktable_aa.check_these([x for x in self.checktable_aa.items.keys() if x not in THE_20s], clear_before_check=False)
+            )
 
         self.configin(CONFIG_TXT)
 
@@ -516,18 +533,38 @@ class AnBeKoM(QtWidgets.QWidget):
         return all(self.config.get(f'start_point_{i}') == 0 for i in 'xyz')
 
     def execute(self):
-        """
-        Executes the analysis process, including checking prerequisites, preparing the environment,
-        creating configuration files, running Caver through Java, and handling the results.
-        """
-    
         # Check if coordinates are set, if not, prompt the user to set them
         if self.coordinatesNotSet:
             notify_box(
                 "Please specify starting point - "
                 "e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.",
                 ValueError)
+
+        with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
+            ret=run_worker_thread_with_progress(self._execute)
+
+        # Check for out of memory errors in Caver's output
+        if 'OutOfMemory' in ret.stdout or 'OutOfMemory' in ret.stderr:
+            notify_box(
+                'Insufficient memory.',
+                details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
+                "Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. "
+                "Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
     
+        # Store the current working directory
+        prevDir = os.getcwd()
+        print(prevDir)
+    
+        # Run the PyMOL view plugin to visualize the results
+        runview = "run " + self.out_dir + "/pymol/view_plugin.py"
+        print(runview)
+        cmd.do(runview)
+    def _execute(self):
+        """
+        Executes the analysis process, including checking prerequisites, preparing the environment,
+        creating configuration files, running Caver through Java, and handling the results.
+        """
+
         # Display the crisscross structure
         self.showCrisscross()
     
@@ -557,28 +594,12 @@ class AnBeKoM(QtWidgets.QWidget):
     
         # Initialize and run Caver through the PyJava interface
         pj = PyJava(self.config.customized_java_heap, THIS_DIR, caverjar, outdirInputs, cfgnew, self.out_dir)
-        ret = pj.run_caver()
-    
-        # Check for out of memory errors in Caver's output
-        if 'OutOfMemory' in ret.stdout or 'OutOfMemory' in ret.stderr:
-            notify_box(
-                'Insufficient memory.',
-                details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
-                "Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. "
-                "Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
-    
-        # Store the current working directory
-        prevDir = os.getcwd()
-        print(prevDir)
-    
-        # Run the PyMOL view plugin to visualize the results
-        runview = "run " + self.out_dir + "/pymol/view_plugin.py"
-        print(runview)
-        cmd.do(runview)
+        return pj.run_caver()
 
     @staticmethod
     def fixPrecision(numberStr: Any) -> float:
         return math.floor(float(numberStr) * 1000) / 1000
+    
 
     def convert_sele_to_coords(self):
         """
@@ -595,7 +616,7 @@ class AnBeKoM(QtWidgets.QWidget):
         # Explicitly prohibit PyMOL selection syntax to avoid confusion
         if self.config.selection_name not in cmd.get_names('selections'):
             notify_box("Selection does not exist. If you are using PyMOL selection syntax, "
-                       "please create a new selection in PyMOL, then refresh the list", ValueError)
+                       "please create a new selection in PyMOL, then input the correct selection name", ValueError)
     
         # Calculate the center of the selection
         startpoint = self.compute_center(self.config.selection_name)
@@ -622,7 +643,7 @@ class AnBeKoM(QtWidgets.QWidget):
         """
         # Prompt the user to select a configuration file if no filepath is provided
         filepath = filepath or getOpenFileNameWithExt(
-            self.window,
+            self.dialog,
             "Select configuration file",
             filter="JSON ( *.json );;TXT ( *.txt )")
         if not filepath:
@@ -654,7 +675,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
     def configout(self, filepath: Optional[str] = None):
         filepath = filepath or getSaveFileNameWithExt(
-            self.window,
+            self.dialog,
             "Select configuration file",
             filter="JSON ( *.json );;TXT ( *.txt )")
         if not filepath:
