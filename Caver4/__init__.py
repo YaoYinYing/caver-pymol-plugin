@@ -273,7 +273,7 @@ class PyJava:
 
         print("\n*** Testing if Java is installed ***")
         if not self.java_present:
-            notify_box("Java is not installed. Please install Java and try again.", RuntimeError)
+            raise RuntimeError("Java is not installed. Please install Java and try again.")
 
         print("\n*** Optimizing memory allocation for Java ***")
         self.optimize_memory(customized_memory_heap)
@@ -533,39 +533,17 @@ class AnBeKoM(QtWidgets.QWidget):
     @property
     def coordinatesNotSet(self) -> bool:
         return all(self.config.get(f'start_point_{i}') == 0 for i in 'xyz')
-
     def execute(self):
+        """
+        Executes the analysis process, including checking prerequisites, preparing the environment,
+        creating configuration files, running Caver through Java, and handling the results.
+        """
         # Check if coordinates are set, if not, prompt the user to set them
         if self.coordinatesNotSet:
             notify_box(
                 "Please specify starting point - "
                 "e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.",
                 ValueError)
-
-        with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
-            ret=run_worker_thread_with_progress(self._execute)
-
-        # Check for out of memory errors in Caver's output
-        if 'OutOfMemory' in ret.stdout or 'OutOfMemory' in ret.stderr:
-            notify_box(
-                'Insufficient memory.',
-                details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
-                "Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. "
-                "Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
-    
-        # Store the current working directory
-        prevDir = os.getcwd()
-        print(prevDir)
-    
-        # Run the PyMOL view plugin to visualize the results
-        runview = "run " + self.out_dir + "/pymol/view_plugin.py"
-        print(runview)
-        cmd.do(runview)
-    def _execute(self):
-        """
-        Executes the analysis process, including checking prerequisites, preparing the environment,
-        creating configuration files, running Caver through Java, and handling the results.
-        """
 
         # Display the crisscross structure
         self.showCrisscross()
@@ -595,8 +573,34 @@ class AnBeKoM(QtWidgets.QWidget):
         self.configout(cfgnew)
     
         # Initialize and run Caver through the PyJava interface
-        pj = PyJava(self.config.customized_java_heap, THIS_DIR, caverjar, outdirInputs, cfgnew, self.out_dir)
-        return pj.run_caver()
+        try:
+            pj = PyJava(self.config.customized_java_heap, THIS_DIR, caverjar, outdirInputs, cfgnew, self.out_dir)
+        except RuntimeError as e:
+            notify_box(str(e), RuntimeError)
+
+        with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
+            ret=run_worker_thread_with_progress(pj.run_caver)
+
+        # Check for out of memory errors in Caver's output
+        if 'OutOfMemory' in ret.stdout or 'OutOfMemory' in ret.stderr:
+            notify_box(
+                'Insufficient memory.',
+                details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
+                "Try to allocate more memory. 64-bit operating system and Java are needed to get over 1200 MB. "
+                "Using smaller 'Number of approximating balls' can also help, but at the cost of decreased accuracy of computation.")
+    
+        # Store the current working directory
+        prevDir = os.getcwd()
+        print(prevDir)
+
+        runview_file=os.path.join(self.out_dir, "pymol","view_plugin.py")
+        if not os.path.isfile(runview_file):
+            notify_box('No tunnel found!', RuntimeError)
+    
+        # Run the PyMOL view plugin to visualize the results
+        runview = f"run {runview_file}" 
+        print(runview)
+        cmd.do(runview)
 
     @staticmethod
     def fixPrecision(numberStr: Any) -> float:
