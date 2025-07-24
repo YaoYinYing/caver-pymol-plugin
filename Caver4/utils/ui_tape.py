@@ -2,14 +2,14 @@
 Advanced UI for Caver, originally written by Yinying for REvoDesign Project.
 '''
 
-from contextlib import contextmanager
 import logging
 import math
 import os
 import time
 import warnings
-from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List, NoReturn,
-                    Optional, Type, TypeVar, Union, overload)
+from contextlib import contextmanager
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
+                    NoReturn, Optional, Type, TypeVar, Union, overload)
 
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
@@ -455,12 +455,13 @@ class CheckableListView(QtWidgets.QWidget):
             return
         if clear_before_check:
             self.uncheck_all()
-        
+
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
             if not (item.isCheckable() and item.text() in required_items):
                 continue
             item.setCheckState(QtCore.Qt.Checked)
+
     def update(self, new_items: Dict):
         for k, v in new_items.items():
             if not v:
@@ -501,7 +502,6 @@ def getOpenFileNameWithExt(*args, **kwargs):
             fname += m.group(1)
 
     return fname
-
 
 
 @contextmanager
@@ -576,6 +576,7 @@ def hold_trigger_button(
 
 
 R = TypeVar("R")
+
 
 class WorkerThread(QtCore.QThread):
     """
@@ -670,6 +671,7 @@ class WorkerThread(QtCore.QThread):
 def run_worker_thread_with_progress(
     worker_function: Callable[..., R], *args, **kwargs
 ) -> R: ...
+
 
 def run_worker_thread_with_progress(
     worker_function: Callable[..., Optional[R]], *args, **kwargs

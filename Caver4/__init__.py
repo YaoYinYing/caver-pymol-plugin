@@ -5,12 +5,12 @@
 #
 
 
-from contextlib import contextmanager
 import json
 import logging
 import math
 import os
 import re
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property, partial
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
@@ -33,7 +33,9 @@ from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .utils.live_run import run_command
 from .utils.ui_tape import (CheckableListView, get_widget_value,
                             getExistingDirectory, getOpenFileNameWithExt,
-                            notify_box, set_widget_value, widget_signal_tape, hold_trigger_button, run_worker_thread_with_progress)
+                            hold_trigger_button, notify_box,
+                            run_worker_thread_with_progress, set_widget_value,
+                            widget_signal_tape)
 
 THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
