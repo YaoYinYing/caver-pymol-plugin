@@ -474,6 +474,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             )
         self.ui.pushButton_RefreshSelection.clicked.connect(self._update_pymol_sel)
         self.ui.pushButton_clearStartPointSele.clicked.connect(self._clear_pymol_sel_and_coords)
+        self.ui.pushButton_RefreshRunID.clicked.connect(self._update_run_id)
         
 
         self.configin(CONFIG_TXT)
@@ -481,6 +482,27 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.update_model_list()
 
         self._analysis_model_resn()
+
+
+    def _update_run_id(self):
+        run_ids=self.get_run_ids()[1]
+        set_widget_value(self.ui.comboBox_RunID, run_ids or [])
+
+    def _playback_run_id(self, run_id: str):
+        out_home, idxs = self.get_run_ids()
+        
+        if not run_id in idxs:
+            notify_box(f"Run ID '{run_id}' does not exist in the output directory.", ValueError)
+
+        expected_view_file = os.path.join(out_home, str(run_id), "pymol", "view_plugin.py")
+        if not os.path.isfile(expected_view_file):
+            notify_box(f"Run ID '{run_id}' does not contain a valid output file ({expected_view_file}).", FileNotFoundError)
+        
+        with self.freeze_window():
+            # Run the PyMOL view plugin to visualize the results
+            runview = f"run {expected_view_file}" 
+            print(runview)
+            cmd.do(runview)
 
     def _update_pymol_sel(self):
         selections: list[str]=cmd.get_names(type="selections")
@@ -554,10 +576,9 @@ class CaverPyMOL(QtWidgets.QWidget):
             wresult += line
         return wresult
 
-    def initialize_out_dir(self):
 
+    def get_run_ids(self) -> tuple[str, list[int]]:
         dir = self.config.output_dir
-
         os.makedirs(dir, exist_ok=True)
 
         dir = dir.replace("\\", "/")
@@ -567,7 +588,16 @@ class CaverPyMOL(QtWidgets.QWidget):
         out_home = os.path.join(dir, "caver_output")
         os.makedirs(out_home, exist_ok=True)
 
-        idxs = map(int, [x for x in os.listdir(out_home) if x.isdigit()] or [0])
+        idxs = list(map(int, [x for x in os.listdir(out_home) if x.isdigit()] or [0]))
+        
+        if not idxs:
+            notify_box(f"Output directory '{out_home}' does not contain any run files, perhaps you dont have run any analysis yet.", ValueError)
+        
+        return out_home,idxs
+
+    def initialize_out_dir(self):
+
+        out_home, idxs = self.get_run_ids()
         max_idx = max(idxs)
 
         new_dir = os.path.join(out_home, str(max_idx + 1))
@@ -595,7 +625,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.showCrisscross()
     
         # Get the selected model's name from the UI list widget
-        selected_model = self.ui.listWidget_inputModel.currentItem().text()
+        selected_model = self.ui.comboBox_inputModel.currentItem().text()
     
         # Initialize the output directory
         self.initialize_out_dir()
@@ -604,12 +634,15 @@ class CaverPyMOL(QtWidgets.QWidget):
         outdirInputs = os.path.join(self.out_dir, 'input')
         os.makedirs(outdirInputs, exist_ok=True)
     
-        # Save the selected model as a PDB file in the input directory
-        input = os.path.join(outdirInputs, f'{selected_model}.pdb')
-        cmd.set('retain_order', 1)
-        cmd.sort()
-        cmd.save(input, selected_model)  # to by ulozilo cely model selected_model.
-    
+        if not self.ui.checkBox_MD.isChecked():
+            # Save the selected model as a PDB file in the input directory
+            input = os.path.join(outdirInputs, f'{selected_model}.pdb')
+            cmd.set('retain_order', 1)
+            cmd.sort()
+            cmd.save(input, selected_model)  # to by ulozilo cely model selected_model.
+        else:
+
+        
         # Get the path to the Caver JAR file
         caverjar = os.path.join(THIS_DIR, "caver.jar")
     
@@ -911,3 +944,12 @@ class CaverPyMOL(QtWidgets.QWidget):
         cmd.set_view(view)
 
 
+    def prepare_md_pdb_traj(self):
+        state_start=get_widget_value(self.ui.spinBox_MD_StateMin)
+        state_stop =get_widget_value(self.ui.spinBox_MD_StateMax)
+
+        if state_start>state_stop:
+            notify_box("Starting state is greater than the stoping state", ValueError)
+        
+        for state in range(state_start+1, state_stop+1):
+            cmd.save(self.)
