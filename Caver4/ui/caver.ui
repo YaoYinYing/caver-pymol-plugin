@@ -118,7 +118,7 @@
    <property name="title">
     <string>Toggles</string>
    </property>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -299,7 +299,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_x_3">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_x">
              <property name="suffix">
               <string/>
              </property>
@@ -333,7 +333,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_y_3">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_y">
              <property name="suffix">
               <string/>
              </property>
@@ -367,7 +367,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_z_3">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_z">
              <property name="suffix">
               <string/>
              </property>
@@ -399,7 +399,7 @@
         <x>10</x>
         <y>10</y>
         <width>281</width>
-        <height>106</height>
+        <height>101</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -731,12 +731,12 @@
    <property name="title">
     <string>Dynamics</string>
    </property>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>301</width>
+      <width>313</width>
       <height>41</height>
      </rect>
     </property>

@@ -30,6 +30,7 @@ from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
+from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
 from .utils.live_run import run_command
 from .utils.ui_tape import (CheckableListView, get_widget_value,
                             getExistingDirectory, getOpenFileNameWithExt,
@@ -52,6 +53,12 @@ class CaverConfig:
 
     # connect to wigets
     output_dir: str = ""
+    selection_name: str = ''
+
+    start_point_x: float = 0.0
+    start_point_y: float = 0.0
+    start_point_z: float = 0.0
+
 
     customized_java_heap: int = 6000
 
@@ -61,13 +68,7 @@ class CaverConfig:
     clustering_threshold: float = 1.5
 
     number_of_approximating_balls: int = 4
-
-    selection_name: str = ''
-
-    start_point_x: float = 0.0
-    start_point_y: float = 0.0
-    start_point_z: float = 0.0
-
+    
     max_distance: float = 4.0
     desired_radius: float = 1.8
 
@@ -317,23 +318,31 @@ class PyJava:
         print("*** Memory for Java: " + str(self.memory_heap_level) + " MB ***")
 
 
-class AnBeKoM(QtWidgets.QWidget):
+class CaverPyMOL(QtWidgets.QWidget):
     # configuration binding from UI to CaverConfig
-    config_bindings: Dict[str, str] = {
+    config_bindings_main: Dict[str, str] = {
         'lineEdit_outputDir': 'output_dir',
+        'comboBox_startPointSele': 'selection_name',
+        'doubleSpinBox_x': 'start_point_x',
+        'doubleSpinBox_y': 'start_point_y',
+        'doubleSpinBox_z': 'start_point_z',
+
+        
+    }
+
+    config_bindings_config: Dict[str, str] = {
+        # from config.txt
         'spinBox_maxJavaHeapSize': 'customized_java_heap',
         'doubleSpinBox_maxProRad': 'probe_radius',
         'doubleSpinBox_shellRad': 'shell_radius',
         'spinBox_shellDepth': 'shell_depth',
         'doubleSpinBox_clusterThreshold': 'clustering_threshold',
         'comboBox_numApproxBalls': 'number_of_approximating_balls',
-        'comboBox_startPointSele': 'selection_name',
-        'doubleSpinBox_x': 'start_point_x',
-        'doubleSpinBox_y': 'start_point_y',
-        'doubleSpinBox_z': 'start_point_z',
+
         'doubleSpinBox_maxDist': 'max_distance',
         'doubleSpinBox_desiredDist': 'desired_radius'
     }
+    
     
 
     def bind_config(self):
@@ -345,8 +354,12 @@ class AnBeKoM(QtWidgets.QWidget):
         it connects the widget's signal to the _wiget_link method using the widget name 
         as an argument. This ensures that changes in the UI are reflected in the configuration.
         """
-        for wn in self.config_bindings:
+        for wn in self.config_bindings_main:
             widget = getattr(self.ui, wn)
+            widget_signal_tape(widget, partial(self._wiget_link, wn))
+
+        for wn in self.config_bindings_config:
+            widget = getattr(self.ui_config, wn)
             widget_signal_tape(widget, partial(self._wiget_link, wn))
 
     def _wiget_link(self, widget_name):
@@ -363,7 +376,7 @@ class AnBeKoM(QtWidgets.QWidget):
         - AttributeError: If the configuration item is not found in the config object.
         """
         # Retrieve the configuration item associated with the widget
-        config_item = self.config_bindings.get(widget_name)
+        config_item = self.config_bindings_main.get(widget_name)
         
         # Check if the configuration item exists in the config object
         if not hasattr(self.config, config_item):
@@ -388,7 +401,7 @@ class AnBeKoM(QtWidgets.QWidget):
         logging.info(f'{widget_name} {pv} -> {nv} -> {uv}')
 
     def refresh_window_from_cfg(self):
-        for wn, cn in self.config_bindings.items():
+        for wn, cn in self.config_bindings_main.items():
             widget = getattr(self.ui, wn)
             set_widget_value(widget, getattr(self.config, cn))
 
@@ -396,6 +409,10 @@ class AnBeKoM(QtWidgets.QWidget):
         main_window = QtWidgets.QWidget()
         self.ui = CaverUI()
         self.ui.setupUi(main_window)
+
+        self.ui_config=CaverConfigForm()
+        config_window=QtWidgets.QWidget()
+        self.ui_config.setupUi(config_window)
 
         self.ui.pushButton_help.clicked.connect(self.launchHelp)
         self.bind_config()
@@ -412,9 +429,9 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_openOutputDir.clicked.connect(
             lambda: self.ui.lineEdit_outputDir.setText(
                 getExistingDirectory()))
-        self.ui.lineEdit_startPointSele.textChanged.connect(self._analysis_model_resn)
+        self.ui.comboBox_startPointSele.currentIndexChanged.connect(self._analysis_model_resn)
 
-        return main_window
+        return main_window, config_window
     
     @contextmanager
     def freeze_window(self):
@@ -439,8 +456,11 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ignoreStructures = [r"^origins$", r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
         if self.dialog is None:
-            self.dialog = self.make_window()
+            self.dialog,self.config_dialog = self.make_window()
         self.dialog.show()
+
+        self.ui.pushButton_editConfig.clicked.connect(self.config_dialog.show)
+
 
         # aa bias
         self.checktable_aa = CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
@@ -452,6 +472,9 @@ class AnBeKoM(QtWidgets.QWidget):
         self.ui.pushButton_ligandResn.clicked.connect(
             lambda: self.checktable_aa.check_these([x for x in self.checktable_aa.items.keys() if x not in THE_20s], clear_before_check=False)
             )
+        self.ui.pushButton_RefreshSelection.clicked.connect(self._update_pymol_sel)
+        self.ui.pushButton_clearStartPointSele.clicked.connect(self._clear_pymol_sel_and_coords)
+        
 
         self.configin(CONFIG_TXT)
 
@@ -459,8 +482,32 @@ class AnBeKoM(QtWidgets.QWidget):
 
         self._analysis_model_resn()
 
-    def _update_pymol_sel(self, selection: str):
-        set_widget_value(self.ui.lineEdit_startPointSele, selection)
+    def _update_pymol_sel(self):
+        selections: list[str]=cmd.get_names(type="selections")
+        set_widget_value(self.ui.comboBox_startPointSele, selections)
+
+    def _use_custom_startpoint(self):
+        startpoint_val=get_widget_value(self.ui.textEdit_startpoint)
+        if not startpoint_val:
+            notify_box("Please specify starting point like atom ids, residue ids or x y z coordinates.", ValueError)
+
+        for i in ('starting_point_atom', 'starting_point_residue', 'starting_point_coordinates'):
+            self.config.set(i, '???')
+        
+        if self.ui.radioButton_startAsAtoms.isChecked():
+            self.config.set('starting_point_atom', startpoint_val)
+        elif self.ui.radioButton_startAsResidues.isChecked():
+            self.config.set('starting_point_residue', startpoint_val)
+        elif self.ui.radioButton_startAsCoords.isChecked():
+            self.config.set('starting_point_coordinates', startpoint_val)
+        else:
+            notify_box('To use custom starting point, please select the corresponding radio button.', ValueError)
+
+    def _clear_pymol_sel_and_coords(self):
+        self.ui.comboBox_startPointSele.clear()
+        self.ui.doubleSpinBox_x.setValue(0)
+        self.ui.doubleSpinBox_y.setValue(0)
+        self.ui.doubleSpinBox_z.setValue(0)
 
     def _update_aa_sel(self, aa_sel: Optional[List[str]]):
         if not aa_sel:
@@ -473,7 +520,7 @@ class AnBeKoM(QtWidgets.QWidget):
 
     def showCrisscross(self):
         cmd.delete("crisscross")
-        AnBeKoM.crisscross(
+        CaverPyMOL.crisscross(
             self.config.start_point_x,
             self.config.start_point_y,
             self.config.start_point_z,
@@ -490,10 +537,8 @@ class AnBeKoM(QtWidgets.QWidget):
         return 0
 
     def update_model_list(self):
-        self.ui.listWidget_inputModel.clear()
-        self.ui.listWidget_inputModel.addItems(
-            [str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))])
-        self.ui.listWidget_inputModel.setCurrentItem(self.ui.listWidget_inputModel.item(0))
+        models=[str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))]
+        set_widget_value(self.ui.comboBox_inputModel, models)
 
         self._analysis_model_resn()
 
@@ -630,12 +675,12 @@ class AnBeKoM(QtWidgets.QWidget):
         if not startpoint:
             return
         # Update the UI with the coordinates of the center
-        self.ui.doubleSpinBox_x.setValue(AnBeKoM.fixPrecision(startpoint[0]))
-        self.ui.doubleSpinBox_y.setValue(AnBeKoM.fixPrecision(startpoint[1]))
-        self.ui.doubleSpinBox_z.setValue(AnBeKoM.fixPrecision(startpoint[2]))
+        self.ui.doubleSpinBox_x.setValue(CaverPyMOL.fixPrecision(startpoint[0]))
+        self.ui.doubleSpinBox_y.setValue(CaverPyMOL.fixPrecision(startpoint[1]))
+        self.ui.doubleSpinBox_z.setValue(CaverPyMOL.fixPrecision(startpoint[2]))
     
         # Mark the center point in the 3D space
-        AnBeKoM.crisscross(startpoint[0], startpoint[1], startpoint[2], 0.5, "crisscross")
+        CaverPyMOL.crisscross(startpoint[0], startpoint[1], startpoint[2], 0.5, "crisscross")
         self.showCrisscross()
 
     def configin(self, filepath: Optional[str] = None):
