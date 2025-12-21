@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
+import webbrowser
 
 from pymol import cmd
 
@@ -42,7 +43,9 @@ THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
 
 
-VERSION = '4.0.0'
+VERSION = '4.0.1'
+url = "https://www.caver.cz/index.php?sid=123"
+
 
 
 THE_20s=['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
@@ -224,6 +227,10 @@ class CaverConfig:
             template = template_f.readlines()
         for l in template:
             l = l.strip()
+            
+            # skip the template line note
+            if 'used as a template' in l:
+                continue
             # Directly append comment lines and empty lines to the new configuration content
             if l.startswith('#') or not l:
                 new_txt_contents.append(l)
@@ -264,7 +271,6 @@ class CaverConfig:
 
 
 
-url = "https://www.caver.cz/index.php?sid=123"
 
 
 class PyJava:
@@ -376,7 +382,13 @@ class CaverPyMOL(QtWidgets.QWidget):
         - AttributeError: If the configuration item is not found in the config object.
         """
         # Retrieve the configuration item associated with the widget
-        config_item = self.config_bindings_main.get(widget_name)
+        if widget_name in self.config_bindings_config: 
+            config_item = self.config_bindings_config[widget_name]
+            ui=self.ui_config
+        else:
+            config_item = self.config_bindings_main[widget_name]
+            ui=self.ui
+
         
         # Check if the configuration item exists in the config object
         if not hasattr(self.config, config_item):
@@ -386,7 +398,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         pv = getattr(self.config, config_item)
         
         # Get the widget object
-        widget = getattr(self.ui, widget_name)
+        widget = getattr(ui, widget_name)
         
         # Get the current value of the widget
         nv = get_widget_value(widget)
@@ -403,6 +415,10 @@ class CaverPyMOL(QtWidgets.QWidget):
     def refresh_window_from_cfg(self):
         for wn, cn in self.config_bindings_main.items():
             widget = getattr(self.ui, wn)
+            set_widget_value(widget, getattr(self.config, cn))
+        
+        for wn, cn in self.config_bindings_config.items():
+            widget = getattr(self.ui_config, wn)
             set_widget_value(widget, getattr(self.config, cn))
 
     def make_window(self):
@@ -430,6 +446,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             lambda: self.ui.lineEdit_outputDir.setText(
                 getExistingDirectory()))
         self.ui.comboBox_startPointSele.currentIndexChanged.connect(self._analysis_model_resn)
+        self.ui.textEdit_startpoint.textChanged.connect(self._use_custom_startpoint)
 
         return main_window, config_window
     
@@ -475,7 +492,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.pushButton_RefreshSelection.clicked.connect(self._update_pymol_sel)
         self.ui.pushButton_clearStartPointSele.clicked.connect(self._clear_pymol_sel_and_coords)
         self.ui.pushButton_RefreshRunID.clicked.connect(self._update_run_id)
-        
+        self.ui.pushButton_LoadRunID.clicked.connect(lambda: self._playback_run_id(get_widget_value(self.ui.comboBox_RunID)))
 
         self.configin(CONFIG_TXT)
 
@@ -489,8 +506,12 @@ class CaverPyMOL(QtWidgets.QWidget):
         set_widget_value(self.ui.comboBox_RunID, run_ids or [])
 
     def _playback_run_id(self, run_id: str):
+        if not run_id.isdigit():
+            notify_box(f"Run ID '{run_id}' is not a valid number.", ValueError)
+    
+        run_id= int(run_id)
         out_home, idxs = self.get_run_ids()
-        
+
         if not run_id in idxs:
             notify_box(f"Run ID '{run_id}' does not exist in the output directory.", ValueError)
 
@@ -510,6 +531,7 @@ class CaverPyMOL(QtWidgets.QWidget):
 
     def _use_custom_startpoint(self):
         startpoint_val=get_widget_value(self.ui.textEdit_startpoint)
+        
         if not startpoint_val:
             notify_box("Please specify starting point like atom ids, residue ids or x y z coordinates.", ValueError)
 
@@ -530,6 +552,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.doubleSpinBox_x.setValue(0)
         self.ui.doubleSpinBox_y.setValue(0)
         self.ui.doubleSpinBox_z.setValue(0)
+        cmd.delete("crisscross")
 
     def _update_aa_sel(self, aa_sel: Optional[List[str]]):
         if not aa_sel:
@@ -551,6 +574,12 @@ class CaverPyMOL(QtWidgets.QWidget):
 
     def changeCoords(self, *args):
         self.showCrisscross()
+        self.config.set(
+            'starting_point_coordinates', 
+            f'{get_widget_value(self.ui.doubleSpinBox_x)} {get_widget_value(self.ui.doubleSpinBox_y)} {get_widget_value(self.ui.doubleSpinBox_z)}'
+            )
+        
+        
 
     def structureIgnored(self, name):
         for key in self.ignoreStructures:
@@ -565,7 +594,6 @@ class CaverPyMOL(QtWidgets.QWidget):
         self._analysis_model_resn()
 
     def launchHelp(self):
-        import webbrowser
         webbrowser.open(url)
 
     def loadFileContent(self, file):
@@ -609,13 +637,18 @@ class CaverPyMOL(QtWidgets.QWidget):
     @property
     def coordinatesNotSet(self) -> bool:
         return all(self.config.get(f'start_point_{i}') == 0 for i in 'xyz')
+
+    @property
+    def customStartPointNotSet(self) -> bool:
+        return get_widget_value(self.ui.textEdit_startpoint).strip() == ''
+
     def execute(self):
         """
         Executes the analysis process, including checking prerequisites, preparing the environment,
         creating configuration files, running Caver through Java, and handling the results.
         """
         # Check if coordinates are set, if not, prompt the user to set them
-        if self.coordinatesNotSet:
+        if self.coordinatesNotSet and self.customStartPointNotSet:
             notify_box(
                 "Please specify starting point - "
                 "e.g. by selecting atoms or residues and clicking at the button 'Convert to x, y, z'.",
@@ -625,7 +658,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.showCrisscross()
     
         # Get the selected model's name from the UI list widget
-        selected_model = self.ui.comboBox_inputModel.currentItem().text()
+        selected_model = get_widget_value(self.ui.comboBox_inputModel)
     
         # Initialize the output directory
         self.initialize_out_dir()
@@ -641,7 +674,8 @@ class CaverPyMOL(QtWidgets.QWidget):
             cmd.sort()
             cmd.save(input, selected_model)  # to by ulozilo cely model selected_model.
         else:
-
+            self.prepare_md_pdb_traj(selected_model, outdirInputs)
+            
         
         # Get the path to the Caver JAR file
         caverjar = os.path.join(THIS_DIR, "caver.jar")
@@ -944,7 +978,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         cmd.set_view(view)
 
 
-    def prepare_md_pdb_traj(self):
+    def prepare_md_pdb_traj(self, selected_model: str, input_dir: str):
         state_start=get_widget_value(self.ui.spinBox_MD_StateMin)
         state_stop =get_widget_value(self.ui.spinBox_MD_StateMax)
 
@@ -952,4 +986,16 @@ class CaverPyMOL(QtWidgets.QWidget):
             notify_box("Starting state is greater than the stoping state", ValueError)
         
         for state in range(state_start+1, state_stop+1):
-            cmd.save(self.)
+            cmd.save(os.path.join(input_dir, f'{state}.pdb'), state=state, selection=selected_model)
+
+    def cite_info(self):
+        citation_file=os.path.join(THIS_DIR, 'bin', 'citation.txt')
+        with open(citation_file, 'r') as f:
+            citation_text=f.read()
+        
+        notify_box('Thank you for using Caver, please cite the following paper.', details=citation_text)
+
+    def open_doc_pdb(self):
+        doc_file=os.path.join(THIS_DIR, 'config', 'caver_userguide.pdf')
+
+        webbrowser.open(f'file://{doc_file}')

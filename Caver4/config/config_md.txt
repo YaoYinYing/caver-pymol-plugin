@@ -16,9 +16,7 @@ last_frame 50
 # TUNNEL CALCULATION
 #*****************************
 
-starting_point_atom 578
-starting_point_atom 1609
-starting_point_atom 3258
+starting_point_atom ???
 
 probe_radius 0.9
 
