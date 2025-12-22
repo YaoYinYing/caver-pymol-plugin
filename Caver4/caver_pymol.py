@@ -1,18 +1,23 @@
-#!/usr/bin/env python
-
 # CAVER Copyright Notice
 # ============================
 #
 
+'''
+"THE BEERWARE LICENSE" (Revision 42):
 
-import json
+Yinying wrote the refactored code.
+As long as you retain this notice, you can do whatever you want with this stuff.
+If we meet someday, and you think this stuff is worth it, you can buy me a beer
+in return.
+-- Yinying Yao
+
+'''
+
 import logging
 import math
-import shutil
 import os
 import re
 from contextlib import contextmanager
-from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 import warnings
@@ -34,293 +39,22 @@ from pymol.Qt.utils import getSaveFileNameWithExt
 
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
-from .utils.live_run import run_command
 from .utils.ui_tape import (CheckableListView, get_widget_value,
                             getExistingDirectory, getOpenFileNameWithExt,
                             hold_trigger_button, notify_box,
                             run_worker_thread_with_progress, set_widget_value,
                             widget_signal_tape)
 
-THIS_DIR = os.path.dirname(__file__)
-CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
+
+from .caver_config import CaverConfig, THIS_DIR,CONFIG_TXT
+from .caver_java import PyJava
 
 
 VERSION = '4.0.1'
 url = "https://www.caver.cz/index.php?sid=123"
 
 
-
 THE_20s=['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
-
-
-@dataclass
-class CaverConfig:
-
-    # connect to wigets
-    output_dir: str = ""
-    selection_name: str = ''
-
-    start_point_x: float = 0.0
-    start_point_y: float = 0.0
-    start_point_z: float = 0.0
-
-
-    customized_java_heap: int = 6000
-
-    shell_radius: float = 3.0
-    shell_depth: int = 2
-    probe_radius: float = 0.7
-    clustering_threshold: float = 1.5
-
-    number_of_approximating_balls: int = 4
-    
-    max_distance: float = 4.0
-    desired_radius: float = 1.8
-
-    def has(self, key: str) -> bool:
-        return hasattr(self, key)
-
-    def delete(self, key: str):
-        delattr(self, key)
-
-    def get(self, key: str) -> Any:
-        return getattr(self, key)
-
-    def set(self, key: str, value: Any):
-        setattr(self, key, value)
-
-    @classmethod
-    def from_json(cls, json_file: str) -> 'CaverConfig':
-        """
-        Load configuration information from a JSON file and create a CaverConfig object.
-    
-        This method is a class method, which means it can be called directly on the class rather than an instance of the class.
-        It takes a path to a JSON file as input and returns an instance of CaverConfig initialized with the data from the JSON file.
-    
-        Parameters:
-        - json_file: str - The path to the JSON file containing the configuration information.
-    
-        Returns:
-        - CaverConfig: An instance of the CaverConfig class initialized with the data from the JSON file.
-        """
-        # Load JSON data from the specified file path
-        json_data = json.load(open(json_file))
-        # filter dataclass keys with fixed typing
-        # `__match_args__` has all dataclass keys
-        # `__dataclass_fields__` has all dataclass key fields
-        # Initialize a new instance of the class using the data from the JSON, converting types as necessary
-        new_self = cls(**{k: cls.__dict__['__dataclass_fields__'][k].type(v)
-                       for k, v in json_data.items() if k in cls.__dict__['__match_args__']})
-        # add extra keys that come from json
-        # Iterate through the JSON data again, adding any extra keys not included in the initial dataclass keys
-        for k, v in json_data.items():
-            if k in cls.__dict__['__match_args__']:
-                continue
-            new_self.set(k, v)
-        return new_self
-
-    def to_json(self, json_file: str):
-        json.dump(self.__dict__, open(json_file, 'w'))
-
-    def set_value(self, key: str, value: Any):
-        setattr(self, key, value)
-
-    @classmethod
-    def from_txt(cls, txt_file: Optional[str] = None):
-        '''
-        Load configuration from a specified text file or the default configuration file if none is provided.
-        
-        This method reads the configuration from a text file, where each line represents a configuration item.
-        The format of each line is "key value", with the following rules:
-        - Lines starting with "#" are comments and are ignored.
-        - If "#" appears in the middle of a line, the part after "#" is treated as a comment and is ignored.
-        - Boolean values: "yes" represents True, "no" represents False.
-        - String values: If they contain spaces, they must be enclosed in double quotes "".
-        - List values: Space-separated.
-        
-        Parameters:
-        - txt_file (Optional[str]): The path to the text file containing the configuration. If not provided, the default configuration file is used.
-        
-        Returns:
-        - An instance of the class initialized with the configuration read from the file.
-        '''
-        # Initialize a new instance of the class
-        new_self = cls()
-        
-        # Open the specified configuration file or the default configuration file
-        with open(txt_file or CONFIG_TXT) as f:
-            # Read each line of the file
-            for l in f.readlines():
-                # Remove leading and trailing whitespace
-                l = l.strip()
-                
-                # If the line contains "#" and does not start with "#", remove the comment part
-                if '#' in l and not l.startswith('#'):
-                    l = l[0:l.rfind("#") - 1]
-                    # remove trailing whitespaces
-                    l = l.rstrip(' ')
-                
-                # If the line starts with "#" or is empty, skip it
-                if l.startswith("#") or not l:
-                    continue
-                
-                # Split the line into key and value parts
-                parsed = l.split(' ', 1)
-                key = parsed[0]
-                # If the key part is empty or there is no value part, skip it
-                if len(parsed) <= 1:
-                    print('skipping ' + key)
-                    continue
-                
-                # Set the value for the key in the new instance
-                new_self._set_value(key, parsed[1])
-        
-        # Return the initialized new instance
-        return new_self
-
-    def _set_value(self, key: str, new_value: str):
-        if hasattr(self, key):
-            v_type = type(getattr(self, key))
-            # align to the self variable type
-            setattr(self, key, v_type(new_value) if v_type != bool else CaverConfig._true_or_false(new_value))
-            return
-        # unknown variable, just set it as str
-        setattr(self, key, new_value)
-
-    def _get_value(self, key: str) -> str:
-        # if the variable is a defined slot in this dataclass, return with the correct type
-        value = getattr(self, key)
-        v_type = type(value)
-
-        # if it's a boolean, return yes or no according to the config.txt
-        if v_type == bool:
-            return CaverConfig._yes_or_no(value)
-        return str(value)
-
-    @staticmethod
-    def _yes_or_no(v: bool) -> str:
-        return 'yes' if v else 'no'
-
-    @staticmethod
-    def _true_or_false(v: str) -> bool:
-        return True if v == 'yes' else False
-
-    def to_txt(self, txt_file: str):
-        '''
-        Export the current configuration to a TXT file for the JAR file to read.
-        The format of the TXT file is as follows:
-        - Boolean values are represented by "True" or "False"
-        - List values are separated by spaces
-    
-        Parameters:
-        - txt_file (str): The path to the TXT file to be exported
-    
-        This function does not return any value.
-        '''
-        # Set the starting point coordinates if any of the start_point_x, start_point_y, or start_point_z attributes are not 0
-        if any(getattr(self, f'start_point_{a}') != 0 for a in 'xyz'):
-            self.set('starting_point_coordinates', " ".join(str(getattr(self, f'start_point_{a}')) for a in 'xyz'))
-            logging.debug(f"starting point: {self.get('starting_point_coordinates')}")
-    
-        # Initialize a new list to store the updated configuration content
-        new_txt_contents = []
-        # Read the configuration template file
-        with open(CONFIG_TXT) as template_f:
-            template = template_f.readlines()
-        for l in template:
-            l = l.strip()
-            
-            # skip the template line note
-            if 'used as a template' in l:
-                continue
-            # Directly append comment lines and empty lines to the new configuration content
-            if l.startswith('#') or not l:
-                new_txt_contents.append(l)
-                continue
-            # Remove everything after the last occurrence of the # character and trailing whitespaces for lines containing inline comments
-            if '#' in l and not l.startswith('#'):
-                l = l[0:l.rfind("#") - 1]
-                l = l.rstrip(' ')
-    
-            # Split each line into a key-value pair
-            parsed = l.split(' ', 1)
-            key = parsed[0]
-            # Skip lines with no value set
-            if len(parsed) <= 1:
-                print('skipping ' + key)
-            # Update keys that exist in the TXT file but not in the current configuration
-            elif hasattr(self, key):
-                self_val = getattr(self, key)
-                _val_type = type(self_val)
-                # Handle boolean values
-                if _val_type == bool:
-                    new_txt_contents.append(f'{key} {CaverConfig._yes_or_no(self_val)}')
-                # Skip unset values
-                elif self_val == '???':
-                    continue
-                # Handle float values
-                elif _val_type == float:
-                    new_txt_contents.append(f'{key} {self_val:.1f}')
-                # Handle other types of values
-                else:
-                    new_txt_contents.append(f'{key} {str(self_val)}')
-    
-        # Create the directory for the TXT file if it does not exist
-        os.makedirs(os.path.dirname(txt_file), exist_ok=True)
-        # Write the updated configuration content to the TXT file
-        with open(txt_file, 'w') as f:
-            f.write('\n'.join(new_txt_contents))
-
-
-class PyJava:
-    def __init__(self, customized_memory_heap, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
-        self.java_bin= shutil.which("java")
-
-        print("\n*** Testing if Java is installed ***")
-        if not self.java_bin:
-            raise RuntimeError("Java is not installed. Please install Java and try again.")
-        
-        run_command([self.java_bin, "-version"], verbose=True)
-        
-        self.jar = caverjar
-
-        print("\n*** Optimizing memory allocation for Java ***")
-        self.optimize_memory(customized_memory_heap)
-        self.cmd = [
-            self.java_bin,
-            f"-Xmx{self.memory_heap_level}m",
-            "-cp", os.path.join(caverfolder, "lib"),
-            "-jar", caverjar,
-            "-home", caverfolder,
-            "-pdb", outdirInputs,
-            "-conf", cfgnew,
-            "-out", out_dir,
-        ]
-        print("*** Caver will be called using command ***")
-        print(" ".join(['"%s"' % t if t != "java" and t[0] != "-" else t for t in self.cmd]))
-        print("******************************************")
-
-
-
-    def run_caver(self):
-        return run_command(self.cmd, verbose=True)
-
-    def optimize_memory(self, customized_memory_heap):
-        customized_memory_heap = int(customized_memory_heap)
-        memory_allocate_options = [500, 800, 900, 950, 1000, 1050, 1100, 1150, 1200, 1250, 1300, 1400, 1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 14000, 16000, 20000, 32000, 48000, 64000]
-        memory_allocate_options.append(customized_memory_heap)
-        memory_allocate_options.sort()
-        # sorted(values)
-        self.memory_heap_level = memory_allocate_options[0]
-        for heap_level in memory_allocate_options:
-            if int(heap_level) <= customized_memory_heap:
-                cmd = [self.java_bin, f"-Xmx{heap_level}m", "-jar", self.jar, "do_nothing"]
-                heap_level_test = run_command(cmd)
-
-                if heap_level_test.returncode == 0:
-                    self.memory_heap_level = heap_level
-                    print("Memory heap level: " + str(self.memory_heap_level))
-        print("*** Memory for Java: " + str(self.memory_heap_level) + " MB ***")
 
 
 class CaverPyMOL(QtWidgets.QWidget):
@@ -331,8 +65,6 @@ class CaverPyMOL(QtWidgets.QWidget):
         'doubleSpinBox_x': 'start_point_x',
         'doubleSpinBox_y': 'start_point_y',
         'doubleSpinBox_z': 'start_point_z',
-
-        
     }
 
     config_bindings_config: Dict[str, str] = {
@@ -416,6 +148,9 @@ class CaverPyMOL(QtWidgets.QWidget):
         logging.info(f'{widget_name} {pv} -> {nv} -> {uv}')
 
     def refresh_window_from_cfg(self):
+        '''
+        Refresh the windows from the configuration file
+        '''
         for wn, cn in self.config_bindings_main.items():
             widget = getattr(self.ui, wn)
             set_widget_value(widget, getattr(self.config, cn))
@@ -425,6 +160,9 @@ class CaverPyMOL(QtWidgets.QWidget):
             set_widget_value(widget, getattr(self.config, cn))
 
     def make_window(self):
+        '''
+        Make windows and load config
+        '''
         main_window = QtWidgets.QWidget()
         self.ui = CaverUI()
         self.ui.setupUi(main_window)
@@ -500,7 +238,9 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.pushButton_cite.clicked.connect(self.cite_info)
         self.ui.pushButton_doc.clicked.connect(self.open_doc_pdf)
 
+        # register as a pymol command
         cmd.extend('caver_set', self.caver_set)
+
         self.configin(CONFIG_TXT)
 
         self.update_model_list()
@@ -513,6 +253,12 @@ class CaverPyMOL(QtWidgets.QWidget):
         set_widget_value(self.ui.comboBox_RunID, run_ids or [])
 
     def _playback_run_id(self, run_id: str):
+        '''
+        Play Back historical runs according to the run id.
+
+        Parameters:
+            - run_id [str]: Run ID of Caver.
+        '''
         if not run_id.isdigit():
             notify_box(f"Run ID '{run_id}' is not a valid number.", ValueError)
 
@@ -531,7 +277,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         with self.freeze_window():
             # Run the PyMOL view plugin to visualize the results
             runview = f"run {expected_view_file}" 
-            print(runview)
+            logging.debug(runview)
             cmd.do(runview)
 
     def _update_pymol_sel(self):
@@ -597,6 +343,11 @@ class CaverPyMOL(QtWidgets.QWidget):
         return 0
 
     def update_model_list(self):
+        '''
+        Update the list of models in the combobox
+        and set the current model to the first one
+
+        '''
         models=[str(i) for i in cmd.get_object_list() if not self.structureIgnored(str(i))]
         set_widget_value(self.ui.comboBox_inputModel, models)
 
@@ -615,6 +366,12 @@ class CaverPyMOL(QtWidgets.QWidget):
 
 
     def get_run_ids(self) -> tuple[str, list[int]]:
+        '''
+        Get all run IDs in the output directory.
+        Returns:
+        - out_home (str): The path to the output directory.
+        - idxs (list[int]): A list of all run IDs found in the output directory.
+        '''
         dir = self.config.output_dir
 
         if not dir:
@@ -629,7 +386,8 @@ class CaverPyMOL(QtWidgets.QWidget):
         out_home = os.path.join(dir, "caver_output")
         os.makedirs(out_home, exist_ok=True)
 
-        idxs = list(map(int, [x for x in os.listdir(out_home) if x.isdigit()] or [0]))
+        # only successful runs are saved with view_plugin.py file
+        idxs = [int(x) for x in os.listdir(out_home) if x.isdigit() if os.path.isfile(os.path.join(out_home, str(x), "pymol", "view_plugin.py"))]
         
         if not idxs:
             notify_box(f"Output directory '{out_home}' does not contain any run files, perhaps you dont have run any analysis yet.", ValueError)
@@ -637,6 +395,11 @@ class CaverPyMOL(QtWidgets.QWidget):
         return out_home,idxs
 
     def initialize_out_dir(self):
+        '''
+        Initialize the output directory for the current run.
+        A new run ID will be generated by adding 1 to the maximum run ID found in the output directory.
+
+        '''
 
         out_home, idxs = self.get_run_ids()
         max_idx = max(idxs)
@@ -645,14 +408,26 @@ class CaverPyMOL(QtWidgets.QWidget):
         os.makedirs(new_dir)
 
         self.out_dir = new_dir
-        print("Output will be stored in " + self.out_dir)
+        logging.info("Output will be stored in " + self.out_dir)
 
     @property
     def coordinatesNotSet(self) -> bool:
+        '''
+        Checks if the coordinates are set.
+
+        Returns
+        bool
+            True if the coordinates are not set, False otherwise.
+        '''
         return all(self.config.get(f'start_point_{i}') == 0 for i in 'xyz')
 
     @property
     def customStartPointNotSet(self) -> bool:
+        '''
+        Check if a custom starting point is set in the UI.
+        Returns:
+            - bool: True if no custom starting point is set, False otherwise.
+        '''
         return get_widget_value(self.ui.textEdit_startpoint).strip() == ''
 
     def execute(self):
@@ -717,7 +492,7 @@ class CaverPyMOL(QtWidgets.QWidget):
     
         # Store the current working directory
         prevDir = os.getcwd()
-        print(prevDir)
+        logging.debug(prevDir)
 
         runview_file=os.path.join(self.out_dir, "pymol","view_plugin.py")
         if not os.path.isfile(runview_file):
@@ -725,7 +500,7 @@ class CaverPyMOL(QtWidgets.QWidget):
     
         # Run the PyMOL view plugin to visualize the results
         runview = f"run {runview_file}" 
-        print(runview)
+        logging.info(runview)
         cmd.do(runview)
 
     @staticmethod
@@ -785,7 +560,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.config = CaverConfig.from_json(filepath) if filepath.endswith(".json") else CaverConfig.from_txt(filepath)
         # refresh window wiget from input config
         self.refresh_window_from_cfg()
-        # Update the start point based on the loaded configuration
+        # Update the start point based on the loaded configuration if it exists
         self.refresh_start_point_from_cfg()
         # Update the configuration status label with the loaded filename
         set_widget_value(self.ui.label_configStatus, f'Loaded from {os.path.basename(filepath)}')
@@ -897,8 +672,7 @@ class CaverPyMOL(QtWidgets.QWidget):
                 for a in all:
                     Ts = Ts + [self.computecenterRA('id ' + str(a) + ' and object ' + object)]
 
-        print('Centers: %s' % ', '.join(map(str, Ts)))
-        # print('Centers: ' + Ts)
+        logging.info('Centers: %s' % ', '.join(map(str, Ts)))
         sumx = 0
         sumy = 0
         sumz = 0
@@ -909,7 +683,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             sumx += center[0]
             sumy += center[1]
             sumz += center[2]
-        print('Starting point: ' + str(sumx) + " " + str(sumy) + " " + str(sumz) + " " + str(l))
+        logging.info('Starting point: ' + str(sumx) + " " + str(sumy) + " " + str(sumz) + " " + str(l))
         return (sumx / l, sumy / l, sumz / l)
 
     # compute center for given selection
@@ -930,6 +704,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         centz /= cnt
         return (centx, centy, centz)
 
+    # TODO: unused?
     def computecenter(self, selection="(all)"):
         gcentx = 0
         gcenty = 0
@@ -943,7 +718,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             centz = 0
             cnt = len(sel.atom)
             if (cnt == 0):
-                print('warning: selection used to compute starting point is empty')
+                warnings.warn(UserWarning('selection used to compute starting point is empty'))
                 return (0, 0, 0)
             for a in sel.atom:
                 centx += a.coord[0]
@@ -952,8 +727,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             centx /= cnt
             centy /= cnt
             centz /= cnt
-        #       fmttext="%lf\t%lf\t%lf\n" % (centx,centy,centz)
-#               print(centx,centy,centz)
+
             gcentx += centx
             gcenty += centy
             gcentz += centz
@@ -992,6 +766,14 @@ class CaverPyMOL(QtWidgets.QWidget):
 
 
     def prepare_md_pdb_traj(self, selected_model: str, input_dir: str):
+        '''
+        Generate pdbs from multi-state PyMOL session for selected model
+
+        Parameters
+            selected_model: str
+            input_dir: str
+
+        '''
         state_start=get_widget_value(self.ui.spinBox_MD_StateMin)
         state_stop =get_widget_value(self.ui.spinBox_MD_StateMax)
 
@@ -1002,6 +784,9 @@ class CaverPyMOL(QtWidgets.QWidget):
             cmd.save(os.path.join(input_dir, f'{state}.pdb'), state=state, selection=selected_model)
 
     def cite_info(self):
+        '''
+        Cite info
+        '''
         citation_file=os.path.join(THIS_DIR, 'bin', 'citation.txt')
         with open(citation_file, 'r') as f:
             citation_text=f.read()
@@ -1009,6 +794,9 @@ class CaverPyMOL(QtWidgets.QWidget):
         notify_box('Thank you for using Caver, please cite the following paper.', details=citation_text)
 
     def open_doc_pdf(self):
+        '''
+        Open doc pdf
+        '''
         doc_file=os.path.join(THIS_DIR, 'config', 'caver_userguide.pdf')
 
         webbrowser.open(f'file://{doc_file}')
@@ -1016,6 +804,12 @@ class CaverPyMOL(QtWidgets.QWidget):
     def caver_set(self, key, value):
         '''
         Setting caver configurations
+
+        Parameters
+        key : str
+            key of the configuration item
+        value : str
+            value of the configuration item
         '''
         if not self.config.has(key):
             warnings.warn(UserWarning(f'{key} is not a valid Caver setting. Will added it to the config.'))
@@ -1032,10 +826,10 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         if d:
             wn=d.get(key)
-            print(f'Setting {wn} -> {value}')
+            logging.debug(f'Setting {wn} -> {value}')
             set_widget_value(getattr(ui, wn), value)
         else:
-            print(f'Setting config {key} -> {value}')
+            logging.debug(f'Setting config {key} -> {value}')
             self.config.set(key, value)
         
 
