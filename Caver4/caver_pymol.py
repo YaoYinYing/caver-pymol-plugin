@@ -169,7 +169,7 @@ class CaverConfig:
                 key = parsed[0]
                 # If the key part is empty or there is no value part, skip it
                 if len(parsed) <= 1:
-                    print('skipping ' + key)
+                    logging.debug('skipping ' + key)
                     continue
                 
                 # Set the value for the key in the new instance
@@ -247,7 +247,7 @@ class CaverConfig:
             key = parsed[0]
             # Skip lines with no value set
             if len(parsed) <= 1:
-                print('skipping ' + key)
+                logging.debug('skipping ' + key)
             # Update keys that exist in the TXT file but not in the current configuration
             elif hasattr(self, key):
                 self_val = getattr(self, key)
@@ -276,7 +276,7 @@ class PyJava:
     def __init__(self, customized_memory_heap, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
         self.java_bin= shutil.which("java")
 
-        print("\n*** Testing if Java is installed ***")
+        logging.info("\n*** Testing if Java is installed ***")
         if not self.java_bin:
             raise RuntimeError("Java is not installed. Please install Java and try again.")
         
@@ -284,7 +284,7 @@ class PyJava:
         
         self.jar = caverjar
 
-        print("\n*** Optimizing memory allocation for Java ***")
+        logging.info("\n*** Optimizing memory allocation for Java ***")
         self.optimize_memory(customized_memory_heap)
         self.cmd = [
             self.java_bin,
@@ -296,9 +296,9 @@ class PyJava:
             "-conf", cfgnew,
             "-out", out_dir,
         ]
-        print("*** Caver will be called using command ***")
-        print(" ".join(['"%s"' % t if t != "java" and t[0] != "-" else t for t in self.cmd]))
-        print("******************************************")
+        logging.info("*** Caver will be called using command ***")
+        logging.info(" ".join(['"%s"' % t if t != "java" and t[0] != "-" else t for t in self.cmd]))
+        logging.info("******************************************")
 
 
 
@@ -319,8 +319,8 @@ class PyJava:
 
                 if heap_level_test.returncode == 0:
                     self.memory_heap_level = heap_level
-                    print("Memory heap level: " + str(self.memory_heap_level))
-        print("*** Memory for Java: " + str(self.memory_heap_level) + " MB ***")
+                    logging.debug("Memory heap level: " + str(self.memory_heap_level))
+        logging.info("*** Memory for Java: " + str(self.memory_heap_level) + " MB ***")
 
 
 class CaverPyMOL(QtWidgets.QWidget):
@@ -531,7 +531,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         with self.freeze_window():
             # Run the PyMOL view plugin to visualize the results
             runview = f"run {expected_view_file}" 
-            print(runview)
+            logging.debug(runview)
             cmd.do(runview)
 
     def _update_pymol_sel(self):
@@ -645,7 +645,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         os.makedirs(new_dir)
 
         self.out_dir = new_dir
-        print("Output will be stored in " + self.out_dir)
+        logging.info("Output will be stored in " + self.out_dir)
 
     @property
     def coordinatesNotSet(self) -> bool:
@@ -717,7 +717,7 @@ class CaverPyMOL(QtWidgets.QWidget):
     
         # Store the current working directory
         prevDir = os.getcwd()
-        print(prevDir)
+        logging.debug(prevDir)
 
         runview_file=os.path.join(self.out_dir, "pymol","view_plugin.py")
         if not os.path.isfile(runview_file):
@@ -725,7 +725,7 @@ class CaverPyMOL(QtWidgets.QWidget):
     
         # Run the PyMOL view plugin to visualize the results
         runview = f"run {runview_file}" 
-        print(runview)
+        logging.info(runview)
         cmd.do(runview)
 
     @staticmethod
@@ -897,8 +897,7 @@ class CaverPyMOL(QtWidgets.QWidget):
                 for a in all:
                     Ts = Ts + [self.computecenterRA('id ' + str(a) + ' and object ' + object)]
 
-        print('Centers: %s' % ', '.join(map(str, Ts)))
-        # print('Centers: ' + Ts)
+        logging.info('Centers: %s' % ', '.join(map(str, Ts)))
         sumx = 0
         sumy = 0
         sumz = 0
@@ -909,7 +908,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             sumx += center[0]
             sumy += center[1]
             sumz += center[2]
-        print('Starting point: ' + str(sumx) + " " + str(sumy) + " " + str(sumz) + " " + str(l))
+        logging.info('Starting point: ' + str(sumx) + " " + str(sumy) + " " + str(sumz) + " " + str(l))
         return (sumx / l, sumy / l, sumz / l)
 
     # compute center for given selection
@@ -943,7 +942,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             centz = 0
             cnt = len(sel.atom)
             if (cnt == 0):
-                print('warning: selection used to compute starting point is empty')
+                warnings.warn(UserWarning('selection used to compute starting point is empty'))
                 return (0, 0, 0)
             for a in sel.atom:
                 centx += a.coord[0]
@@ -952,8 +951,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             centx /= cnt
             centy /= cnt
             centz /= cnt
-        #       fmttext="%lf\t%lf\t%lf\n" % (centx,centy,centz)
-#               print(centx,centy,centz)
+
             gcentx += centx
             gcenty += centy
             gcentz += centz
@@ -1032,10 +1030,10 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         if d:
             wn=d.get(key)
-            print(f'Setting {wn} -> {value}')
+            logging.debug(f'Setting {wn} -> {value}')
             set_widget_value(getattr(ui, wn), value)
         else:
-            print(f'Setting config {key} -> {value}')
+            logging.debug(f'Setting config {key} -> {value}')
             self.config.set(key, value)
         
 
