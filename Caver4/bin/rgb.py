@@ -1,6 +1,6 @@
 from pymol import cmd
 
-caver_colors: tuple[list[float,float,float]]= (
+caver_colors= (
     [0.0,0.0,1.0],
     [0.0,1.0,0.0],
     [1.0,0.0,0.0],

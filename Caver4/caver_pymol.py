@@ -494,6 +494,8 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.pushButton_RefreshRunID.clicked.connect(self._update_run_id)
         self.ui.pushButton_LoadRunID.clicked.connect(lambda: self._playback_run_id(get_widget_value(self.ui.comboBox_RunID)))
 
+        self.ui.pushButton_cite.clicked.connect(self.cite_info)
+        self.ui.pushButton_doc.clicked.connect(self.open_doc_pdf)
         self.configin(CONFIG_TXT)
 
         self.update_model_list()
@@ -995,7 +997,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         
         notify_box('Thank you for using Caver, please cite the following paper.', details=citation_text)
 
-    def open_doc_pdb(self):
+    def open_doc_pdf(self):
         doc_file=os.path.join(THIS_DIR, 'config', 'caver_userguide.pdf')
 
         webbrowser.open(f'file://{doc_file}')
