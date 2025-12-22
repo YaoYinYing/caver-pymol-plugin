@@ -2,6 +2,7 @@ from pymol import cmd
 from chempy.models import Indexed
 from chempy import Bond, Atom
 from pymol import cmd
+import os
 
 if not os.path.exists("../data/clusters"):
 	cmd.cd("$pymol_scripts")
@@ -22,7 +23,7 @@ def create_spheres(name, spheres, links, frame):
 		ai = i * 4
 		r = spheres[ai + 3]
 		cluster = int(name[7:10])
-		if r <> 0.5:
+		if r != 0.5:
 			a=Atom()
 			a.name = "X" + str(i)
 			a.resi = str(cluster)
@@ -48,7 +49,7 @@ def computeSpheres(frame):
 	for tunnelName in tunnelNames:  # for each cluster
 		path = "../data/clusters/" + tunnelName
 		infile = open(path, "r")    # open PDB file with cluster
-		modelNumber = 0;
+		modelNumber = 0
 		spheres = []
 		links = []
 		unfinished = True
@@ -59,7 +60,7 @@ def computeSpheres(frame):
 				break
 
 			if(line[0:5] == "MODEL"):
-				modelNumber += 1;
+				modelNumber += 1
 
 				if(modelNumber == frame): # find line for actual frame
 					while infile and unfinished:
@@ -73,9 +74,9 @@ def computeSpheres(frame):
 							links.append(int(line[6:11]))
 							links.append(int(line[11:16]))
 						if(line[0:6] == "ENDMDL"):
-						 	tunnels[tunnelName] = spheres
+							tunnels[tunnelName] = spheres
 							conects[tunnelName] = links
-						 	unfinished = False
+							unfinished = False
 		infile.close()
 
 	color = 1

@@ -1,7 +1,8 @@
 from pymol import cmd
+import os
 
 if not os.path.exists("../data/clusters_timeless"):
-	cmd.cd("$pymol_scripts")
+    cmd.cd("$pymol_scripts")
 
 cmd.cd("modules")
 import caver
@@ -15,15 +16,15 @@ list = os.listdir("../data/clusters_timeless")
 list.sort()
 name = ''
 for fn in list:
-	old_name = name
-	name = fn
+    old_name = name
+    name = fn
 
-	if color < 1000 and caver.new_cluster(old_name, name):
-		color += 1
+    if color < 1000 and caver.new_cluster(old_name, name):
+        color += 1
 
-	cmd.load('../data/clusters_timeless/' + fn, name)
-	cmd.color('caver' + str(color), name)
-	cmd.alter(name, 'vdw=b')
+    cmd.load('../data/clusters_timeless/' + fn, name)
+    cmd.color(f'caver{color}', name)
+    cmd.alter(name, 'vdw=b')
 cmd.do('set all_states,1')
 
 cmd.set('two_sided_lighting', 'on')

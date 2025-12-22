@@ -6,3 +6,6 @@ dist:
 
 clean:
 	rm -rf dist
+
+install:
+	cp -r Caver4 /Users/yyy/.pymol/startup/

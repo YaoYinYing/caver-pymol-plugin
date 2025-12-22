@@ -43,6 +43,7 @@ def set_widget_value(widget: QtWidgets.QGridLayout, value: str): ...
 @overload
 def set_widget_value(widget: Union[
     QtWidgets.QLineEdit,
+    QtWidgets.QTextEdit,
     QtWidgets.QLCDNumber,
     QtWidgets.QCheckBox,
     QtWidgets.QLabel
@@ -104,6 +105,8 @@ def set_widget_value(widget, value):
             widget.setCurrentText(str(value))
     elif isinstance(widget, QtWidgets.QLineEdit) or isinstance(widget, QtWidgets.QLabel):
         widget.setText(str(value))
+    elif isinstance(widget, QtWidgets.QTextEdit):
+        widget.setPlainText(str(value))
     elif isinstance(widget, QtWidgets.QProgressBar):
         if isinstance(value, int):
             widget.setValue(value)
@@ -125,7 +128,8 @@ def get_widget_value(widget: QtWidgets.QCheckBox) -> bool: ...  # type: ignore
 @overload
 def get_widget_value(widget: Union[  # type: ignore
     QtWidgets.QComboBox,
-    QtWidgets.QLineEdit]) -> str: ...
+    QtWidgets.QLineEdit,
+    QtWidgets.QTextEdit]) -> str: ...
 
 
 @overload
@@ -164,19 +168,20 @@ def get_widget_value(widget: QtWidgets.QWidget) -> Any:
     """
     if isinstance(widget, QtWidgets.QDoubleSpinBox) or isinstance(widget, QtWidgets.QSpinBox):
         return widget.value()
-    elif isinstance(widget, QtWidgets.QComboBox):
+    if isinstance(widget, QtWidgets.QComboBox):
         return widget.currentText()
-    elif isinstance(widget, QtWidgets.QLineEdit):
+    if isinstance(widget, QtWidgets.QLineEdit):
         return widget.text()
-    elif isinstance(widget, QtWidgets.QProgressBar):
+    if isinstance(widget, QtWidgets.QProgressBar):
         return widget.value()
-    elif isinstance(widget, QtWidgets.QLCDNumber):
+    if isinstance(widget, QtWidgets.QLCDNumber):
         return float(widget.value())
-    elif isinstance(widget, QtWidgets.QCheckBox):
+    if isinstance(widget, QtWidgets.QCheckBox):
         return widget.isChecked()
+    if isinstance(widget, QtWidgets.QTextEdit):
+        return widget.toPlainText()
 
-    else:
-        raise ValueError(f"Widget type {type(widget).__name__} is not supported for value retrieval.")
+    raise ValueError(f"Widget type {type(widget).__name__} is not supported for value retrieval.")
 
 
 def widget_signal_tape(widget: QtWidgets.QWidget, event):
