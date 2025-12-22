@@ -55,6 +55,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip">
+        <string>The latest configuration info appears at here.</string>
+       </property>
        <property name="text">
         <string/>
        </property>
@@ -70,6 +73,9 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="toolTip">
+          <string>Edit detailed preferences</string>
+         </property>
          <property name="text">
           <string>Edit</string>
          </property>
@@ -83,6 +89,9 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="toolTip">
+          <string>Load configuration from a TXT or JSON file.</string>
+         </property>
          <property name="text">
           <string>Load</string>
          </property>
@@ -95,6 +104,9 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Save current configuration to a TXT or JSON file.</string>
          </property>
          <property name="text">
           <string>Save</string>
@@ -138,12 +150,22 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_outputDir"/>
+        <widget class="QLineEdit" name="lineEdit_outputDir">
+         <property name="toolTip">
+          <string>Output directory for saving all results</string>
+         </property>
+         <property name="placeholderText">
+          <string>Please set an output directory before using Caver.</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_openOutputDir">
+       <property name="toolTip">
+        <string>Pick an output directory.</string>
+       </property>
        <property name="text">
         <string>...</string>
        </property>
@@ -176,6 +198,9 @@
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QComboBox" name="comboBox_inputModel">
+       <property name="toolTip">
+        <string>PyMOL model to be analysed.</string>
+       </property>
        <property name="editable">
         <bool>true</bool>
        </property>
@@ -188,6 +213,9 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>Reload PyMOL model objects</string>
        </property>
        <property name="text">
         <string>Reload</string>
@@ -222,6 +250,9 @@
      <number>0</number>
     </property>
     <widget class="QWidget" name="tab_coordinates">
+     <property name="toolTip">
+      <string>Use PyMOL selection to create starting point coordinates.</string>
+     </property>
      <attribute name="title">
       <string>Select</string>
      </attribute>
@@ -252,6 +283,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string/>
+           </property>
            <property name="editable">
             <bool>true</bool>
            </property>
@@ -263,6 +297,9 @@
         <layout class="QHBoxLayout" name="horizontalLayout_15">
          <item>
           <widget class="QPushButton" name="pushButton_clearStartPointSele">
+           <property name="toolTip">
+            <string>If you wish to use Custom input, clear the selections.</string>
+           </property>
            <property name="text">
             <string> Clear</string>
            </property>
@@ -270,6 +307,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="pushButton_RefreshSelection">
+           <property name="toolTip">
+            <string>Refresh the selection list</string>
+           </property>
            <property name="text">
             <string>Refresh</string>
            </property>
@@ -277,6 +317,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="pushButton_convertStartPointSele">
+           <property name="toolTip">
+            <string>Convert selection into xyz-coordinates.</string>
+           </property>
            <property name="text">
             <string>Convert</string>
            </property>
@@ -287,7 +330,10 @@
       </layout>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab">
+    <widget class="QWidget" name="tab_refine">
+     <property name="toolTip">
+      <string>Refine coordinates from PyMOL selection.</string>
+     </property>
      <attribute name="title">
       <string>Refine</string>
      </attribute>
@@ -403,6 +449,9 @@
      </widget>
     </widget>
     <widget class="QWidget" name="tab_atoms">
+     <property name="toolTip">
+      <string>Input custom starting point settings. Atoms for atom ids, Residues for residue ids, coordinates for xyz coordinates.</string>
+     </property>
      <attribute name="title">
       <string>Custom</string>
      </attribute>
@@ -426,6 +475,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>starting_point_atom</string>
+           </property>
            <property name="text">
             <string>Atoms</string>
            </property>
@@ -438,6 +490,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>starting_point_residue</string>
            </property>
            <property name="text">
             <string>Residues</string>
@@ -452,6 +507,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>starting_point_coordinates</string>
+           </property>
            <property name="text">
             <string>Coordinates</string>
            </property>
@@ -460,7 +518,11 @@
         </layout>
        </item>
        <item>
-        <widget class="QTextEdit" name="textEdit_startpoint"/>
+        <widget class="QTextEdit" name="textEdit_startpoint">
+         <property name="toolTip">
+          <string>See the document for detaild syntax.</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -485,6 +547,9 @@
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+      <property name="toolTip">
+       <string>Run the analysis</string>
+      </property>
       <property name="text">
        <string>Run</string>
       </property>
@@ -497,6 +562,9 @@
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="toolTip">
+       <string>Help from the official website</string>
       </property>
       <property name="text">
        <string>Help</string>
@@ -511,6 +579,9 @@
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+      <property name="toolTip">
+       <string>Open document of Caver configuration</string>
+      </property>
       <property name="text">
        <string>Doc</string>
       </property>
@@ -523,6 +594,9 @@
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="toolTip">
+       <string>Cite info</string>
       </property>
       <property name="text">
        <string>Cite</string>
@@ -561,6 +635,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip">
+        <string>Residue names that takes into account. Protein residues is the default. Unselected residues will be ignored.</string>
+       </property>
       </widget>
      </item>
      <item>
@@ -575,6 +652,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>Select all of them.</string>
+           </property>
            <property name="text">
             <string>All</string>
            </property>
@@ -588,6 +668,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>Select non of them.</string>
+           </property>
            <property name="text">
             <string>None</string>
            </property>
@@ -600,6 +683,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Revese current selections.</string>
            </property>
            <property name="text">
             <string>Reverse</string>
@@ -621,6 +707,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>Protein residues only</string>
+           </property>
            <property name="text">
             <string>Protein</string>
            </property>
@@ -633,6 +722,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Add non-protein residues.</string>
            </property>
            <property name="text">
             <string>Ligand</string>
@@ -655,6 +747,9 @@
      <height>121</height>
     </rect>
    </property>
+   <property name="toolTip">
+    <string>Reload historical analysis results.</string>
+   </property>
    <property name="title">
     <string>Results Play Back</string>
    </property>
@@ -672,13 +767,20 @@
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
         <widget class="QCheckBox" name="checkBox_EnablePlayBack">
+         <property name="toolTip">
+          <string>Enable result play backs</string>
+         </property>
          <property name="text">
           <string>Enabled:</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBox_RunID"/>
+        <widget class="QComboBox" name="comboBox_RunID">
+         <property name="toolTip">
+          <string>Run ID that under the outputs.</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -689,6 +791,9 @@
          <property name="enabled">
           <bool>false</bool>
          </property>
+         <property name="toolTip">
+          <string>Refresh the Run IDs</string>
+         </property>
          <property name="text">
           <string>Refresh</string>
          </property>
@@ -698,6 +803,9 @@
         <widget class="QPushButton" name="pushButton_LoadRunID">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Load selected Run ID into PyMOL session.</string>
          </property>
          <property name="text">
           <string>Load</string>
@@ -713,7 +821,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>350</y>
+     <y>360</y>
      <width>321</width>
      <height>61</height>
     </rect>
@@ -733,6 +841,9 @@
     <layout class="QHBoxLayout" name="horizontalLayout_8">
      <item>
       <widget class="QCheckBox" name="checkBox_MD">
+       <property name="toolTip">
+        <string>Enable MD analysis from PyMOL states.</string>
+       </property>
        <property name="text">
         <string>MD Analysis:</string>
        </property>
@@ -750,6 +861,9 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Start state number</string>
          </property>
          <property name="suffix">
           <string/>
@@ -782,6 +896,9 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>End state number.</string>
          </property>
          <property name="minimum">
           <number>-1</number>

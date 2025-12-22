@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
+import warnings
 import webbrowser
 
 from pymol import cmd
@@ -271,9 +272,6 @@ class CaverConfig:
             f.write('\n'.join(new_txt_contents))
 
 
-
-
-
 class PyJava:
     def __init__(self, customized_memory_heap, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
         self.java_bin= shutil.which("java")
@@ -349,6 +347,10 @@ class CaverPyMOL(QtWidgets.QWidget):
         'doubleSpinBox_maxDist': 'max_distance',
         'doubleSpinBox_desiredDist': 'desired_radius'
     }
+    
+    # reversed
+    config_bindings_main_rev={v:k for k,v in config_bindings_main.items()}
+    config_bindings_config_rev={v:k for k,v in config_bindings_config.items()}
     
     
 
@@ -497,6 +499,8 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         self.ui.pushButton_cite.clicked.connect(self.cite_info)
         self.ui.pushButton_doc.clicked.connect(self.open_doc_pdf)
+
+        cmd.extend('caver_set', self.caver_set)
         self.configin(CONFIG_TXT)
 
         self.update_model_list()
@@ -1008,3 +1012,30 @@ class CaverPyMOL(QtWidgets.QWidget):
         doc_file=os.path.join(THIS_DIR, 'config', 'caver_userguide.pdf')
 
         webbrowser.open(f'file://{doc_file}')
+
+    def caver_set(self, key, value):
+        '''
+        Setting caver configurations
+        '''
+        if not self.config.has(key):
+            warnings.warn(UserWarning(f'{key} is not a valid Caver setting. Will added it to the config.'))
+        
+        d={}
+        ui=None
+        if key in self.config_bindings_main_rev:
+            ui=self.ui
+            d=self.config_bindings_main_rev
+        
+        elif key in self.config_bindings_config_rev:
+            ui=self.ui_config
+            d=self.config_bindings_config_rev
+
+        if d:
+            wn=d.get(key)
+            print(f'Setting {wn} -> {value}')
+            set_widget_value(getattr(ui, wn), value)
+        else:
+            print(f'Setting config {key} -> {value}')
+            self.config.set(key, value)
+        
+
