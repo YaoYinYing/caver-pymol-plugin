@@ -26,6 +26,7 @@ else:
 
 import time
 
+# TODO: deprecated
 from pymol import stored
 from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
@@ -510,6 +511,8 @@ class CaverPyMOL(QtWidgets.QWidget):
     def _playback_run_id(self, run_id: str):
         if not run_id.isdigit():
             notify_box(f"Run ID '{run_id}' is not a valid number.", ValueError)
+
+        
     
         run_id= int(run_id)
         out_home, idxs = self.get_run_ids()
@@ -609,6 +612,10 @@ class CaverPyMOL(QtWidgets.QWidget):
 
     def get_run_ids(self) -> tuple[str, list[int]]:
         dir = self.config.output_dir
+
+        if not dir:
+            notify_box("Please specify output directory.", ValueError)
+
         os.makedirs(dir, exist_ok=True)
 
         dir = dir.replace("\\", "/")
