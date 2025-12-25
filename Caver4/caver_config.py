@@ -281,5 +281,8 @@ class CaverShortcut(Shortcut):
         # memory the previous result only if it's a string (perfect match)
         if isinstance(result, str):
             self.config._complete_temp = result
+        else:
+            # otherwise, clear the previous result
+            self.config._complete_temp = ''
         logging.debug(f"CaverShortcut interpret: {keyword}: {_prev} -> {result}")
         return result
