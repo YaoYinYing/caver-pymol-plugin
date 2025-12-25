@@ -243,10 +243,15 @@ class CaverPyMOL(QtWidgets.QWidget):
         cmd.extend('caver_set', self.caver_set)
 
         # autocompletion for key
-        cmd.auto_arg[0]["caver_set"] = [lambda : CaverShortcut(config=self.config,keywords=self.config.all_keys), "Caver setting key", ""]
+        cmd.auto_arg[0]["caver_set"] = [lambda : CaverShortcut(config=self.config,keywords=self.config.all_keys), "Caver setting key", ", "]
 
         # dynamic autocompletion for value (current)
-        cmd.auto_arg[1]["caver_set"] = [lambda: Shortcut(keywords=[self.config.get(self.config._complete_temp)]), "Caver setting value", ""]
+        cmd.auto_arg[1]["caver_set"] = [
+            lambda: Shortcut(
+                keywords=[
+                    self.config.get(self.config._complete_temp) if self.config.has(self.config._complete_temp) else ' '
+                    ]
+                ), "Caver setting value", ""]
 
         self.configin(CONFIG_TXT)
 

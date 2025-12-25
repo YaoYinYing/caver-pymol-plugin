@@ -278,6 +278,8 @@ class CaverShortcut(Shortcut):
     ) -> Optional[Union[int, str, list[str]]]:
         result = self._interpret(keyword, mode)
         _prev = self.config._complete_temp
-        self.config._complete_temp = keyword or ''
+        # memory the previous result only if it's a string (perfect match)
+        if isinstance(result, str):
+            self.config._complete_temp = result
         logging.debug(f"CaverShortcut interpret: {keyword}: {_prev} -> {result}")
         return result
