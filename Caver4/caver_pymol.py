@@ -51,7 +51,7 @@ from .caver_config import CaverConfig, THIS_DIR,CONFIG_TXT, CaverShortcut
 from .caver_java import PyJava
 
 
-VERSION = '4.0.1'
+VERSION = '4.0.2'
 url = "https://www.caver.cz/index.php?sid=123"
 
 
