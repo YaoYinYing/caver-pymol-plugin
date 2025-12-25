@@ -19,9 +19,45 @@ import logging
 import os
 from typing import Any, Optional, Union
 from pymol.shortcut import Shortcut
+from tomlkit import key
 
 THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
+
+CHOICES_FOR: dict[str, list[str]] = {
+    # booleans (normalized)
+    "compute_bottleneck_residues": ["yes", "no"],
+    "compute_errors": ["yes", "no"],
+    "compute_tunnel_residues": ["yes", "no"],
+    "do_approximate_clustering": ["yes", "no"],
+    "frame_clustering": ["yes", "no"],
+    "generate_bottleneck_heat_map": ["yes", "no"],
+    "generate_histograms": ["yes", "no"],
+    "generate_profile_heat_map": ["yes", "no"],
+    "generate_summary": ["yes", "no"],
+    "generate_trajectory": ["yes", "no"],
+    "generate_tunnel_characteristics": ["yes", "no"],
+    "generate_tunnel_profiles": ["yes", "no"],
+    "generate_unclassified_cluster": ["yes", "no"],
+    "load_cluster_tree": ["yes", "no"],
+    "load_tunnels": ["yes", "no"],
+    "save_dynamics_visualization": ["yes", "no"],
+    "save_error_profiles": ["yes", "no"],
+    "save_zones": ["yes", "no"],
+
+    # enums
+    "stop_after": ["never", "tunnels", "cluster_tree"],
+    "swap": ["yes", "maybe", "no"],
+    "visualization_subsampling": ["random", "cheapest"],
+    "one_tunnel_in_snapshot": ["cheapest", "random", "no"],
+
+    # discrete numeric options (keep as strings for Shortcut)
+    "number_of_approximating_balls": ["12", "20", "8", "6", "4"],
+
+    # special token
+    "include": ["*"],
+}
+
 
 @dataclass
 class CaverConfig:
@@ -51,6 +87,7 @@ class CaverConfig:
     max_distance: float = 4.0
     desired_radius: float = 1.8
 
+    
     @property
     def all_keys(self) -> list[str]:
         return [
@@ -59,6 +96,8 @@ class CaverConfig:
         ]
     
 
+    def choices_for(self,key: str) -> list[str] | None:
+        return CHOICES_FOR.get(key)
 
 
     def has(self, key: str) -> bool:
@@ -67,8 +106,8 @@ class CaverConfig:
     def delete(self, key: str):
         delattr(self, key)
 
-    def get(self, key: str) -> Any:
-        return getattr(self, key)
+    def get(self, key: str) -> Any| None:
+        return getattr(self, key) if hasattr(self, key) else None
 
     def set(self, key: str, value: Any):
         setattr(self, key, value)
@@ -269,15 +308,12 @@ class CaverShortcut(Shortcut):
         super().__init__(keywords, filter_leading_underscore,)
         self.config = config
     
-    def _interpret(
-        self, keyword: str, mode: bool = False
-    ) -> Optional[Union[int, str, list[str]]]:
-        return super().interpret(keyword, mode)
     def interpret(
         self, keyword: str, mode: bool = False
     ) -> Optional[Union[int, str, list[str]]]:
-        result = self._interpret(keyword, mode)
+        result = super().interpret(keyword, mode)
         _prev = self.config._complete_temp
+        
         # memory the previous result only if it's a string (perfect match)
         if isinstance(result, str):
             self.config._complete_temp = result

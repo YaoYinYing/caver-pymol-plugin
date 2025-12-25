@@ -248,10 +248,9 @@ class CaverPyMOL(QtWidgets.QWidget):
         # dynamic autocompletion for value (current)
         cmd.auto_arg[1]["caver_set"] = [
             lambda: Shortcut(
-                keywords=[
-                    self.config.get(self.config._complete_temp) if self.config.has(self.config._complete_temp) else ' '
-                    ]
-                ), "Caver setting value", ""]
+                keywords=(
+                    self.config.choices_for(self.config._complete_temp) or 
+                    [self.config.get(self.config._complete_temp)] or [" "])), "Caver setting value", ""]
 
         self.configin(CONFIG_TXT)
 
