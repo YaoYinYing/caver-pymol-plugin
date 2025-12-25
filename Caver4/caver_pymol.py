@@ -34,6 +34,7 @@ import time
 
 # TODO: deprecated
 from pymol import stored
+from pymol.shortcut import Shortcut
 from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 
@@ -46,7 +47,7 @@ from .utils.ui_tape import (CheckableListView, get_widget_value,
                             widget_signal_tape)
 
 
-from .caver_config import CaverConfig, THIS_DIR,CONFIG_TXT
+from .caver_config import CaverConfig, THIS_DIR,CONFIG_TXT, CaverShortcut
 from .caver_java import PyJava
 
 
@@ -240,6 +241,17 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         # register as a pymol command
         cmd.extend('caver_set', self.caver_set)
+
+        # autocompletion for key
+        cmd.auto_arg[0]["caver_set"] = [lambda : CaverShortcut(config=self.config,keywords=self.config.all_keys), "Caver setting key", ", "]
+
+        # dynamic autocompletion for value (current)
+        cmd.auto_arg[1]["caver_set"] = [
+            lambda: Shortcut(
+                keywords=[
+                    self.config.get(self.config._complete_temp) if self.config.has(self.config._complete_temp) else ' '
+                    ]
+                ), "Caver setting value", ""]
 
         self.configin(CONFIG_TXT)
 

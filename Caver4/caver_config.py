@@ -17,13 +17,15 @@ from dataclasses import dataclass
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Union
+from pymol.shortcut import Shortcut
 
 THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
 
 @dataclass
 class CaverConfig:
+    
 
     # connect to main ui widgets
     output_dir: str = ""
@@ -32,6 +34,8 @@ class CaverConfig:
     start_point_x: float = 0.0
     start_point_y: float = 0.0
     start_point_z: float = 0.0
+
+    _complete_temp: str =''
 
 
     # connect to config widgets
@@ -46,6 +50,16 @@ class CaverConfig:
     
     max_distance: float = 4.0
     desired_radius: float = 1.8
+
+    @property
+    def all_keys(self) -> list[str]:
+        return [
+            k for k in self.__dict__.keys() 
+            if not k.startswith(('output_dir','selection_name','start_point_x','start_point_y','start_point_z'))
+        ]
+    
+
+
 
     def has(self, key: str) -> bool:
         return hasattr(self, key)
@@ -240,3 +254,32 @@ class CaverConfig:
         # Write the updated configuration content to the TXT file
         with open(txt_file, 'w') as f:
             f.write('\n'.join(new_txt_contents))
+
+
+class CaverShortcut(Shortcut):
+    '''
+    Shortcut class connect to CaverConfig
+
+    A specialized Shortcut class that connects to a CaverConfig instance. 
+    Last configuration key is temporarily stored in CaverConfig._complete_temp for next-iterm completion purposes.
+    '''
+
+
+    def __init__(self, config: CaverConfig, keywords = None, filter_leading_underscore = True,):
+        super().__init__(keywords, filter_leading_underscore,)
+        self.config = config
+    
+    def _interpret(
+        self, keyword: str, mode: bool = False
+    ) -> Optional[Union[int, str, list[str]]]:
+        return super().interpret(keyword, mode)
+    def interpret(
+        self, keyword: str, mode: bool = False
+    ) -> Optional[Union[int, str, list[str]]]:
+        result = self._interpret(keyword, mode)
+        _prev = self.config._complete_temp
+        # memory the previous result only if it's a string (perfect match)
+        if isinstance(result, str):
+            self.config._complete_temp = result
+        logging.debug(f"CaverShortcut interpret: {keyword}: {_prev} -> {result}")
+        return result
