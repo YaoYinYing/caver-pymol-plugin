@@ -4,7 +4,19 @@ The CAVER PyMOL plugin enables calculation and visualization of tunnels in
 PyMOL. For the calculation of tunnels, the plugin utilizes CAVER 3.02 software
 package.
 
-Website: <https://www.caver.cz>
+Original Website: <https://www.caver.cz>
+
+## Features of this fork
+- Support modern PyMOL driven by PyQt
+- Support MD analysis
+- Flexibler starting point and residue inclusions
+- Results playback
+- Extended PyMOL commandline prompt `caver_set`
+
+## Image Preview
+![](https://github-image-cache.yaoyy.moe/2026/01/106a16b82340e1a4581b2eff7839fdf1.png)
+(A). Refactored pluggin interface. (B). Configuration window. (C). Starting point selection and refines. (D). Starting point from residues, atons or coordinates. (E). Tunnel MD analysis. (F, G). `caver_set` auto-completion for (E) options and (G) values.
+
 
 ## Contributors:
 * Human Computer Interaction Laboratory Faculty of Informatics, Masaryk University
@@ -19,7 +31,8 @@ Website: <https://www.caver.cz>
 
 ## Installation instructions
 
-1. Install OpenJDK: e.g.: `brew install openjdk`, then add it to PATH according to the instructions output with HomeBrew.
+1. Install OpenJDK
+  - For macOS:  run `brew install openjdk` in terminal, then add it to PATH according to the instructions output with HomeBrew.
 2. Download [plugin](https://github.com/YaoYinYing/caver-pymol-plugin/archive/refs/heads/master.zip)
 3. Start PyMOL
 4. Open Plugin manager (Plugin -> Plugin manager)
