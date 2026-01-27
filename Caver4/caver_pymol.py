@@ -262,7 +262,7 @@ class CaverPyMOL(QtWidgets.QWidget):
 
     def _update_run_id(self):
         run_ids=self.get_run_ids()[1]
-        set_widget_value(self.ui.comboBox_RunID, run_ids or [])
+        set_widget_value(self.ui.comboBox_RunID, run_ids)
 
     def _playback_run_id(self, run_id: str):
         '''
@@ -278,6 +278,9 @@ class CaverPyMOL(QtWidgets.QWidget):
     
         run_id= int(run_id)
         out_home, idxs = self.get_run_ids()
+
+        if not idxs:
+            notify_box("No historical runs found in the output directory.", ValueError)
 
         if not run_id in idxs:
             notify_box(f"Run ID '{run_id}' does not exist in the output directory.", ValueError)
@@ -401,9 +404,6 @@ class CaverPyMOL(QtWidgets.QWidget):
         # only successful runs are saved with view_plugin.py file
         idxs = [int(x) for x in os.listdir(out_home) if x.isdigit() if os.path.isfile(os.path.join(out_home, str(x), "pymol", "view_plugin.py"))]
         
-        if not idxs:
-            notify_box(f"Output directory '{out_home}' does not contain any run files, perhaps you dont have run any analysis yet.", ValueError)
-        
         return out_home,idxs
 
     def initialize_out_dir(self):
@@ -414,7 +414,12 @@ class CaverPyMOL(QtWidgets.QWidget):
         '''
 
         out_home, idxs = self.get_run_ids()
-        max_idx = max(idxs)
+
+        
+        if not idxs:
+            max_idx = 0
+        else:
+            max_idx = max(idxs)
 
         new_dir = os.path.join(out_home, str(max_idx + 1))
         os.makedirs(new_dir)
