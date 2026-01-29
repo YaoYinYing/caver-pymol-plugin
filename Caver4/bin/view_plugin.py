@@ -1,14 +1,19 @@
-from pymol import cmd
 import os
+
+from pymol import cmd
+
 
 def parrent(dir):
     return os.path.abspath(os.path.join(dir, os.path.pardir))
 
+
 scripts = '$pymol_scripts' + '/'
 home = parrent(scripts) + '/'
 
+
 def exists(name: str):
     return name in cmd.get_names("all")
+
 
 def load_safely(file: str, name: str):
     if exists(name):
@@ -32,7 +37,7 @@ if os.path.exists(cluster_dir):
     list = os.listdir(cluster_dir)
     list.sort()
     for fn in list:
-        name = id + '_' + fn.replace('tun_cl_','t')
+        name = id + '_' + fn.replace('tun_cl_', 't')
         suffix = name[-4:]
         if '.pdb' == suffix or '.ent' == suffix:
             name = name[:-4]

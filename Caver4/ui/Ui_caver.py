@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Form implementation generated from reading ui file '/Users/yyy/Documents/protein_design/caver-pymol-plugin/Caver4/ui/caver.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
@@ -11,7 +9,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_CaverUI(object):
+class Ui_CaverUI:
     def setupUi(self, CaverUI):
         CaverUI.setObjectName("CaverUI")
         CaverUI.resize(540, 500)
@@ -117,6 +115,7 @@ class Ui_CaverUI(object):
         self.verticalLayoutWidget_4.setObjectName("verticalLayoutWidget_4")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_4)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_3.setSpacing(0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.horizontalLayout_14 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_14.setObjectName("horizontalLayout_14")
@@ -136,9 +135,6 @@ class Ui_CaverUI(object):
         self.verticalLayout_3.addLayout(self.horizontalLayout_14)
         self.horizontalLayout_15 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
-        self.pushButton_clearStartPointSele = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
-        self.pushButton_clearStartPointSele.setObjectName("pushButton_clearStartPointSele")
-        self.horizontalLayout_15.addWidget(self.pushButton_clearStartPointSele)
         self.pushButton_RefreshSelection = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
         self.pushButton_RefreshSelection.setObjectName("pushButton_RefreshSelection")
         self.horizontalLayout_15.addWidget(self.pushButton_RefreshSelection)
@@ -149,19 +145,21 @@ class Ui_CaverUI(object):
         self.tabWidget.addTab(self.tab_coordinates, "")
         self.tab_refine = QtWidgets.QWidget()
         self.tab_refine.setObjectName("tab_refine")
-        self.widget = QtWidgets.QWidget(self.tab_refine)
-        self.widget.setGeometry(QtCore.QRect(10, 10, 289, 25))
-        self.widget.setObjectName("widget")
-        self.horizontalLayout_27 = QtWidgets.QHBoxLayout(self.widget)
-        self.horizontalLayout_27.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayoutWidget_3 = QtWidgets.QWidget(self.tab_refine)
+        self.verticalLayoutWidget_3.setGeometry(QtCore.QRect(0, -1, 291, 71))
+        self.verticalLayoutWidget_3.setObjectName("verticalLayoutWidget_3")
+        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_3)
+        self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_7.setObjectName("verticalLayout_7")
+        self.horizontalLayout_27 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_27.setSpacing(0)
         self.horizontalLayout_27.setObjectName("horizontalLayout_27")
         self.horizontalLayout_28 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_28.setObjectName("horizontalLayout_28")
-        self.label_20 = QtWidgets.QLabel(self.widget)
+        self.label_20 = QtWidgets.QLabel(self.verticalLayoutWidget_3)
         self.label_20.setObjectName("label_20")
         self.horizontalLayout_28.addWidget(self.label_20)
-        self.doubleSpinBox_x = QtWidgets.QDoubleSpinBox(self.widget)
+        self.doubleSpinBox_x = QtWidgets.QDoubleSpinBox(self.verticalLayoutWidget_3)
         self.doubleSpinBox_x.setSuffix("")
         self.doubleSpinBox_x.setDecimals(1)
         self.doubleSpinBox_x.setMinimum(-100000.0)
@@ -169,15 +167,15 @@ class Ui_CaverUI(object):
         self.doubleSpinBox_x.setObjectName("doubleSpinBox_x")
         self.horizontalLayout_28.addWidget(self.doubleSpinBox_x)
         self.horizontalLayout_27.addLayout(self.horizontalLayout_28)
-        self.label_21 = QtWidgets.QLabel(self.widget)
+        self.label_21 = QtWidgets.QLabel(self.verticalLayoutWidget_3)
         self.label_21.setObjectName("label_21")
         self.horizontalLayout_27.addWidget(self.label_21)
         self.horizontalLayout_29 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_29.setObjectName("horizontalLayout_29")
-        self.label_22 = QtWidgets.QLabel(self.widget)
+        self.label_22 = QtWidgets.QLabel(self.verticalLayoutWidget_3)
         self.label_22.setObjectName("label_22")
         self.horizontalLayout_29.addWidget(self.label_22)
-        self.doubleSpinBox_y = QtWidgets.QDoubleSpinBox(self.widget)
+        self.doubleSpinBox_y = QtWidgets.QDoubleSpinBox(self.verticalLayoutWidget_3)
         self.doubleSpinBox_y.setSuffix("")
         self.doubleSpinBox_y.setDecimals(1)
         self.doubleSpinBox_y.setMinimum(-100000.0)
@@ -185,15 +183,15 @@ class Ui_CaverUI(object):
         self.doubleSpinBox_y.setObjectName("doubleSpinBox_y")
         self.horizontalLayout_29.addWidget(self.doubleSpinBox_y)
         self.horizontalLayout_27.addLayout(self.horizontalLayout_29)
-        self.label_23 = QtWidgets.QLabel(self.widget)
+        self.label_23 = QtWidgets.QLabel(self.verticalLayoutWidget_3)
         self.label_23.setObjectName("label_23")
         self.horizontalLayout_27.addWidget(self.label_23)
         self.horizontalLayout_30 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_30.setObjectName("horizontalLayout_30")
-        self.label_24 = QtWidgets.QLabel(self.widget)
+        self.label_24 = QtWidgets.QLabel(self.verticalLayoutWidget_3)
         self.label_24.setObjectName("label_24")
         self.horizontalLayout_30.addWidget(self.label_24)
-        self.doubleSpinBox_z = QtWidgets.QDoubleSpinBox(self.widget)
+        self.doubleSpinBox_z = QtWidgets.QDoubleSpinBox(self.verticalLayoutWidget_3)
         self.doubleSpinBox_z.setSuffix("")
         self.doubleSpinBox_z.setDecimals(1)
         self.doubleSpinBox_z.setMinimum(-100000.0)
@@ -201,6 +199,15 @@ class Ui_CaverUI(object):
         self.doubleSpinBox_z.setObjectName("doubleSpinBox_z")
         self.horizontalLayout_30.addWidget(self.doubleSpinBox_z)
         self.horizontalLayout_27.addLayout(self.horizontalLayout_30)
+        self.verticalLayout_7.addLayout(self.horizontalLayout_27)
+        self.pushButton_clearStartPointSele = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_clearStartPointSele.sizePolicy().hasHeightForWidth())
+        self.pushButton_clearStartPointSele.setSizePolicy(sizePolicy)
+        self.pushButton_clearStartPointSele.setObjectName("pushButton_clearStartPointSele")
+        self.verticalLayout_7.addWidget(self.pushButton_clearStartPointSele)
         self.tabWidget.addTab(self.tab_refine, "")
         self.tab_atoms = QtWidgets.QWidget()
         self.tab_atoms.setObjectName("tab_atoms")
@@ -238,11 +245,12 @@ class Ui_CaverUI(object):
         self.horizontalLayout_4.addWidget(self.radioButton_startAsCoords)
         self.verticalLayout_2.addLayout(self.horizontalLayout_4)
         self.textEdit_startpoint = QtWidgets.QTextEdit(self.verticalLayoutWidget_2)
+        self.textEdit_startpoint.setMaximumSize(QtCore.QSize(16777215, 30))
         self.textEdit_startpoint.setObjectName("textEdit_startpoint")
         self.verticalLayout_2.addWidget(self.textEdit_startpoint)
         self.tabWidget.addTab(self.tab_atoms, "")
         self.horizontalLayoutWidget_22 = QtWidgets.QWidget(CaverUI)
-        self.horizontalLayoutWidget_22.setGeometry(QtCore.QRect(20, 440, 311, 32))
+        self.horizontalLayoutWidget_22.setGeometry(QtCore.QRect(10, 440, 321, 41))
         self.horizontalLayoutWidget_22.setObjectName("horizontalLayoutWidget_22")
         self.horizontalLayout_22 = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_22)
         self.horizontalLayout_22.setContentsMargins(0, 0, 0, 0)
@@ -351,7 +359,7 @@ class Ui_CaverUI(object):
         self.groupBox_6.setGeometry(QtCore.QRect(340, 360, 191, 121))
         self.groupBox_6.setObjectName("groupBox_6")
         self.verticalLayoutWidget = QtWidgets.QWidget(self.groupBox_6)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 30, 171, 80))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 30, 181, 80))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -421,10 +429,10 @@ class Ui_CaverUI(object):
 
         self.retranslateUi(CaverUI)
         self.tabWidget.setCurrentIndex(0)
-        self.checkBox_EnablePlayBack.toggled['bool'].connect(self.pushButton_RefreshRunID.setEnabled) # type: ignore
-        self.checkBox_EnablePlayBack.toggled['bool'].connect(self.pushButton_LoadRunID.setEnabled) # type: ignore
-        self.checkBox_MD.toggled['bool'].connect(self.spinBox_MD_StateMin.setEnabled) # type: ignore
-        self.checkBox_MD.toggled['bool'].connect(self.spinBox_MD_StateMax.setEnabled) # type: ignore
+        self.checkBox_EnablePlayBack.toggled["bool"].connect(self.pushButton_RefreshRunID.setEnabled)  # type: ignore
+        self.checkBox_EnablePlayBack.toggled["bool"].connect(self.pushButton_LoadRunID.setEnabled)  # type: ignore
+        self.checkBox_MD.toggled["bool"].connect(self.spinBox_MD_StateMin.setEnabled)  # type: ignore
+        self.checkBox_MD.toggled["bool"].connect(self.spinBox_MD_StateMax.setEnabled)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(CaverUI)
 
     def retranslateUi(self, CaverUI):
@@ -436,12 +444,16 @@ class Ui_CaverUI(object):
         self.pushButton_editConfig.setText(_translate("CaverUI", "Edit"))
         self.pushButton_loadConfig.setToolTip(_translate("CaverUI", "Load configuration from a TXT or JSON file."))
         self.pushButton_loadConfig.setText(_translate("CaverUI", "Load"))
-        self.pushButton_saveConfig.setToolTip(_translate("CaverUI", "Save current configuration to a TXT or JSON file."))
+        self.pushButton_saveConfig.setToolTip(
+            _translate("CaverUI", "Save current configuration to a TXT or JSON file.")
+        )
         self.pushButton_saveConfig.setText(_translate("CaverUI", "Save"))
         self.groupBox_2.setTitle(_translate("CaverUI", "Toggles"))
         self.label_8.setText(_translate("CaverUI", "Output Directories:"))
         self.lineEdit_outputDir.setToolTip(_translate("CaverUI", "Output directory for saving all results"))
-        self.lineEdit_outputDir.setPlaceholderText(_translate("CaverUI", "Please set an output directory before using Caver."))
+        self.lineEdit_outputDir.setPlaceholderText(
+            _translate("CaverUI", "Please set an output directory before using Caver.")
+        )
         self.pushButton_openOutputDir.setToolTip(_translate("CaverUI", "Pick an output directory."))
         self.pushButton_openOutputDir.setText(_translate("CaverUI", "..."))
         self.groupBox_3.setTitle(_translate("CaverUI", "Input Model"))
@@ -449,13 +461,15 @@ class Ui_CaverUI(object):
         self.pushButton_reloadInputModel.setToolTip(_translate("CaverUI", "Reload PyMOL model objects"))
         self.pushButton_reloadInputModel.setText(_translate("CaverUI", "Reload"))
         self.groupBox_4.setTitle(_translate("CaverUI", "Start Point "))
-        self.tab_coordinates.setToolTip(_translate("CaverUI", "Use PyMOL selection to create starting point coordinates."))
+        self.tab_coordinates.setToolTip(
+            _translate("CaverUI", "Use PyMOL selection to create starting point coordinates.")
+        )
         self.label_9.setText(_translate("CaverUI", "Selection: "))
-        self.pushButton_clearStartPointSele.setToolTip(_translate("CaverUI", "If you wish to use Custom input, clear the selections."))
-        self.pushButton_clearStartPointSele.setText(_translate("CaverUI", " Clear"))
         self.pushButton_RefreshSelection.setToolTip(_translate("CaverUI", "Refresh the selection list"))
         self.pushButton_RefreshSelection.setText(_translate("CaverUI", "Refresh"))
-        self.pushButton_convertStartPointSele.setToolTip(_translate("CaverUI", "Convert selection into xyz-coordinates."))
+        self.pushButton_convertStartPointSele.setToolTip(
+            _translate("CaverUI", "Convert selection into xyz-coordinates.")
+        )
         self.pushButton_convertStartPointSele.setText(_translate("CaverUI", "Convert"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_coordinates), _translate("CaverUI", "Select"))
         self.tab_refine.setToolTip(_translate("CaverUI", "Refine coordinates from PyMOL selection."))
@@ -464,13 +478,22 @@ class Ui_CaverUI(object):
         self.label_22.setText(_translate("CaverUI", "y="))
         self.label_23.setText(_translate("CaverUI", ","))
         self.label_24.setText(_translate("CaverUI", "z="))
+        self.pushButton_clearStartPointSele.setToolTip(
+            _translate("CaverUI", "If you wish to use Custom input, clear the selections.")
+        )
+        self.pushButton_clearStartPointSele.setText(_translate("CaverUI", " Clear"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_refine), _translate("CaverUI", "Refine"))
-        self.tab_atoms.setToolTip(_translate("CaverUI", "Input custom starting point settings. Atoms for atom ids, Residues for residue ids, coordinates for xyz coordinates."))
-        self.radioButton_startAsAtoms.setToolTip(_translate("CaverUI", "starting_point_atom"))
+        self.tab_atoms.setToolTip(
+            _translate(
+                "CaverUI",
+                "Input custom starting point settings. Atoms for atom ids, Residues for residue ids, coordinates for xyz coordinates. For Residues, please check the chain IDs of input model.",
+            )
+        )
+        self.radioButton_startAsAtoms.setToolTip(_translate("CaverUI", "Corresponding to starting_point_atom"))
         self.radioButton_startAsAtoms.setText(_translate("CaverUI", "Atoms"))
-        self.radioButton_startAsResidues.setToolTip(_translate("CaverUI", "starting_point_residue"))
+        self.radioButton_startAsResidues.setToolTip(_translate("CaverUI", "Corresponding to starting_point_residue"))
         self.radioButton_startAsResidues.setText(_translate("CaverUI", "Residues"))
-        self.radioButton_startAsCoords.setToolTip(_translate("CaverUI", "starting_point_coordinates"))
+        self.radioButton_startAsCoords.setToolTip(_translate("CaverUI", "Corresponding to starting_point_coordinates"))
         self.radioButton_startAsCoords.setText(_translate("CaverUI", "Coordinates"))
         self.textEdit_startpoint.setToolTip(_translate("CaverUI", "See the document for detaild syntax."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_atoms), _translate("CaverUI", "Custom"))
@@ -483,7 +506,12 @@ class Ui_CaverUI(object):
         self.pushButton_cite.setToolTip(_translate("CaverUI", "Cite info"))
         self.pushButton_cite.setText(_translate("CaverUI", "Cite"))
         self.groupBox_5.setTitle(_translate("CaverUI", "Customized Residue Type"))
-        self.listView_residueType.setToolTip(_translate("CaverUI", "Residue names that takes into account. Protein residues is the default. Unselected residues will be ignored."))
+        self.listView_residueType.setToolTip(
+            _translate(
+                "CaverUI",
+                "Residue names that takes into account. Protein residues is the default. Unselected residues will be ignored.",
+            )
+        )
         self.pushButton_allAA.setToolTip(_translate("CaverUI", "Select all of them."))
         self.pushButton_allAA.setText(_translate("CaverUI", "All"))
         self.pushButton_noneAA.setToolTip(_translate("CaverUI", "Select non of them."))
@@ -496,7 +524,9 @@ class Ui_CaverUI(object):
         self.pushButton_ligandResn.setText(_translate("CaverUI", "Ligand"))
         self.groupBox_6.setToolTip(_translate("CaverUI", "Reload historical analysis results."))
         self.groupBox_6.setTitle(_translate("CaverUI", "Results Play Back"))
-        self.checkBox_EnablePlayBack.setToolTip(_translate("CaverUI", "Enable result play backs"))
+        self.checkBox_EnablePlayBack.setToolTip(
+            _translate("CaverUI", "Enable result play backs for historical analyses.")
+        )
         self.checkBox_EnablePlayBack.setText(_translate("CaverUI", "Enabled:"))
         self.comboBox_RunID.setToolTip(_translate("CaverUI", "Run ID that under the outputs."))
         self.pushButton_RefreshRunID.setToolTip(_translate("CaverUI", "Refresh the Run IDs"))

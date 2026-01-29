@@ -1,5 +1,6 @@
-from .caver_pymol import CaverPyMOL
 from pymol.plugins import addmenuitemqt
+
+from .caver_pymol import CaverPyMOL
 
 
 def __init_plugin__(app=None):
