@@ -3,7 +3,8 @@ import logging
 import os
 import subprocess
 import threading
-from typing import List, Mapping, Optional, Tuple, Union
+from collections.abc import Mapping
+from typing import Optional, Union
 
 
 class LiveProcessResult(subprocess.CompletedProcess):
@@ -16,7 +17,7 @@ class LiveProcessResult(subprocess.CompletedProcess):
 
 
 def run_command(
-    cmd: Union[Tuple[str], List[str]],
+    cmd: Union[tuple[str], list[str]],
     verbose: bool = False,
     env: Optional[Mapping[str, str]] = None,
 ) -> subprocess.CompletedProcess[str]:
@@ -42,11 +43,11 @@ def run_command(
     if env:
         patched_env.update(env)
 
-    stdout_lines: List[str] = []
-    stderr_lines: List[str] = []
+    stdout_lines: list[str] = []
+    stderr_lines: list[str] = []
 
-    def stream_reader(pipe: io.IOBase, collector: List[str], label: str):
-        for line in iter(pipe.readline, ''):
+    def stream_reader(pipe: io.IOBase, collector: list[str], label: str):
+        for line in iter(pipe.readline, ""):
             if verbose:
                 logging.info(f"[{label}] {line.rstrip()}")
             collector.append(line)
@@ -70,13 +71,11 @@ def run_command(
     t1.join()
     t2.join()
 
-    stdout_text = ''.join(stdout_lines)
-    stderr_text = ''.join(stderr_lines)
+    stdout_text = "".join(stdout_lines)
+    stderr_text = "".join(stderr_lines)
 
     if process.returncode != 0 and verbose:
-        raise RuntimeError(
-            f"--> Command failed:\n{'-' * 79}\n{stderr_text.strip()}\n{'-' * 79}"
-        )
+        raise RuntimeError(f"--> Command failed:\n{'-' * 79}\n{stderr_text.strip()}\n{'-' * 79}")
 
     return LiveProcessResult(
         args=cmd,

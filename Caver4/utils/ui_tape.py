@@ -1,15 +1,15 @@
-'''
+"""
 Advanced UI for Caver, originally written by Yinying for REvoDesign Project.
-'''
+"""
 
 import logging
 import math
 import os
 import time
 import warnings
+from collections.abc import Iterable
 from contextlib import contextmanager
-from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    NoReturn, Optional, Type, TypeVar, Union, overload)
+from typing import TYPE_CHECKING, Any, Callable, NoReturn, Optional, TypeVar, Union, overload
 
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
@@ -22,14 +22,13 @@ def set_widget_value(widget: QtWidgets.QStackedWidget, value: list): ...
 
 
 @overload
-def set_widget_value(widget: QtWidgets.QProgressBar, value: Union[int, List[int], tuple[int, int]]): ...
+def set_widget_value(widget: QtWidgets.QProgressBar, value: Union[int, list[int], tuple[int, int]]): ...
 
 
 @overload
-def set_widget_value(widget: Union[
-    QtWidgets.QDoubleSpinBox,
-    QtWidgets.QSpinBox],
-    value: Union[int, float, list[str], tuple[str, str]]): ...
+def set_widget_value(
+    widget: Union[QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox], value: Union[int, float, list[str], tuple[str, str]]
+): ...
 
 
 @overload
@@ -41,13 +40,12 @@ def set_widget_value(widget: QtWidgets.QGridLayout, value: str): ...
 
 
 @overload
-def set_widget_value(widget: Union[
-    QtWidgets.QLineEdit,
-    QtWidgets.QTextEdit,
-    QtWidgets.QLCDNumber,
-    QtWidgets.QCheckBox,
-    QtWidgets.QLabel
-], value: Any): ...
+def set_widget_value(
+    widget: Union[
+        QtWidgets.QLineEdit, QtWidgets.QTextEdit, QtWidgets.QLCDNumber, QtWidgets.QCheckBox, QtWidgets.QLabel
+    ],
+    value: Any,
+): ...
 
 
 def set_widget_value(widget, value):
@@ -126,23 +124,17 @@ def get_widget_value(widget: QtWidgets.QCheckBox) -> bool: ...  # type: ignore
 
 
 @overload
-def get_widget_value(widget: Union[  # type: ignore
-    QtWidgets.QComboBox,
-    QtWidgets.QLineEdit,
-    QtWidgets.QTextEdit]) -> str: ...
+def get_widget_value(
+    widget: Union[QtWidgets.QComboBox, QtWidgets.QLineEdit, QtWidgets.QTextEdit],  # type: ignore
+) -> str: ...
 
 
 @overload
-def get_widget_value(widget: Union[  # type: ignore
-    QtWidgets.QDoubleSpinBox,
-    QtWidgets.QLCDNumber
-]) -> float: ...
+def get_widget_value(widget: Union[QtWidgets.QDoubleSpinBox, QtWidgets.QLCDNumber]) -> float: ...  # type: ignore
 
 
 @overload
-def get_widget_value(widget: Union[  # type: ignore
-    QtWidgets.QSpinBox,
-    QtWidgets.QProgressBar]) -> int: ...
+def get_widget_value(widget: Union[QtWidgets.QSpinBox, QtWidgets.QProgressBar]) -> int: ...  # type: ignore
 
 
 def get_widget_value(widget: QtWidgets.QWidget) -> Any:
@@ -227,9 +219,7 @@ def widget_signal_tape(widget: QtWidgets.QWidget, event):
 
     # Raise an error for unsupported widget types
     else:
-        raise NotImplementedError(
-            f"{widget} {type(widget)} is not supported yet"
-        )
+        raise NotImplementedError(f"{widget} {type(widget)} is not supported yet")
 
 
 def getExistingDirectory():
@@ -256,28 +246,19 @@ def refresh_window():
 
 @overload
 def notify_box(
-    message: str = "",
-    error_type: Union[None, Type[Warning]] = None,
-    details: Optional[str] = None
-) -> None:
-    ...
+    message: str = "", error_type: Union[None, type[Warning]] = None, details: Optional[str] = None
+) -> None: ...
+
 
 # Overload #2: Exception => NoReturn
 
 
 @overload
-def notify_box(
-    message: str,
-    error_type: Type[Exception],
-    details: Optional[str] = None
-) -> NoReturn:
-    ...
+def notify_box(message: str, error_type: type[Exception], details: Optional[str] = None) -> NoReturn: ...
 
 
 def notify_box(
-    message: str = "",
-    error_type: Optional[Type[Exception]] = None,
-    details: Optional[str] = None
+    message: str = "", error_type: Optional[type[Exception]] = None, details: Optional[str] = None
 ) -> Union[None, NoReturn]:
     """
     Display a notification message box.
@@ -320,7 +301,7 @@ def notify_box(
     raise_error(error_type, message)
 
 
-def raise_error(error_type: Type[Exception], message: str) -> NoReturn:
+def raise_error(error_type: type[Exception], message: str) -> NoReturn:
     """
     Raises an error of the specified type with the given message.
 
@@ -339,10 +320,11 @@ class CheckableListView(QtWidgets.QWidget):
         list_view: The QListView instance this widget operates on.
         model: The data model instance used by the list view.
     """
+
     # Custom signal, emits (item_text: str, new_state: Qt.CheckState)
     checkStateChanged = QtCore.pyqtSignal(list)
 
-    def __init__(self, list_view, items: Dict[str, str] = {}, parent=None):
+    def __init__(self, list_view, items: dict[str, str] = {}, parent=None):
         """
         Initializes the CheckableListView instance.
 
@@ -410,7 +392,7 @@ class CheckableListView(QtWidgets.QWidget):
             A list of strings representing the texts of all checked items.
         """
         checked_items = self._get_items_by_check_state(QtCore.Qt.Checked)
-        logging.debug(f'Checked: {checked_items}')
+        logging.debug(f"Checked: {checked_items}")
         return checked_items
 
     def get_unchecked_items(self):
@@ -452,7 +434,7 @@ class CheckableListView(QtWidgets.QWidget):
                 else:
                     item.setCheckState(QtCore.Qt.Checked)
 
-    def check_these(self, required_items: List[str], clear_before_check: bool = True):
+    def check_these(self, required_items: list[str], clear_before_check: bool = True):
         """
         Selects the items in the list.
         """
@@ -467,7 +449,7 @@ class CheckableListView(QtWidgets.QWidget):
                 continue
             item.setCheckState(QtCore.Qt.Checked)
 
-    def update(self, new_items: Dict):
+    def update(self, new_items: dict):
         for k, v in new_items.items():
             if not v:
                 # Add as a separator
@@ -476,14 +458,14 @@ class CheckableListView(QtWidgets.QWidget):
                 separator_item.setSelectable(False)  # Non-selectable
                 separator_item.setCheckable(False)  # Non-checkable
                 separator_item.setForeground(QtGui.QBrush(QtCore.Qt.yellow))
-                separator_item.setBackground(QtGui.QBrush(QtCore.Qt.blue))   # Different background
+                separator_item.setBackground(QtGui.QBrush(QtCore.Qt.blue))  # Different background
                 separator_item.setFont(QtGui.QFont("Arial", weight=QtGui.QFont.Bold))  # Bold text
                 self.model.appendRow(separator_item)
             else:
                 # Add as a regular checkable item
                 item = QtGui.QStandardItem(k)
                 item.setCheckable(True)
-                item.setCheckState(QtCore.Qt.Unchecked)   # Default unchecked
+                item.setCheckState(QtCore.Qt.Unchecked)  # Default unchecked
                 self.model.appendRow(item)
 
         self.items.update(new_items)
@@ -512,7 +494,7 @@ def getOpenFileNameWithExt(*args, **kwargs):
 @contextmanager
 def hold_trigger_button(
     buttons: Union[tuple[QtWidgets.QPushButton, ...], QtWidgets.QPushButton],
-    animation_duration: int = 1000  # Duration of the breathing cycle (in milliseconds)
+    animation_duration: int = 1000,  # Duration of the breathing cycle (in milliseconds)
 ):
     """
     A context manager for holding and releasing trigger buttons with a breathing effect
@@ -673,14 +655,10 @@ class WorkerThread(QtCore.QThread):
 
 
 @overload
-def run_worker_thread_with_progress(
-    worker_function: Callable[..., R], *args, **kwargs
-) -> R: ...
+def run_worker_thread_with_progress(worker_function: Callable[..., R], *args, **kwargs) -> R: ...
 
 
-def run_worker_thread_with_progress(
-    worker_function: Callable[..., Optional[R]], *args, **kwargs
-) -> Optional[R]:
+def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]], *args, **kwargs) -> Optional[R]:
     """
     Runs a worker function in a separate thread and optionally updates a progress bar.
 

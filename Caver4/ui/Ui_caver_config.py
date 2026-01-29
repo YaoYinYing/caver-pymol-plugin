@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Form implementation generated from reading ui file '/Users/yyy/Documents/protein_design/caver-pymol-plugin/Caver4/ui/caver_config.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
@@ -11,7 +9,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_CaverConfigForm(object):
+class Ui_CaverConfigForm:
     def setupUi(self, CaverConfigForm):
         CaverConfigForm.setObjectName("CaverConfigForm")
         CaverConfigForm.resize(640, 480)
