@@ -188,7 +188,14 @@ class CaverPyMOL(QtWidgets.QWidget):
             lambda: self.ui.lineEdit_outputDir.setText(
                 getExistingDirectory()))
         self.ui.comboBox_startPointSele.currentIndexChanged.connect(self._analysis_model_resn)
+        
+        # update startpoint inputs
+        self.ui.radioButton_startAsAtoms.toggled.connect(self._use_custom_startpoint)
+        self.ui.radioButton_startAsCoords.toggled.connect(self._use_custom_startpoint)
+        self.ui.radioButton_startAsResidues.toggled.connect(self._use_custom_startpoint)
         self.ui.textEdit_startpoint.textChanged.connect(self._use_custom_startpoint)
+
+
 
         return main_window, config_window
     
@@ -301,6 +308,9 @@ class CaverPyMOL(QtWidgets.QWidget):
 
     def _use_custom_startpoint(self):
         startpoint_val=get_widget_value(self.ui.textEdit_startpoint)
+
+        if not self.coordinatesNotSet:
+            notify_box('The coordinates at "Refine" tab are already set. One must clear the coordinates first.', ValueError)
         
         if not startpoint_val:
             notify_box("Please specify starting point like atom ids, residue ids or x y z coordinates.", ValueError)
