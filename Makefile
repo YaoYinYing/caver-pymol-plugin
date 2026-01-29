@@ -9,3 +9,6 @@ clean:
 
 install:
 	cp -r Caver4 /Users/yyy/.pymol/startup/
+
+black:
+	pre-commit run --all-files
