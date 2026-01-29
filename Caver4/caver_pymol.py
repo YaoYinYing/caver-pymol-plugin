@@ -421,7 +421,16 @@ class CaverPyMOL(QtWidgets.QWidget):
         else:
             max_idx = max(idxs)
 
-        new_dir = os.path.join(out_home, str(max_idx + 1))
+        max_idx+=1
+        
+        # a while loop for iteratively check if the new directory exists
+        while os.path.isdir(new_dir:=os.path.join(out_home, str(max_idx))):
+            _=max_idx
+            max_idx+=1
+            logging.warning(f"Run ID {_} already exists. Trying {max_idx}")
+            
+            
+
         os.makedirs(new_dir)
 
         self.out_dir = new_dir
