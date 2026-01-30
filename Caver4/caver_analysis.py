@@ -16,6 +16,7 @@ logging=ROOT_LOGGER.getChild('Analyst')
 
 palette_tuple = tuple(palette_dict.keys())
 
+CURRENT_ANALYST: Optional[CaverAnalyst]=None 
 
 def list_palettes() -> tuple[str, ...]:
     return palette_tuple
@@ -166,5 +167,18 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     analyst=CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
     analyst.render(minimum=spectrum_min, maximum=spectrum_max, palette=palette, show_as=repre)
 
+    # Set global variable for analyst
+    global CURRENT_ANALYST
+    CURRENT_ANALYST = analyst
 
-    
+    return 
+
+class CaverAnalystPreviewer:
+    def __init__(self, form: CaverAnalysisForm):
+        self.analyst: CaverAnalyst =CURRENT_ANALYST
+        if not self.analyst:
+            raise Exception("No analyst set")
+        self.form=form
+        self
+    def forward(self):
+        self.analyst
