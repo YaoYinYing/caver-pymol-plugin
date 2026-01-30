@@ -42,9 +42,11 @@ ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('main')    
 
+VERSION = "4.0.2"
+
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
-from .caver_analysis import run_analysis
+from .caver_analysis import run_analysis, list_palettes
 from .utils.upgrade import has_updates
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
@@ -61,7 +63,7 @@ from .utils.ui_tape import (
     widget_signal_tape,
 )
 
-VERSION = "4.0.2"
+
 url = "https://www.caver.cz/index.php?sid=123"
 
 
@@ -290,6 +292,7 @@ class CaverPyMOL(QtWidgets.QWidget):
                     else notify_box(message="No upgrade available")
             )
         
+        # analysis module
         self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(
             lambda: run_analysis(
                 form=self.ui_analyst,
@@ -297,6 +300,19 @@ class CaverPyMOL(QtWidgets.QWidget):
                 res_dir=self.get_run_ids()[0]
             )
         )
+        def refresh_tunnel_ids():
+            output_dir=os.path.join(
+                        get_widget_value(self.ui.lineEdit_outputDir), 
+                        'caver_output',
+                        get_widget_value(self.ui.comboBox_RunID) or self.run_id)
+            tunnel_clusters=[x for x in os.listdir(os.path.join(output_dir, "data", "clusters_timeless")) if x.endswith(".pdb") and x.startswith('tun_cl_')]
+            num_tunnels = len(tunnel_clusters)
+            set_widget_value(self.ui_analyst.comboBox_tunnel, range(1, num_tunnels+1))
+
+        self.ui_analyst.pushButton_refreshTunnels.clicked.connect(
+            lambda: refresh_tunnel_ids()
+        )
+        set_widget_value(self.ui_analyst.comboBox_spectrumPalette, list_palettes())
 
         # register as a pymol command
         cmd.extend("caver_set", self.caver_set)

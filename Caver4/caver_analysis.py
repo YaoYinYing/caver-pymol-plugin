@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import os
 from typing import Optional, Union
 from pymol import cmd
+from pymol.constants_palette import palette_dict
 
 # pandas is not supposed to be installed with PyMOL
 
@@ -12,6 +13,14 @@ from .utils.ui_tape import get_widget_value, set_widget_value
 from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
 
 logging=ROOT_LOGGER.getChild('Analysis')
+
+palette_tuple = tuple(palette_dict.keys())
+
+
+def list_palettes() -> tuple[str, ...]:
+    return palette_tuple
+
+
 
 def exists(name: str):
     return name in cmd.get_names("all")
@@ -109,9 +118,10 @@ class TunnelDynamic:
 
         for frame_id, column in enumerate(csv_data[1:], start=1):
             # check if frame is missing
-            missing_frame= not all(value != -1.0 for value in column)
+            missing_frame= all(value == -1.0 for value in column)
             # if the frame is missing, use empty string for pdb_datum
             pdb_datum= pdb_data[pdb_idx] if not missing_frame else ''
+            logging.debug(f'frame_id: {frame_id}, missing_frame: {missing_frame}')
 
             # if not missing frame, count the pdb index for next iteration
             if not missing_frame:
@@ -126,17 +136,18 @@ class TunnelDynamic:
 class CaverAnalyst:
     # salute to the original caver analyst package
     
-    def __init__(self, res_dir: str, run_id: Union[int, str], tunnel_id: int, pallete: str='red_green'):
+    def __init__(self, res_dir: str, run_id: int, tunnel_id: int, pallete: str='red_green'):
         self.res_dir = res_dir
         self.run_id = run_id
         self.tunnel_id = tunnel_id
         self.palette = pallete
         self.tunnels: TunnelDynamic = TunnelDynamic.from_result_dir(res_dir, run_id, tunnel_id)
     
-    def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green') -> None:
+    def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green', show_as: str='lines') -> None:
         for frame in self.tunnels.frames:
-            logging.info(f"Rendering frame {frame.name}")
+            logging.info(f"Rendering frame {frame.frame_id} ({len(frame.pdb_strings)}) from {self.tunnels.name} ...")
             frame_name=frame.load(self.tunnels.name, group=f'{self.tunnels.name}_{self.run_id}_t{self.tunnel_id:03d}')
+            cmd.show(show_as, frame_name)
             frame.render(frame_name, minimum=minimum, maximum=maximum, palette=palette or self.palette)
         logging.info(f"Rendered tunnel {self.tunnels.name}")
             
@@ -145,8 +156,8 @@ class CaverAnalyst:
 
 def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str):
     palette=get_widget_value(form.comboBox_spectrumPalette)
-    run_id=str(run_id)
-    tunnel_id=get_widget_value(form.comboBox_tunnel)
+    run_id=int(run_id)
+    tunnel_id=int(get_widget_value(form.comboBox_tunnel))
     spectrum_min=get_widget_value(form.doubleSpinBox_min)
     spectrum_max=get_widget_value(form.doubleSpinBox_max)
 
