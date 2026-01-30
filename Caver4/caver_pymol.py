@@ -13,7 +13,7 @@ in return.
 
 """
 
-import logging
+import logging as pylogging
 import math
 import os
 import re
@@ -37,6 +37,10 @@ from pymol import stored
 from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 from pymol.shortcut import Shortcut
+
+ROOT_LOGGER= pylogging.getLogger('Caver')
+
+logging= ROOT_LOGGER.getChild('main')    
 
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
