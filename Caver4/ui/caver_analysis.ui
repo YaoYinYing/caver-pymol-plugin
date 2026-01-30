@@ -188,26 +188,39 @@
      <property name="geometry">
       <rect>
        <x>350</x>
-       <y>10</y>
-       <width>120</width>
-       <height>80</height>
+       <y>0</y>
+       <width>151</width>
+       <height>101</height>
       </rect>
      </property>
      <property name="title">
-      <string>Static</string>
+      <string>Run</string>
      </property>
-     <widget class="QPushButton" name="pushButton_applyTunnelsSpectrumStatic">
+     <widget class="QWidget" name="">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>30</y>
-        <width>101</width>
-        <height>31</height>
+        <width>133</width>
+        <height>66</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Apply</string>
-      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QPushButton" name="pushButton_applyTunnelsSpectrumStatic">
+         <property name="text">
+          <string>Apply Static</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_applyTunnelsSpectrumStatic_2">
+         <property name="text">
+          <string>Apply Dynamic</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
    </widget>

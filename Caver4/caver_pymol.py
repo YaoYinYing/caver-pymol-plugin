@@ -44,8 +44,11 @@ logging= ROOT_LOGGER.getChild('main')
 
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
+from .caver_analysis import run_analysis
+from .utils.upgrade import has_updates
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
+from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
 from .utils.ui_tape import (
     CheckableListView,
     get_widget_value,
@@ -194,7 +197,12 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         self.ui_config = CaverConfigForm()
         config_window = QtWidgets.QWidget()
+
         self.ui_config.setupUi(config_window)
+
+        self.ui_analyst = CaverAnalysisForm()
+        analysis_window = QtWidgets.QWidget()
+        self.ui_analyst.setupUi(analysis_window)
 
         self.ui.pushButton_help.clicked.connect(self.launchHelp)
         self.bind_config()
@@ -219,7 +227,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.radioButton_startAsResidues.toggled.connect(self._use_custom_startpoint)
         self.ui.textEdit_startpoint.textChanged.connect(self._use_custom_startpoint)
 
-        return main_window, config_window
+        return main_window, config_window, analysis_window
 
     @contextmanager
     def freeze_window(self):
@@ -239,15 +247,18 @@ class CaverPyMOL(QtWidgets.QWidget):
         # global reference to avoid garbage collection of our dialog
         self.dialog = None
         self.config = CaverConfig()
+        self.run_id = 0
 
         # ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$", r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
+        # make windows and setup the open dialog signal
         if self.dialog is None:
-            self.dialog, self.config_dialog = self.make_window()
+            self.dialog, self.config_dialog, self.analysis_dialog = self.make_window()
         self.dialog.show()
 
         self.ui.pushButton_editConfig.clicked.connect(self.config_dialog.show)
+        self.ui.pushButton_analysis.clicked.connect(self.analysis_dialog.show)
 
         # aa bias
         self.checktable_aa = CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
@@ -272,6 +283,20 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         self.ui.pushButton_cite.clicked.connect(self.cite_info)
         self.ui.pushButton_doc.clicked.connect(self.open_doc_pdf)
+
+        self.ui.pushButton_upgrade.clicked.connect(
+            lambda:  notify_box(message="Upgrade available", details="Please upgrade to the latest version") 
+                    if has_updates() 
+                    else notify_box(message="No upgrade available")
+            )
+        
+        self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(
+            lambda: run_analysis(
+                form=self.ui_analyst,
+                run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
+                res_dir=self.get_run_ids()[0]
+            )
+        )
 
         # register as a pymol command
         cmd.extend("caver_set", self.caver_set)
@@ -471,6 +496,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             _ = max_idx
             max_idx += 1
             logging.warning(f"Run ID {_} already exists. Trying {max_idx}")
+            self.run_id=max_idx
 
         os.makedirs(new_dir)
 

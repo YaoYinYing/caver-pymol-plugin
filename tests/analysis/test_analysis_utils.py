@@ -10,9 +10,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from Caver4.caver_analysis import (
-    NullFrame,
     TunnelDynamic,
-    TunnelFrame,
     read_tunnel_csv,
     read_tunnel_pdb,
 )
@@ -99,8 +97,8 @@ def test_tunnel_dynamic_from_result_dir_builds_frames(tmp_path):
     assert dynamic.name == "cl_000001"
     assert len(dynamic.frames) == 49
 
-    tunnel_frames = [frame for frame in dynamic.frames if isinstance(frame, TunnelFrame)]
-    null_frames = [frame for frame in dynamic.frames if isinstance(frame, NullFrame)]
+    tunnel_frames = [frame for frame in dynamic.frames if not frame.is_empty]
+    null_frames = [frame for frame in dynamic.frames if frame.is_empty]
 
     assert len(tunnel_frames) == 1
     assert tunnel_frames[0].frame_id == 36
