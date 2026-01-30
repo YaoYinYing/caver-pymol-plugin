@@ -38,9 +38,10 @@ from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 from pymol.shortcut import Shortcut
 
+
 ROOT_LOGGER= pylogging.getLogger('Caver')
 
-logging= ROOT_LOGGER.getChild('main')    
+logging= ROOT_LOGGER.getChild('Caver')    
 
 VERSION = "4.0.2"
 
@@ -90,6 +91,14 @@ THE_20s = [
     "VAL",
 ]
 
+TUNNEL_REPRE=(
+    'lines',
+    'sticks',
+    'spheres',
+    'mesh',
+    'surface',
+
+)
 
 class CaverPyMOL(QtWidgets.QWidget):
     # configuration binding from UI to CaverConfig
@@ -286,10 +295,20 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.pushButton_cite.clicked.connect(self.cite_info)
         self.ui.pushButton_doc.clicked.connect(self.open_doc_pdf)
 
+
+        def upgrade_check():
+            with self.freeze_window(), hold_trigger_button(self.ui.pushButton_upgrade):
+                has_new_updates = run_worker_thread_with_progress(has_updates)
+                if has_new_updates:
+                    notify_box(
+                        "New updates available!"
+                    )
+                    webbrowser.open('https://github.com/YaoYinYing/caver-pymol-plugin')
+                else:
+                    notify_box("No updates available.")
+
         self.ui.pushButton_upgrade.clicked.connect(
-            lambda:  notify_box(message="Upgrade available", details="Please upgrade to the latest version") 
-                    if has_updates() 
-                    else notify_box(message="No upgrade available")
+            lambda: upgrade_check()
             )
         
         # analysis module
@@ -313,6 +332,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             lambda: refresh_tunnel_ids()
         )
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, list_palettes())
+        set_widget_value(self.ui_analyst.comboBox_representation, TUNNEL_REPRE)
 
         # register as a pymol command
         cmd.extend("caver_set", self.caver_set)

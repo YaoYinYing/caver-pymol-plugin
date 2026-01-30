@@ -8,7 +8,7 @@ from urllib.error import HTTPError, URLError
 
 from ..caver_pymol import ROOT_LOGGER,VERSION
 
-logging=ROOT_LOGGER.getChild('utils')
+logging=ROOT_LOGGER.getChild('upgrade')
 
 def get_github_repo_tags(repo_url) -> list[str]:
     """

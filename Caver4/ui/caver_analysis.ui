@@ -34,8 +34,8 @@
       <rect>
        <x>10</x>
        <y>0</y>
-       <width>331</width>
-       <height>151</height>
+       <width>251</width>
+       <height>181</height>
       </rect>
      </property>
      <property name="title">
@@ -46,8 +46,8 @@
        <rect>
         <x>10</x>
         <y>20</y>
-        <width>308</width>
-        <height>131</height>
+        <width>231</width>
+        <height>151</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout">
@@ -109,19 +109,6 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="Line" name="line">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
            </property>
           </widget>
          </item>
@@ -187,16 +174,26 @@
          </item>
         </layout>
        </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Repre:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="comboBox_representation"/>
+       </item>
       </layout>
      </widget>
     </widget>
     <widget class="QGroupBox" name="groupBox_2">
      <property name="geometry">
       <rect>
-       <x>350</x>
-       <y>0</y>
-       <width>151</width>
-       <height>101</height>
+       <x>10</x>
+       <y>190</y>
+       <width>251</width>
+       <height>81</height>
       </rect>
      </property>
      <property name="title">
@@ -207,15 +204,15 @@
        <rect>
         <x>10</x>
         <y>30</y>
-        <width>133</width>
-        <height>66</height>
+        <width>231</width>
+        <height>41</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <widget class="QPushButton" name="pushButton_applyTunnelsSpectrumStatic">
          <property name="text">
-          <string>Apply Static</string>
+          <string>Apply</string>
          </property>
         </widget>
        </item>

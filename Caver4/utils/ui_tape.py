@@ -2,7 +2,7 @@
 Advanced UI for Caver, originally written by Yinying for REvoDesign Project.
 """
 
-import logging
+
 import math
 import os
 import time
@@ -11,11 +11,14 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, NoReturn, Optional, TypeVar, Union, overload
 
+from ..caver_pymol import ROOT_LOGGER
+
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
 else:
     from pymol.Qt import QtCore, QtGui, QtWidgets
 
+logging=ROOT_LOGGER.getChild('UI_Tape')
 
 @overload
 def set_widget_value(widget: QtWidgets.QStackedWidget, value: list): ...

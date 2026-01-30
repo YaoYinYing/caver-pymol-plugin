@@ -12,7 +12,7 @@ from .caver_pymol import ROOT_LOGGER
 from .utils.ui_tape import get_widget_value, set_widget_value
 from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
 
-logging=ROOT_LOGGER.getChild('Analysis')
+logging=ROOT_LOGGER.getChild('Analyst')
 
 palette_tuple = tuple(palette_dict.keys())
 
@@ -136,11 +136,11 @@ class TunnelDynamic:
 class CaverAnalyst:
     # salute to the original caver analyst package
     
-    def __init__(self, res_dir: str, run_id: int, tunnel_id: int, pallete: str='red_green'):
+    def __init__(self, res_dir: str, run_id: int, tunnel_id: int, palette: str='red_green'):
         self.res_dir = res_dir
         self.run_id = run_id
         self.tunnel_id = tunnel_id
-        self.palette = pallete
+        self.palette = palette
         self.tunnels: TunnelDynamic = TunnelDynamic.from_result_dir(res_dir, run_id, tunnel_id)
     
     def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green', show_as: str='lines') -> None:
@@ -161,8 +161,10 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     spectrum_min=get_widget_value(form.doubleSpinBox_min)
     spectrum_max=get_widget_value(form.doubleSpinBox_max)
 
-    analyst=CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, pallete=palette)
-    analyst.render(minimum=spectrum_min, maximum=spectrum_max)
+    repre=get_widget_value(form.comboBox_representation)
+
+    analyst=CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
+    analyst.render(minimum=spectrum_min, maximum=spectrum_max, palette=palette, show_as=repre)
 
 
     
