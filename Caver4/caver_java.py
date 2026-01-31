@@ -14,11 +14,15 @@ in return.
 """
 
 
-import logging
+
 import os
 import shutil
 
+from .caver_pymol import ROOT_LOGGER
+
+
 from .utils.live_run import run_command
+logging=ROOT_LOGGER.getChild('PyJava')
 
 
 class PyJava:

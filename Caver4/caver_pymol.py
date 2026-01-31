@@ -13,7 +13,7 @@ in return.
 
 """
 
-import logging
+import logging as pylogging
 import math
 import os
 import re
@@ -21,7 +21,7 @@ import warnings
 import webbrowser
 from contextlib import contextmanager
 from functools import partial
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pymol import cmd
 
@@ -38,10 +38,27 @@ from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 from pymol.shortcut import Shortcut
 
+# internal modules import global variables (logger, version, etc.) 
+# so better to define them here before internal imports to avoid circular imports
+ROOT_LOGGER= pylogging.getLogger('Caver')
+
+logging= ROOT_LOGGER.getChild('Caver')    
+
+VERSION = "4.0.3"
+
+website_url = "https://www.caver.cz/index.php?sid=123"
+
+repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
+
+# internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
+from .caver_analysis import run_analysis, list_palettes, CaverAnalyst, CaverAnalystPreviewer
+from .utils.upgrade import has_updates
+from .utils.tools import open_doc_pdf, cite_info
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
+from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
 from .utils.ui_tape import (
     CheckableListView,
     get_widget_value,
@@ -54,8 +71,7 @@ from .utils.ui_tape import (
     widget_signal_tape,
 )
 
-VERSION = "4.0.2"
-url = "https://www.caver.cz/index.php?sid=123"
+
 
 
 THE_20s = [
@@ -81,6 +97,14 @@ THE_20s = [
     "VAL",
 ]
 
+TUNNEL_REPRE=(
+    'lines',
+    'sticks',
+    'spheres',
+    'mesh',
+    'surface',
+
+)
 
 class CaverPyMOL(QtWidgets.QWidget):
     # configuration binding from UI to CaverConfig
@@ -190,9 +214,14 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         self.ui_config = CaverConfigForm()
         config_window = QtWidgets.QWidget()
+
         self.ui_config.setupUi(config_window)
 
-        self.ui.pushButton_help.clicked.connect(self.launchHelp)
+        self.ui_analyst = CaverAnalysisForm()
+        analysis_window = QtWidgets.QWidget()
+        self.ui_analyst.setupUi(analysis_window)
+
+        self.ui.pushButton_help.clicked.connect(lambda: webbrowser.open(website_url))
         self.bind_config()
         self.ui.pushButton_compute.clicked.connect(self.execute)
         self.ui.pushButton_convertStartPointSele.clicked.connect(self.convert_sele_to_coords)
@@ -215,7 +244,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.radioButton_startAsResidues.toggled.connect(self._use_custom_startpoint)
         self.ui.textEdit_startpoint.textChanged.connect(self._use_custom_startpoint)
 
-        return main_window, config_window
+        return main_window, config_window, analysis_window
 
     @contextmanager
     def freeze_window(self):
@@ -235,15 +264,18 @@ class CaverPyMOL(QtWidgets.QWidget):
         # global reference to avoid garbage collection of our dialog
         self.dialog = None
         self.config = CaverConfig()
+        self.run_id = 0
 
         # ignore structures which match the follwing regexps
         self.ignoreStructures = [r"^origins$", r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
+        # make windows and setup the open dialog signal
         if self.dialog is None:
-            self.dialog, self.config_dialog = self.make_window()
+            self.dialog, self.config_dialog, self.analysis_dialog = self.make_window()
         self.dialog.show()
 
         self.ui.pushButton_editConfig.clicked.connect(self.config_dialog.show)
+        self.ui.pushButton_analysis.clicked.connect(self.analysis_dialog.show)
 
         # aa bias
         self.checktable_aa = CheckableListView(self.ui.listView_residueType, {aa: aa for aa in THE_20s})
@@ -266,8 +298,103 @@ class CaverPyMOL(QtWidgets.QWidget):
             lambda: self._playback_run_id(get_widget_value(self.ui.comboBox_RunID))
         )
 
-        self.ui.pushButton_cite.clicked.connect(self.cite_info)
-        self.ui.pushButton_doc.clicked.connect(self.open_doc_pdf)
+        self.ui.pushButton_cite.clicked.connect(cite_info)
+        self.ui.pushButton_doc.clicked.connect(open_doc_pdf)
+
+
+        def upgrade_check():
+            with self.freeze_window(), hold_trigger_button(self.ui.pushButton_upgrade):
+                has_new_updates = run_worker_thread_with_progress(has_updates, repo_url)
+                if has_new_updates:
+                    notify_box(
+                        "New updates available!"
+                    )
+                    webbrowser.open('https://github.com/YaoYinYing/caver-pymol-plugin')
+                else:
+                    notify_box("No updates available.")
+
+        self.ui.pushButton_upgrade.clicked.connect(
+            lambda: upgrade_check()
+            )
+        
+        self.analyst:Optional[CaverAnalyst] = None
+        self.analyst_previewer:Optional[CaverAnalystPreviewer] = None
+
+        def _run_analysis():
+            self.analyst=run_analysis(
+                form=self.ui_analyst,
+                run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
+                res_dir=self.get_run_ids()[0]
+            )
+        
+        def _run_analysis_preview():
+            if not self.analyst:
+                raise UnboundLocalError('Analyst not initialized')
+            
+            logging.debug('Initializing analyst previewer')
+            self.analyst_previewer=CaverAnalystPreviewer(
+                form=self.ui_analyst,
+                analyst=self.analyst,
+                res_dir=self.get_run_ids()[0],
+                run_id=get_widget_value(self.ui.comboBox_RunID) or self.run_id
+            )
+            # self.analyst_previewer.init_slider_range()
+            # self.analyst_previewer.slider.valueChanged.connect(self.analyst_previewer._sync_to_slider)
+
+            self.ui_analyst.pushButton_firstFrame.clicked.connect(self.analyst_previewer.head)
+            self.ui_analyst.pushButton_lastFrame.clicked.connect(self.analyst_previewer.tail)
+
+            self.ui_analyst.pushButton_nextFrame.clicked.connect(self.analyst_previewer.forward)
+            self.ui_analyst.pushButton_previousFrame.clicked.connect(self.analyst_previewer.backward)
+            logging.debug('Analyst previewer initialized')
+
+            
+        def _cleanup_analysis_preview():
+            logging.debug('Cleaning up analyst previewer')
+            try:
+                # self.analyst_previewer.slider.valueChanged.disconnect(self.analyst_previewer._sync_to_slider)
+
+                self.ui_analyst.pushButton_firstFrame.clicked.disconnect(self.analyst_previewer.head)
+                self.ui_analyst.pushButton_lastFrame.clicked.disconnect(self.analyst_previewer.tail)
+
+                self.ui_analyst.pushButton_nextFrame.clicked.disconnect(self.analyst_previewer.forward)
+                self.ui_analyst.pushButton_previousFrame.clicked.disconnect(self.analyst_previewer.backward)
+            except Exception as e:
+                logging.error(f"Error occurred: {e}")
+            self.analyst_previewer=None
+            logging.debug('Analyst previewer cleaned up')
+
+        # analysis module
+        self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(_run_analysis)
+        
+        def refresh_tunnel_ids():
+            output_dir=os.path.join(
+                        get_widget_value(self.ui.lineEdit_outputDir), 
+                        'caver_output',
+                        get_widget_value(self.ui.comboBox_RunID) or self.run_id)
+            tunnel_clusters=[x for x in os.listdir(os.path.join(output_dir, "data", "clusters_timeless")) if x.endswith(".pdb") and x.startswith('tun_cl_')]
+            num_tunnels = len(tunnel_clusters)
+            set_widget_value(self.ui_analyst.comboBox_tunnel, range(1, num_tunnels+1))
+
+        self.ui_analyst.pushButton_refreshTunnels.clicked.connect(refresh_tunnel_ids)
+        
+        set_widget_value(self.ui_analyst.comboBox_spectrumPalette, list_palettes())
+        set_widget_value(self.ui_analyst.comboBox_representation, TUNNEL_REPRE)
+
+        # respect to caver default
+        set_widget_value(self.ui_analyst.comboBox_spectrumPalette, 'red_green') 
+        
+
+        self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)
+
+        self.ui_analyst.pushButton_clearTunnelsSpectrumStatic.clicked.connect(_cleanup_analysis_preview)
+        def _about_this_frame():
+            if not self.analyst_previewer:
+                notify_box(message='No tunnel preview is available.',error_type= IndexError)
+            
+            self.analyst_previewer.about_this_frame()
+        self.ui_analyst.pushButton_aboutThisFrame.clicked.connect(_about_this_frame)
+        
 
         # register as a pymol command
         cmd.extend("caver_set", self.caver_set)
@@ -324,6 +451,19 @@ class CaverPyMOL(QtWidgets.QWidget):
             notify_box(
                 f"Run ID '{run_id}' does not contain a valid output file ({expected_view_file}).", FileNotFoundError
             )
+        reinit_session=get_widget_value(self.ui.checkBox_playback_reinit)
+        if reinit_session:
+            logging.warning(f"Reinitializing the session.")
+            cmd.reinitialize()
+            pdb_files=[x for x in os.listdir(os.path.join(out_home, str(run_id), "data")) if x.endswith(".pdb") and x != 'v_origins.pdb' and x != 'origins.pdb']
+            
+            logging.debug(f'pdb_files: {pdb_files}')
+
+            if not pdb_files:
+                raise RuntimeError("No PDB files found in the output directory.")
+            input_pdb=pdb_files[0]
+            logging.debug(f'input_pdb: {input_pdb}')
+            cmd.load(os.path.join(out_home, str(run_id), "data", input_pdb))
 
         with self.freeze_window():
             # Run the PyMOL view plugin to visualize the results
@@ -404,9 +544,6 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         self._analysis_model_resn()
 
-    def launchHelp(self):
-        webbrowser.open(url)
-
     def loadFileContent(self, file):
         handler = open(file)
         lines = handler.readlines()
@@ -467,6 +604,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             _ = max_idx
             max_idx += 1
             logging.warning(f"Run ID {_} already exists. Trying {max_idx}")
+            self.run_id=max_idx
 
         os.makedirs(new_dir)
 
@@ -519,12 +657,16 @@ class CaverPyMOL(QtWidgets.QWidget):
         outdirInputs = os.path.join(self.out_dir, "input")
         os.makedirs(outdirInputs, exist_ok=True)
 
+        # save the model(s)
+        # if not MD analysis, save the current model at current state
         if not self.ui.checkBox_MD.isChecked():
             # Save the selected model as a PDB file in the input directory
             input = os.path.join(outdirInputs, f"{selected_model}.pdb")
             cmd.set("retain_order", 1)
             cmd.sort()
-            cmd.save(input, selected_model)  # to by ulozilo cely model selected_model.
+            cmd.save(input, selected_model)
+        
+        # otherwise, save the MD trajectory
         else:
             self.prepare_md_pdb_traj(selected_model, outdirInputs)
 
@@ -564,8 +706,9 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         # Run the PyMOL view plugin to visualize the results
         runview = f"run {runview_file}"
-        logging.info(runview)
+        logging.info(f'Executing: {runview}')
         cmd.do(runview)
+        logging.info("Done.")
 
     @staticmethod
     def fixPrecision(numberStr: Any) -> float:
@@ -853,32 +996,28 @@ class CaverPyMOL(QtWidgets.QWidget):
             input_dir: str
 
         """
+        # state index are both 1-based and stop is inclusive
         state_start = get_widget_value(self.ui.spinBox_MD_StateMin)
         state_stop = get_widget_value(self.ui.spinBox_MD_StateMax)
+        
 
         if state_start > state_stop:
             notify_box("Starting state is greater than the stoping state", ValueError)
 
-        for state in range(state_start + 1, state_stop + 1):
-            cmd.save(os.path.join(input_dir, f"{state}.pdb"), state=state, selection=selected_model)
+        state_count=[]
 
-    def cite_info(self):
-        """
-        Cite info
-        """
-        citation_file = os.path.join(THIS_DIR, "bin", "citation.txt")
-        with open(citation_file) as f:
-            citation_text = f.read()
+        for state in range(state_start, state_stop + 1):
+            try:
+                cmd.save(os.path.join(input_dir, f"{state}.pdb"), state=state, selection=selected_model)
+                logging.debug(f'Saved state {state} to {state}.pdb')
+                state_count.append(state)
+            except Exception as e:
+                logging.error(f'Error saving state {state} to {state}.pdb: {e}')
+        
+        # save the state number to a file that can be used for per-frame analysis
 
-        notify_box("Thank you for using Caver, please cite the following paper.", details=citation_text)
-
-    def open_doc_pdf(self):
-        """
-        Open doc pdf
-        """
-        doc_file = os.path.join(THIS_DIR, "config", "caver_userguide.pdf")
-
-        webbrowser.open(f"file://{doc_file}")
+        with open(os.path.join(input_dir, '..',"md_state_number.txt"), "w") as f:
+            f.writelines(str(x)+'\n' for x in state_count)
 
     def caver_set(self, key, value):
         """

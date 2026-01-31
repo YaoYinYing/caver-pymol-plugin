@@ -1,3 +1,8 @@
 dist/
 .vscode/settings.json
 .DS_Store
+/tests/data/cache
+*.pyc
+tests/whole_clustering.csv
+
+tests/data/md_snapshots/caver_md.snapshots

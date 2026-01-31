@@ -2,7 +2,7 @@
 Advanced UI for Caver, originally written by Yinying for REvoDesign Project.
 """
 
-import logging
+
 import math
 import os
 import time
@@ -11,18 +11,21 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, NoReturn, Optional, TypeVar, Union, overload
 
+from ..caver_pymol import ROOT_LOGGER
+
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
 else:
     from pymol.Qt import QtCore, QtGui, QtWidgets
 
+logging=ROOT_LOGGER.getChild('UI_Tape')
 
 @overload
 def set_widget_value(widget: QtWidgets.QStackedWidget, value: list): ...
 
 
 @overload
-def set_widget_value(widget: QtWidgets.QProgressBar, value: Union[int, list[int], tuple[int, int]]): ...
+def set_widget_value(widget: Union[QtWidgets.QProgressBar, QtWidgets.QSlider], value: Union[int, list[int], tuple[int, int]]): ...
 
 
 @overload
@@ -101,11 +104,11 @@ def set_widget_value(widget, value):
                 widget.addItem(v, k)
         else:
             widget.setCurrentText(str(value))
-    elif isinstance(widget, QtWidgets.QLineEdit) or isinstance(widget, QtWidgets.QLabel):
+    elif isinstance(widget, (QtWidgets.QLineEdit, QtWidgets.QLabel)):
         widget.setText(str(value))
     elif isinstance(widget, QtWidgets.QTextEdit):
         widget.setPlainText(str(value))
-    elif isinstance(widget, QtWidgets.QProgressBar):
+    elif isinstance(widget, (QtWidgets.QProgressBar, QtWidgets.QSlider)):
         if isinstance(value, int):
             widget.setValue(value)
         elif isinstance(value, (list, tuple)) and len(value) == 2:
@@ -134,7 +137,7 @@ def get_widget_value(widget: Union[QtWidgets.QDoubleSpinBox, QtWidgets.QLCDNumbe
 
 
 @overload
-def get_widget_value(widget: Union[QtWidgets.QSpinBox, QtWidgets.QProgressBar]) -> int: ...  # type: ignore
+def get_widget_value(widget: Union[QtWidgets.QSpinBox, QtWidgets.QProgressBar, QtWidgets.QSlider]) -> int: ...  # type: ignore
 
 
 def get_widget_value(widget: QtWidgets.QWidget) -> Any:
@@ -158,13 +161,13 @@ def get_widget_value(widget: QtWidgets.QWidget) -> Any:
     Raises:
     - ValueError: If the widget type is not supported for value retrieval.
     """
-    if isinstance(widget, QtWidgets.QDoubleSpinBox) or isinstance(widget, QtWidgets.QSpinBox):
+    if isinstance(widget, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
         return widget.value()
     if isinstance(widget, QtWidgets.QComboBox):
         return widget.currentText()
     if isinstance(widget, QtWidgets.QLineEdit):
         return widget.text()
-    if isinstance(widget, QtWidgets.QProgressBar):
+    if isinstance(widget, (QtWidgets.QProgressBar, QtWidgets.QSlider)):
         return widget.value()
     if isinstance(widget, QtWidgets.QLCDNumber):
         return float(widget.value())

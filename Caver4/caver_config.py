@@ -14,12 +14,15 @@ in return.
 """
 
 import json
-import logging
+
 import os
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
 from pymol.shortcut import Shortcut
+
+from .caver_pymol import ROOT_LOGGER
+logging = ROOT_LOGGER.getChild('Config')
 
 THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
