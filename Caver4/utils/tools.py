@@ -5,7 +5,7 @@ import webbrowser
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from ui_tape import notify_box
+from .ui_tape import notify_box
 def open_doc_pdf():
     """
     Open doc pdf

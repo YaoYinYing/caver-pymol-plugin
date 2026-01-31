@@ -9,7 +9,7 @@ from pymol.constants_palette import palette_dict
 # pandas is not supposed to be installed with PyMOL
 
 from .caver_pymol import ROOT_LOGGER
-from .utils.ui_tape import get_widget_value, set_widget_value
+from .utils.ui_tape import get_widget_value
 from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
 
 logging=ROOT_LOGGER.getChild('Analyst')
@@ -131,7 +131,8 @@ class TunnelDynamic:
             missing_frame= all(value == -1.0 for value in column)
             # if the frame is missing, use empty string for pdb_datum
             pdb_datum= pdb_data[pdb_idx] if not missing_frame else ''
-            logging.debug(f'frame_id: {frame_id} ({len(x for x in pdb_datum.split('\n') if x.startswith('ATOM')) }), missing_frame: {missing_frame}')
+            atom_count=[x for x in pdb_datum.split("\n") if x.startswith("ATOM")]
+            logging.debug(f'frame_id: {frame_id} ({len(atom_count)}), missing_frame: {missing_frame}')
 
             # if not missing frame, count the pdb index for next iteration
             if not missing_frame:
@@ -176,8 +177,6 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     analyst=CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
     analyst.render(minimum=spectrum_min, maximum=spectrum_max, palette=palette, show_as=repre)
 
-
-
     return analyst
 
 class CaverAnalystPreviewer:
@@ -185,6 +184,8 @@ class CaverAnalystPreviewer:
         
         self.form=form
         self.analyst=analyst
+        if not analyst:
+            raise ValueError("No analyst provided")
 
         self.res_dir=analyst.res_dir
         self.run_id=analyst.run_id
@@ -200,34 +201,58 @@ class CaverAnalystPreviewer:
         
         self.num_frames=len(self.frame_ids)
         self.init_slider_range()
-        self._current_frame_id=0
+        self._current_frame_id=1
     def init_slider_range(self):
-        self.slider.setRange(min=min(self.frame_ids), max=max(self.frame_ids))
+        self.slider.setRange(min(self.frame_ids), max(self.frame_ids))
+        # only released signal is emitted when the slider is released,
+        # so we can use it to trigger the frame switch and skip the middle frames
+        self.slider.sliderReleased.connect(self._switch_frame)
     
     @property
-    def all_tunnel_objects(self) -> list[str]:
-        return [obj for obj in cmd.get_object_list() if obj.startswith(self.tunnel_name)]
+    def tunnel_objects_to_hide(self, ) -> str:
+        return ' or '.join(f'{self.tunnel_name}.{frame_id}' for frame_id in self.frame_ids if frame_id != self._current_frame_id)
 
-    def _switch_frame(self, frame_id: int):
-        tunnel_obj=f'{self.tunnel_name}.{frame_id}'
-        cmd.frame(frame_id)
-        cmd.disable()
+    @property
+    def tunnel_objects_to_show(self) -> str:
+        return f'{self.tunnel_name}.{self._current_frame_id}'
+    def _switch_frame(self):
+        logging.debug(f"Switching frame to {self._current_frame_id}")
+        cmd.frame(self._current_frame_id)
+        cmd.refresh()
+        logging.debug(f"Hiding frames {self.tunnel_objects_to_hide}")
+        cmd.disable(f'( {self.tunnel_objects_to_hide} )')
+        cmd.refresh()
+        logging.debug(f"Showing frame {self.tunnel_objects_to_show}")
+        cmd.enable(self.tunnel_objects_to_show)
+
+        cmd.refresh()
+
+    def _sync_to_slider(self):
+        logging.debug(f"Syncing slider to frame {self._current_frame_id}")
+        self.slider.setValue(self._current_frame_id)
     
     def forward(self):
-        # cur_val=get_widget_value(self.slider)
-        # set_widget_value(self.slider, cur_val+1)
-        ...
+        
+        if self._current_frame_id+1 >= self.num_frames:
+            raise IndexError("Reached the end of the tunnel")
+        logging.debug(f"Moving forward to frame {self._current_frame_id+1}")
+        self._current_frame_id+=1
+        self._sync_to_slider()
 
     def backward(self):
-        # cur_val=get_widget_value(self.slider)
-        # set_widget_value(self.slider, cur_val-1)
-        ...
+        
+        if self._current_frame_id-1 <= 0:
+            raise IndexError("Reached the beginning of the tunnel")
+        logging.debug(f"Moving backward to frame {self._current_frame_id-1}")
+        self._current_frame_id-=1
+        self._sync_to_slider()
     def head(self):
-        # set_widget_value(self.slider, min(self.num_frames))
-        ...
+        logging.debug(f"Moving to head of tunnel")
+        self._current_frame_id=1
+        self._sync_to_slider()
     def tail(self):
-        # set_widget_value(self.slider, max(self.num_frames))
-
-        ...
+        logging.debug(f"Moving to tail of tunnel")
+        self._current_frame_id=self.num_frames[-1]
+        self._sync_to_slider()
 
     

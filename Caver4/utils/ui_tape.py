@@ -104,11 +104,11 @@ def set_widget_value(widget, value):
                 widget.addItem(v, k)
         else:
             widget.setCurrentText(str(value))
-    elif isinstance(widget, QtWidgets.QLineEdit) or isinstance(widget, QtWidgets.QLabel):
+    elif isinstance(widget, (QtWidgets.QLineEdit, QtWidgets.QLabel)):
         widget.setText(str(value))
     elif isinstance(widget, QtWidgets.QTextEdit):
         widget.setPlainText(str(value))
-    elif isinstance(widget, QtWidgets.QProgressBar, QtWidgets.QSlider):
+    elif isinstance(widget, (QtWidgets.QProgressBar, QtWidgets.QSlider)):
         if isinstance(value, int):
             widget.setValue(value)
         elif isinstance(value, (list, tuple)) and len(value) == 2:
@@ -161,13 +161,13 @@ def get_widget_value(widget: QtWidgets.QWidget) -> Any:
     Raises:
     - ValueError: If the widget type is not supported for value retrieval.
     """
-    if isinstance(widget, QtWidgets.QDoubleSpinBox) or isinstance(widget, QtWidgets.QSpinBox):
+    if isinstance(widget, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
         return widget.value()
     if isinstance(widget, QtWidgets.QComboBox):
         return widget.currentText()
     if isinstance(widget, QtWidgets.QLineEdit):
         return widget.text()
-    if isinstance(widget, QtWidgets.QProgressBar, QtWidgets.QSlider):
+    if isinstance(widget, (QtWidgets.QProgressBar, QtWidgets.QSlider)):
         return widget.value()
     if isinstance(widget, QtWidgets.QLCDNumber):
         return float(widget.value())

@@ -21,7 +21,7 @@ import warnings
 import webbrowser
 from contextlib import contextmanager
 from functools import partial
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pymol import cmd
 
@@ -53,7 +53,7 @@ repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
 # internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
-from .caver_analysis import run_analysis, list_palettes
+from .caver_analysis import run_analysis, list_palettes, CaverAnalyst, CaverAnalystPreviewer
 from .utils.upgrade import has_updates
 from .utils.tools import open_doc_pdf, cite_info
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
@@ -317,14 +317,56 @@ class CaverPyMOL(QtWidgets.QWidget):
             lambda: upgrade_check()
             )
         
-        # analysis module
-        self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(
-            lambda: run_analysis(
+        self.analyst:Optional[CaverAnalyst] = None
+        self.analyst_previewer:Optional[CaverAnalystPreviewer] = None
+
+        def _run_analysis():
+            self.analyst=run_analysis(
                 form=self.ui_analyst,
                 run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
                 res_dir=self.get_run_ids()[0]
             )
-        )
+        
+        def _run_analysis_preview():
+            if not self.analyst:
+                raise UnboundLocalError('Analyst not initialized')
+            
+            logging.debug('Initializing analyst previewer')
+            self.analyst_previewer=CaverAnalystPreviewer(
+                form=self.ui_analyst,
+                analyst=self.analyst,
+                res_dir=self.get_run_ids()[0],
+                run_id=get_widget_value(self.ui.comboBox_RunID) or self.run_id
+            )
+            self.analyst_previewer.init_slider_range()
+            self.analyst_previewer.slider.valueChanged.connect(self.analyst_previewer._sync_to_slider)
+
+            self.ui_analyst.pushButton_firstFrame.clicked.connect(self.analyst_previewer.head)
+            self.ui_analyst.pushButton_lastFrame.clicked.connect(self.analyst_previewer.tail)
+
+            self.ui_analyst.pushButton_nextFrame.clicked.connect(self.analyst_previewer.forward)
+            self.ui_analyst.pushButton_previousFrame.clicked.connect(self.analyst_previewer.backward)
+            logging.debug('Analyst previewer initialized')
+
+            
+        def _cleanup_analysis_preview():
+            logging.debug('Cleaning up analyst previewer')
+            try:
+                self.analyst_previewer.slider.valueChanged.disconnect(self.analyst_previewer._sync_to_slider)
+
+                self.ui_analyst.pushButton_firstFrame.clicked.disconnect(self.analyst_previewer.head)
+                self.ui_analyst.pushButton_lastFrame.clicked.disconnect(self.analyst_previewer.tail)
+
+                self.ui_analyst.pushButton_nextFrame.clicked.disconnect(self.analyst_previewer.forward)
+                self.ui_analyst.pushButton_previousFrame.clicked.disconnect(self.analyst_previewer.backward)
+            except Exception as e:
+                logging.error(f"Error occurred: {e}")
+            self.analyst_previewer=None
+            logging.debug('Analyst previewer cleaned up')
+
+        # analysis module
+        self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(_run_analysis)
+        
         def refresh_tunnel_ids():
             output_dir=os.path.join(
                         get_widget_value(self.ui.lineEdit_outputDir), 
@@ -334,11 +376,13 @@ class CaverPyMOL(QtWidgets.QWidget):
             num_tunnels = len(tunnel_clusters)
             set_widget_value(self.ui_analyst.comboBox_tunnel, range(1, num_tunnels+1))
 
-        self.ui_analyst.pushButton_refreshTunnels.clicked.connect(
-            lambda: refresh_tunnel_ids()
-        )
+        self.ui_analyst.pushButton_refreshTunnels.clicked.connect(refresh_tunnel_ids)
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, list_palettes())
         set_widget_value(self.ui_analyst.comboBox_representation, TUNNEL_REPRE)
+
+        self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)
+
+        self.ui_analyst.pushButton_clearTunnelsSpectrumStatic.clicked.connect(_cleanup_analysis_preview)
 
         # register as a pymol command
         cmd.extend("caver_set", self.caver_set)
@@ -961,7 +1005,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         # save the state number to a file that can be used for per-frame analysis
 
         with open(os.path.join(input_dir, '..',"md_state_number.txt"), "w") as f:
-            f.writelines(state_count)
+            f.writelines(str(x)+'\n' for x in state_count)
 
     def caver_set(self, key, value):
         """
