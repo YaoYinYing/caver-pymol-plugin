@@ -128,12 +128,10 @@ TUNNEL_REPRE=(
 # save snapshots to `tests/results/snapshots`, pymol images to `tests/results/pymol_images`
 # mark these two case as the first two test cases at integration test grade. 
 # also note: 
+# 0. use existing conda environment `REvoDesignLatestDev` for testing, in which you should have pymol installed.
 # 1. PyMOL is supposed to be installed already, so you dont have to mock Qt and PyMOL. Just do the real tests.
 # 2. DO NOT try to mock everything, just mock the things you need (eg, the Messagebox from Qt).
-# Do not mock Java, as it has already been installed at PATH. run the real tests.
-
-
-
+# 3. Do not mock Java, as it has already been installed at PATH. run the real tests.
 class CaverPyMOL(QtWidgets.QWidget):
     # configuration binding from UI to CaverConfig
     config_bindings_main: dict[str, str] = {
