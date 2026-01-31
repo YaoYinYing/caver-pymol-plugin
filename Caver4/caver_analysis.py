@@ -215,44 +215,55 @@ class CaverAnalystPreviewer:
     @property
     def tunnel_objects_to_show(self) -> str:
         return f'{self.tunnel_name}.{self._current_frame_id}'
+    
+
+    def _update_button_status(self):
+        self.form.pushButton_firstFrame.setEnabled(self._current_frame_id != min(self.frame_ids))
+        self.form.pushButton_lastFrame.setEnabled(self._current_frame_id != max(self.frame_ids))
+
+        self.form.pushButton_nextFrame.setEnabled(self._current_frame_id != max(self.frame_ids))
+        self.form.pushButton_previousFrame.setEnabled(self._current_frame_id != min(self.frame_ids))
+
+    # the real work is done here
     def _switch_frame(self):
         logging.debug(f"Switching frame to {self._current_frame_id}")
         cmd.frame(self._current_frame_id)
         cmd.refresh()
-        logging.debug(f"Hiding frames {self.tunnel_objects_to_hide}")
+        # logging.debug(f"Hiding frames {self.tunnel_objects_to_hide}")
         cmd.disable(f'( {self.tunnel_objects_to_hide} )')
         cmd.refresh()
-        logging.debug(f"Showing frame {self.tunnel_objects_to_show}")
+        # logging.debug(f"Showing frame {self.tunnel_objects_to_show}")
         cmd.enable(self.tunnel_objects_to_show)
 
         cmd.refresh()
+        self._update_button_status()
 
-    def _sync_to_slider(self):
-        logging.debug(f"Syncing slider to frame {self._current_frame_id}")
+    def _update_index_to_slider(self):
+        # logging.debug(f"Syncing slider to frame {self._current_frame_id}")
         self.slider.setValue(self._current_frame_id)
     
     def forward(self):
         
         if self._current_frame_id >= self.num_frames:
             raise IndexError("Reached the end of the tunnel")
-        logging.debug(f"Moving forward to frame {self._current_frame_id+1}")
+        # logging.debug(f"Moving forward to frame {self._current_frame_id+1}")
         self._current_frame_id+=1
-        self._sync_to_slider()
+        self._update_index_to_slider()
 
     def backward(self):
         
         if self._current_frame_id <= 0:
             raise IndexError("Reached the beginning of the tunnel")
-        logging.debug(f"Moving backward to frame {self._current_frame_id-1}")
+        # logging.debug(f"Moving backward to frame {self._current_frame_id-1}")
         self._current_frame_id-=1
-        self._sync_to_slider()
+        self._update_index_to_slider()
     def head(self):
         logging.debug(f"Moving to head of tunnel")
         self._current_frame_id=min(self.frame_ids)
-        self._sync_to_slider()
+        self._update_index_to_slider()
     def tail(self):
         logging.debug(f"Moving to tail of tunnel")
         self._current_frame_id=max(self.frame_ids)
-        self._sync_to_slider()
+        self._update_index_to_slider()
 
     
