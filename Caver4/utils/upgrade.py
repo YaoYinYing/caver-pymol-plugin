@@ -56,10 +56,12 @@ def get_github_repo_tags(repo_url) -> list[str]:
 def has_updates() -> bool:
     url='https://github.com/YaoYinYing/caver-pymol-plugin'
     tags=get_github_repo_tags(url)
+    logging.debug(f'Available tags: {tags}')
 
     if tags:
-        latest_tag = tags[0]
-        return latest_tag.lstrip('v') > VERSION
+        latest_tag = tags[0].lstrip('v')
+        logging.debug(f'Latest tag: {latest_tag}')
+        return latest_tag > VERSION
     else:
         return False
     

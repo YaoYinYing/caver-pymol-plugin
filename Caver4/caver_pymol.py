@@ -38,13 +38,15 @@ from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 from pymol.shortcut import Shortcut
 
-
+# internal modules import global variables (logger, version, etc.) 
+# so better to define them here before internal imports to avoid circular imports
 ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('Caver')    
 
-VERSION = "4.0.2"
+VERSION = "4.0.3"
 
+# internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
 from .caver_analysis import run_analysis, list_palettes
