@@ -227,8 +227,6 @@ class CaverAnalystPreviewer:
         md_state_file=os.path.join(res_dir, str(run_id), "md_state_number.txt")
         with open(md_state_file, "r") as f:
             self.frame_ids=[int(line.strip()) for line in f.readlines()]
-        
-        self.num_frames=len(self.frame_ids)
 
         self._current_frame_id=min(self.frame_ids)
 
@@ -284,9 +282,6 @@ class CaverAnalystPreviewer:
         self.slider.setValue(self._current_frame_id)
     
     def forward(self):
-        
-        # button status checker will force to disable the button if the index reach the end
-        # logging.debug(f"Moving forward to frame {self._current_frame_id+1}")
         self._current_frame_id+=1
         self._update_index_to_slider()
 
@@ -303,4 +298,21 @@ class CaverAnalystPreviewer:
         self._current_frame_id=max(self.frame_ids)
         self._update_index_to_slider()
 
+        self.form.pushButton_clearTunnelsSpectrumStatic
+
+
     
+    # TODO: implement the auto-play mode
+    # buttons:
+    # - play: form.pushButton_autoPlay
+    # - pause: form.pushButton_pauseAutoPlay
+    # - interval: form.doubleSpinBox_autoPlayInterval
+    # use thread to run the auto-play so the GUI is not blocked
+    # disable these buttons while auto-play is running, release them when auto-play is paused:
+    # -  about this frame: form.pushButton_aboutThisFrame
+    # - forward/backward: form.pushButton_nextFrame, form.pushButton_previousFrame
+    # - first/last frame: form.pushButton_firstFrame, form.pushButton_lastFrame
+    # - refresh tunnel preview: form.pushButton_refreshTunnelPreview
+    # - analyze tunnel: form.pushButton_applyTunnelsSpectrumStatic
+    # - clear tunnel: form.pushButton_clearTunnelsSpectrumStatic
+

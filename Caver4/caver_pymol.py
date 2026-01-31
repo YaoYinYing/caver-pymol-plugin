@@ -321,17 +321,22 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.analyst_previewer:Optional[CaverAnalystPreviewer] = None
 
         def _run_analysis():
-            self.analyst=run_analysis(
-                form=self.ui_analyst,
-                run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
-                res_dir=self.get_run_ids()[0]
-            )
+            with self.freeze_window(), hold_trigger_button(self.ui_analyst.pushButton_applyTunnelsSpectrumStatic):
+
+                # for long running tasks, use a worker thread
+                self.analyst=run_worker_thread_with_progress(
+                    run_analysis,
+                    form=self.ui_analyst,
+                    run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
+                    res_dir=self.get_run_ids()[0]
+                )
         
         def _run_analysis_preview():
             if not self.analyst:
                 raise UnboundLocalError('Analyst not initialized')
             
             logging.debug('Initializing analyst previewer')
+            
             self.analyst_previewer=CaverAnalystPreviewer(
                 form=self.ui_analyst,
                 analyst=self.analyst,
