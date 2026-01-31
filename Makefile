@@ -20,7 +20,7 @@ setup-display-gha:
 
 
 prepare-test:
-	python3 -m pip install pytest pytest-qt>=4.4.0 pytest-cov<=6.0.0 pytest-mock<3.14.1 pytest-runner pytest-xdist>=3.6.1 pytest<=8.3.3 pytest-order pytest-emoji pytest-github-actions-annotate-failures shellcheck-py==0.10.0.1 pre-commit virtualenv<=20.27.1 coverage httpx psutil
+	python -m pip install pytest 'pytest-qt>=4.4.0' 'pytest-cov<=6.0.0' 'pytest-mock<3.14.1' pytest-runner 'pytest-xdist>=3.6.1' 'pytest<=8.3.3' pytest-order pytest-emoji pytest-github-actions-annotate-failures 'shellcheck-py==0.10.0.1' pre-commit 'virtualenv<=20.27.1' coverage httpx psutil
 
 test:
 	python -m pytest --cov-config=.coveragerc --cov-report=term-missing -v --pyargs --durations=0 -vv --emoji --cov=$(PROJECT) ./tests
