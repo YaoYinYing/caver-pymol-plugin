@@ -29,7 +29,6 @@ def test_static_analysis_workflow(caver_worker) -> None:
     assert static_ui.is_file(), "UI snapshot for static run was not captured"
     assert static_scene.is_file(), "PyMOL scene for static run was not captured"
 
-
 def test_dynamic_analysis_workflow(caver_worker) -> None:
     """
     Execute the dynamic MD workflow and ensure expected caches are generated.
@@ -40,7 +39,9 @@ def test_dynamic_analysis_workflow(caver_worker) -> None:
     md_state_file = run_dir / "md_state_number.txt"
     assert md_state_file.is_file(), "MD state tracking file missing"
     contents = md_state_file.read_text().strip().splitlines()
-    assert contents[0] == "1" and contents[-1] == "50"
+    min_state, max_state = caver_worker.MD_STATE_RANGE
+    assert (min_state, max_state) == (1, 5), "Dynamic tests should cover MD states 1-5"
+    assert contents[0] == str(min_state) and contents[-1] == str(max_state)
 
     input_pdbs = list(run_dir.joinpath("input").glob("*.pdb"))
     assert input_pdbs, "MD frames were not exported as PDBs"

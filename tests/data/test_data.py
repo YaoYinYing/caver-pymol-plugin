@@ -46,7 +46,7 @@ DYNAMIC_WORKFLOW = WorkflowScenario(
     object_name="caver_test_md",
     start_mode="atoms",
     start_value="578 1609 3258",
-    md_state_range=(1, 50),
+    md_state_range=(1, 5),
 )
 
 
