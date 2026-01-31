@@ -7,3 +7,4 @@ tests/whole_clustering.csv
 
 tests/data/md_snapshots/caver_md.snapshots
 /.coverage
+tests/conftest.REvoDesign.py
