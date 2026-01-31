@@ -3,9 +3,10 @@ from __future__ import annotations
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, cast
 
 import pytest
+from tests.data.test_data import DYNAMIC_WORKFLOW, STATIC_WORKFLOW, WorkflowScenario
 
 TESTS_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = TESTS_DIR / "results"
@@ -77,11 +78,13 @@ class CaverPluginWorker:
     Helper that drives the PyMOL GUI plugin the same way a user would.
     """
 
-    STATIC_COORDS = (17.012, 24.139, 7.790)
-    STATIC_OBJECT = "caver_static"
-    DYNAMIC_OBJECT = "caver_dynamic"
-    DYNAMIC_ATOMS = "578 1609 3258"
-    MD_STATE_RANGE = (1, 50)
+    STATIC_SCENARIO: WorkflowScenario = STATIC_WORKFLOW
+    DYNAMIC_SCENARIO: WorkflowScenario = DYNAMIC_WORKFLOW
+    STATIC_COORDS = cast(tuple[float, float, float], STATIC_SCENARIO.start_value)
+    STATIC_OBJECT = STATIC_SCENARIO.object_name
+    DYNAMIC_OBJECT = DYNAMIC_SCENARIO.object_name
+    DYNAMIC_ATOMS = cast(str, DYNAMIC_SCENARIO.start_value)
+    MD_STATE_RANGE = DYNAMIC_SCENARIO.md_state_range or (1, 50)
 
     def __init__(self, qtbot, data_dir: Path, results_root: Path) -> None:
         pytest.importorskip("pymol")
@@ -173,11 +176,17 @@ class CaverPluginWorker:
         self.process_events()
         return object_name
 
+    @staticmethod
+    def _format_coordinate_string(coords: tuple[float, float, float]) -> str:
+        return " ".join(f"{value:.3f}" for value in coords)
+
     def set_start_coordinates(self, coords: tuple[float, float, float]) -> None:
         self._clear_custom_startpoint()
         for axis, value in zip("xyz", coords):
             spin = getattr(self.plugin.ui, f"doubleSpinBox_{axis}")
             spin.setValue(float(value))
+            setattr(self.plugin.config, f"start_point_{axis}", float(value))
+        self.plugin.config.set("starting_point_coordinates", self._format_coordinate_string(coords))
         self.process_events()
 
     def set_custom_startpoint(self, mode: str, start_value: str) -> None:
@@ -193,6 +202,33 @@ class CaverPluginWorker:
                 radio.setChecked(key == mode)
         self.plugin._use_custom_startpoint()
         self.process_events()
+
+    def _configure_md_states(self, md_range: tuple[int, int] | None) -> None:
+        if not md_range:
+            self.plugin.ui.checkBox_MD.setChecked(False)
+            return
+        min_state, max_state = md_range
+        self.plugin.ui.checkBox_MD.setChecked(True)
+        self.plugin.ui.spinBox_MD_StateMin.setValue(min_state)
+        self.plugin.ui.spinBox_MD_StateMax.setValue(max_state)
+
+    def _run_workflow(self, scenario: WorkflowScenario) -> Path:
+        self.reset()
+        structure = scenario.structure_path(self._data_dir)
+        self.load_structure(structure, scenario.object_name)
+        self._configure_md_states(scenario.md_state_range)
+        if scenario.start_mode == "coords":
+            coords = cast(tuple[float, float, float], scenario.start_value)
+            self.set_start_coordinates(coords)
+        else:
+            start_value = cast(str, scenario.start_value)
+            self.set_custom_startpoint(scenario.start_mode, start_value)
+        snapshot_prefix = scenario.snapshot_prefix
+        self.capture_gui_snapshot(f"{snapshot_prefix}_ui.png")
+        self.capture_pymol_scene(f"{snapshot_prefix}_scene.png")
+        self.plugin.execute()
+        self.process_events()
+        return Path(self.plugin.out_dir)
 
     def capture_gui_snapshot(self, filename: str) -> Path:
         self.process_events()
@@ -210,32 +246,13 @@ class CaverPluginWorker:
         """
         Execute the static analysis workflow end-to-end.
         """
-        static_file = self._data_dir / "pdb" / "1AKD.pdb"
-        self.reset()
-        self.load_structure(static_file, self.STATIC_OBJECT)
-        self.set_start_coordinates(self.STATIC_COORDS)
-        self.capture_gui_snapshot("static_analysis_ui.png")
-        self.capture_pymol_scene("static_analysis_scene.png")
-        self.plugin.execute()
-        self.process_events()
-        return Path(self.plugin.out_dir)
+        return self._run_workflow(self.STATIC_SCENARIO)
 
     def run_dynamic_analysis(self) -> Path:
         """
         Execute the MD workflow end-to-end.
         """
-        snapshot_file = self._data_dir / "md_snapshots" / "caver_md.snapshots.pze"
-        self.reset()
-        self.load_structure(snapshot_file, self.DYNAMIC_OBJECT)
-        self.plugin.ui.checkBox_MD.setChecked(True)
-        self.plugin.ui.spinBox_MD_StateMin.setValue(self.MD_STATE_RANGE[0])
-        self.plugin.ui.spinBox_MD_StateMax.setValue(self.MD_STATE_RANGE[1])
-        self.set_custom_startpoint("atoms", self.DYNAMIC_ATOMS)
-        self.capture_gui_snapshot("dynamic_analysis_ui.png")
-        self.capture_pymol_scene("dynamic_analysis_scene.png")
-        self.plugin.execute()
-        self.process_events()
-        return Path(self.plugin.out_dir)
+        return self._run_workflow(self.DYNAMIC_SCENARIO)
 
     def shutdown(self) -> None:
         """
