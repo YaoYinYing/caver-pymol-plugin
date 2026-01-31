@@ -25,7 +25,7 @@ def set_widget_value(widget: QtWidgets.QStackedWidget, value: list): ...
 
 
 @overload
-def set_widget_value(widget: QtWidgets.QProgressBar, value: Union[int, list[int], tuple[int, int]]): ...
+def set_widget_value(widget: Union[QtWidgets.QProgressBar, QtWidgets.QSlider], value: Union[int, list[int], tuple[int, int]]): ...
 
 
 @overload
@@ -108,7 +108,7 @@ def set_widget_value(widget, value):
         widget.setText(str(value))
     elif isinstance(widget, QtWidgets.QTextEdit):
         widget.setPlainText(str(value))
-    elif isinstance(widget, QtWidgets.QProgressBar):
+    elif isinstance(widget, QtWidgets.QProgressBar, QtWidgets.QSlider):
         if isinstance(value, int):
             widget.setValue(value)
         elif isinstance(value, (list, tuple)) and len(value) == 2:
@@ -137,7 +137,7 @@ def get_widget_value(widget: Union[QtWidgets.QDoubleSpinBox, QtWidgets.QLCDNumbe
 
 
 @overload
-def get_widget_value(widget: Union[QtWidgets.QSpinBox, QtWidgets.QProgressBar]) -> int: ...  # type: ignore
+def get_widget_value(widget: Union[QtWidgets.QSpinBox, QtWidgets.QProgressBar, QtWidgets.QSlider]) -> int: ...  # type: ignore
 
 
 def get_widget_value(widget: QtWidgets.QWidget) -> Any:
@@ -167,7 +167,7 @@ def get_widget_value(widget: QtWidgets.QWidget) -> Any:
         return widget.currentText()
     if isinstance(widget, QtWidgets.QLineEdit):
         return widget.text()
-    if isinstance(widget, QtWidgets.QProgressBar):
+    if isinstance(widget, QtWidgets.QProgressBar, QtWidgets.QSlider):
         return widget.value()
     if isinstance(widget, QtWidgets.QLCDNumber):
         return float(widget.value())

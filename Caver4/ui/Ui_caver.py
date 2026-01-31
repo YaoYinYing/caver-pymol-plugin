@@ -507,7 +507,7 @@ class Ui_CaverUI(object):
         self.checkBox_EnablePlayBack.toggled['bool'].connect(self.pushButton_LoadRunID.setEnabled) # type: ignore
         self.checkBox_MD.toggled['bool'].connect(self.spinBox_MD_StateMin.setEnabled) # type: ignore
         self.checkBox_MD.toggled['bool'].connect(self.spinBox_MD_StateMax.setEnabled) # type: ignore
-        self.checkBox_EnablePlayBack.toggled['bool'].connect(self.checkBox_playback_reinit.setChecked) # type: ignore
+        self.checkBox_EnablePlayBack.toggled['bool'].connect(self.checkBox_playback_reinit.setEnabled) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(CaverUI)
 
     def retranslateUi(self, CaverUI):

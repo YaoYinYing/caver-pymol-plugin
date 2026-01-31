@@ -1128,7 +1128,7 @@
    <sender>checkBox_EnablePlayBack</sender>
    <signal>toggled(bool)</signal>
    <receiver>checkBox_playback_reinit</receiver>
-   <slot>setChecked(bool)</slot>
+   <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>60</x>

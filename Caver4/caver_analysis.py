@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 import os
 from typing import Optional, Union
 from pymol import cmd
@@ -16,7 +16,7 @@ logging=ROOT_LOGGER.getChild('Analyst')
 
 palette_tuple = tuple(palette_dict.keys())
 
-CURRENT_ANALYST: Optional[CaverAnalyst]=None 
+
 
 def list_palettes() -> tuple[str, ...]:
     return palette_tuple
@@ -62,10 +62,19 @@ class TunnelFrame:
     
     frame_id: int
     pdb_strings: str = ''
+    diameters: list[float] = field(default_factory=list)
 
     @property
     def is_empty(self) -> bool:
         return not self.pdb_strings
+    
+    @property
+    def node_number(self) -> int:
+        return len(x for x in self.pdb_strings.split('\n') if x.startswith('ATOM'))
+    
+    @property
+    def diameter_records_number(self) -> int:
+        return len(self.diameters)
 
     def load(self, name: str, group: str, apply_to_vdw: bool=True) -> str:
         obj_name=f'{name}.{self.frame_id}'
@@ -122,14 +131,15 @@ class TunnelDynamic:
             missing_frame= all(value == -1.0 for value in column)
             # if the frame is missing, use empty string for pdb_datum
             pdb_datum= pdb_data[pdb_idx] if not missing_frame else ''
-            logging.debug(f'frame_id: {frame_id}, missing_frame: {missing_frame}')
+            logging.debug(f'frame_id: {frame_id} ({len(x for x in pdb_datum.split('\n') if x.startswith('ATOM')) }), missing_frame: {missing_frame}')
 
             # if not missing frame, count the pdb index for next iteration
             if not missing_frame:
                 pdb_idx+=1
             
             # assemble and append frame
-            append_frame(TunnelFrame(frame_id, pdb_datum))
+            
+            append_frame(TunnelFrame(frame_id, pdb_datum, column))
 
         return cls(name=f"cl_{tunnel_id:06d}", frames=frames)
 
@@ -142,6 +152,7 @@ class CaverAnalyst:
         self.run_id = run_id
         self.tunnel_id = tunnel_id
         self.palette = palette
+
         self.tunnels: TunnelDynamic = TunnelDynamic.from_result_dir(res_dir, run_id, tunnel_id)
     
     def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green', show_as: str='lines') -> None:
@@ -151,11 +162,9 @@ class CaverAnalyst:
             cmd.show(show_as, frame_name)
             frame.render(frame_name, minimum=minimum, maximum=maximum, palette=palette or self.palette)
         logging.info(f"Rendered tunnel {self.tunnels.name}")
-            
+        
 
-
-
-def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str):
+def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str) -> CaverAnalyst:
     palette=get_widget_value(form.comboBox_spectrumPalette)
     run_id=int(run_id)
     tunnel_id=int(get_widget_value(form.comboBox_tunnel))
@@ -167,18 +176,58 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     analyst=CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
     analyst.render(minimum=spectrum_min, maximum=spectrum_max, palette=palette, show_as=repre)
 
-    # Set global variable for analyst
-    global CURRENT_ANALYST
-    CURRENT_ANALYST = analyst
 
-    return 
+
+    return analyst
 
 class CaverAnalystPreviewer:
-    def __init__(self, form: CaverAnalysisForm):
-        self.analyst: CaverAnalyst =CURRENT_ANALYST
-        if not self.analyst:
-            raise Exception("No analyst set")
+    def __init__(self, form: CaverAnalysisForm,analyst:CaverAnalyst, res_dir: str, run_id: int):
+        
         self.form=form
-        self
+        self.analyst=analyst
+
+        self.res_dir=analyst.res_dir
+        self.run_id=analyst.run_id
+        self.tunnel_id=analyst.tunnel_id
+        self.tunnel_name=analyst.tunnels.name
+
+        self.slider=form.horizontalSlider
+        self.autoplay_interval=get_widget_value(form.doubleSpinBox_autoPlayInterval)   
+        
+        md_state_file=os.path.join(res_dir, str(run_id), "md_state_number.txt")
+        with open(md_state_file, "r") as f:
+            self.frame_ids=[int(line.strip()) for line in f.readlines()]
+        
+        self.num_frames=len(self.frame_ids)
+        self.init_slider_range()
+        self._current_frame_id=0
+    def init_slider_range(self):
+        self.slider.setRange(min=min(self.frame_ids), max=max(self.frame_ids))
+    
+    @property
+    def all_tunnel_objects(self) -> list[str]:
+        return [obj for obj in cmd.get_object_list() if obj.startswith(self.tunnel_name)]
+
+    def _switch_frame(self, frame_id: int):
+        tunnel_obj=f'{self.tunnel_name}.{frame_id}'
+        cmd.frame(frame_id)
+        cmd.disable()
+    
     def forward(self):
-        self.analyst
+        # cur_val=get_widget_value(self.slider)
+        # set_widget_value(self.slider, cur_val+1)
+        ...
+
+    def backward(self):
+        # cur_val=get_widget_value(self.slider)
+        # set_widget_value(self.slider, cur_val-1)
+        ...
+    def head(self):
+        # set_widget_value(self.slider, min(self.num_frames))
+        ...
+    def tail(self):
+        # set_widget_value(self.slider, max(self.num_frames))
+
+        ...
+
+    

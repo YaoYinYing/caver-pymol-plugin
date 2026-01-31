@@ -53,8 +53,8 @@ def get_github_repo_tags(repo_url) -> list[str]:
         return []
     
 
-def has_updates() -> bool:
-    url='https://github.com/YaoYinYing/caver-pymol-plugin'
+def has_updates(url) -> bool:
+    
     tags=get_github_repo_tags(url)
     logging.debug(f'Available tags: {tags}')
 

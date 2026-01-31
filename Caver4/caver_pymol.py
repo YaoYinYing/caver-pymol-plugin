@@ -46,11 +46,16 @@ logging= ROOT_LOGGER.getChild('Caver')
 
 VERSION = "4.0.3"
 
+website_url = "https://www.caver.cz/index.php?sid=123"
+
+repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
+
 # internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
 from .caver_analysis import run_analysis, list_palettes
 from .utils.upgrade import has_updates
+from .utils.tools import open_doc_pdf, cite_info
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
 from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
@@ -67,7 +72,6 @@ from .utils.ui_tape import (
 )
 
 
-url = "https://www.caver.cz/index.php?sid=123"
 
 
 THE_20s = [
@@ -217,7 +221,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         analysis_window = QtWidgets.QWidget()
         self.ui_analyst.setupUi(analysis_window)
 
-        self.ui.pushButton_help.clicked.connect(self.launchHelp)
+        self.ui.pushButton_help.clicked.connect(lambda: webbrowser.open(website_url))
         self.bind_config()
         self.ui.pushButton_compute.clicked.connect(self.execute)
         self.ui.pushButton_convertStartPointSele.clicked.connect(self.convert_sele_to_coords)
@@ -294,13 +298,13 @@ class CaverPyMOL(QtWidgets.QWidget):
             lambda: self._playback_run_id(get_widget_value(self.ui.comboBox_RunID))
         )
 
-        self.ui.pushButton_cite.clicked.connect(self.cite_info)
-        self.ui.pushButton_doc.clicked.connect(self.open_doc_pdf)
+        self.ui.pushButton_cite.clicked.connect(cite_info)
+        self.ui.pushButton_doc.clicked.connect(open_doc_pdf)
 
 
         def upgrade_check():
             with self.freeze_window(), hold_trigger_button(self.ui.pushButton_upgrade):
-                has_new_updates = run_worker_thread_with_progress(has_updates)
+                has_new_updates = run_worker_thread_with_progress(has_updates, repo_url)
                 if has_new_updates:
                     notify_box(
                         "New updates available!"
@@ -391,6 +395,19 @@ class CaverPyMOL(QtWidgets.QWidget):
             notify_box(
                 f"Run ID '{run_id}' does not contain a valid output file ({expected_view_file}).", FileNotFoundError
             )
+        reinit_session=get_widget_value(self.ui.checkBox_playback_reinit)
+        if reinit_session:
+            logging.warning(f"Reinitializing the session.")
+            cmd.reinitialize()
+            pdb_files=[x for x in os.listdir(os.path.join(out_home, str(run_id), "data")) if x.endswith(".pdb") and x != 'v_origins.pdb' and x != 'origins.pdb']
+            
+            logging.debug(f'pdb_files: {pdb_files}')
+
+            if not pdb_files:
+                raise RuntimeError("No PDB files found in the output directory.")
+            input_pdb=pdb_files[0]
+            logging.debug(f'input_pdb: {input_pdb}')
+            cmd.load(os.path.join(out_home, str(run_id), "data", input_pdb))
 
         with self.freeze_window():
             # Run the PyMOL view plugin to visualize the results
@@ -470,9 +487,6 @@ class CaverPyMOL(QtWidgets.QWidget):
         set_widget_value(self.ui.comboBox_inputModel, models)
 
         self._analysis_model_resn()
-
-    def launchHelp(self):
-        webbrowser.open(url)
 
     def loadFileContent(self, file):
         handler = open(file)
@@ -587,12 +601,16 @@ class CaverPyMOL(QtWidgets.QWidget):
         outdirInputs = os.path.join(self.out_dir, "input")
         os.makedirs(outdirInputs, exist_ok=True)
 
+        # save the model(s)
+        # if not MD analysis, save the current model at current state
         if not self.ui.checkBox_MD.isChecked():
             # Save the selected model as a PDB file in the input directory
             input = os.path.join(outdirInputs, f"{selected_model}.pdb")
             cmd.set("retain_order", 1)
             cmd.sort()
-            cmd.save(input, selected_model)  # to by ulozilo cely model selected_model.
+            cmd.save(input, selected_model)
+        
+        # otherwise, save the MD trajectory
         else:
             self.prepare_md_pdb_traj(selected_model, outdirInputs)
 
@@ -632,8 +650,9 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         # Run the PyMOL view plugin to visualize the results
         runview = f"run {runview_file}"
-        logging.info(runview)
+        logging.info(f'Executing: {runview}')
         cmd.do(runview)
+        logging.info("Done.")
 
     @staticmethod
     def fixPrecision(numberStr: Any) -> float:
@@ -921,32 +940,28 @@ class CaverPyMOL(QtWidgets.QWidget):
             input_dir: str
 
         """
+        # state index are both 1-based and stop is inclusive
         state_start = get_widget_value(self.ui.spinBox_MD_StateMin)
         state_stop = get_widget_value(self.ui.spinBox_MD_StateMax)
+        
 
         if state_start > state_stop:
             notify_box("Starting state is greater than the stoping state", ValueError)
 
-        for state in range(state_start + 1, state_stop + 1):
-            cmd.save(os.path.join(input_dir, f"{state}.pdb"), state=state, selection=selected_model)
+        state_count=[]
 
-    def cite_info(self):
-        """
-        Cite info
-        """
-        citation_file = os.path.join(THIS_DIR, "bin", "citation.txt")
-        with open(citation_file) as f:
-            citation_text = f.read()
+        for state in range(state_start, state_stop + 1):
+            try:
+                cmd.save(os.path.join(input_dir, f"{state}.pdb"), state=state, selection=selected_model)
+                logging.debug(f'Saved state {state} to {state}.pdb')
+                state_count.append(state)
+            except Exception as e:
+                logging.error(f'Error saving state {state} to {state}.pdb: {e}')
+        
+        # save the state number to a file that can be used for per-frame analysis
 
-        notify_box("Thank you for using Caver, please cite the following paper.", details=citation_text)
-
-    def open_doc_pdf(self):
-        """
-        Open doc pdf
-        """
-        doc_file = os.path.join(THIS_DIR, "config", "caver_userguide.pdf")
-
-        webbrowser.open(f"file://{doc_file}")
+        with open(os.path.join(input_dir, '..',"md_state_number.txt"), "w") as f:
+            f.writelines(state_count)
 
     def caver_set(self, key, value):
         """
