@@ -338,8 +338,8 @@ class CaverPyMOL(QtWidgets.QWidget):
                 res_dir=self.get_run_ids()[0],
                 run_id=get_widget_value(self.ui.comboBox_RunID) or self.run_id
             )
-            self.analyst_previewer.init_slider_range()
-            self.analyst_previewer.slider.valueChanged.connect(self.analyst_previewer._sync_to_slider)
+            # self.analyst_previewer.init_slider_range()
+            # self.analyst_previewer.slider.valueChanged.connect(self.analyst_previewer._sync_to_slider)
 
             self.ui_analyst.pushButton_firstFrame.clicked.connect(self.analyst_previewer.head)
             self.ui_analyst.pushButton_lastFrame.clicked.connect(self.analyst_previewer.tail)
@@ -352,7 +352,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         def _cleanup_analysis_preview():
             logging.debug('Cleaning up analyst previewer')
             try:
-                self.analyst_previewer.slider.valueChanged.disconnect(self.analyst_previewer._sync_to_slider)
+                # self.analyst_previewer.slider.valueChanged.disconnect(self.analyst_previewer._sync_to_slider)
 
                 self.ui_analyst.pushButton_firstFrame.clicked.disconnect(self.analyst_previewer.head)
                 self.ui_analyst.pushButton_lastFrame.clicked.disconnect(self.analyst_previewer.tail)

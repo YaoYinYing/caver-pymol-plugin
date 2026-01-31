@@ -169,8 +169,8 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     palette=get_widget_value(form.comboBox_spectrumPalette)
     run_id=int(run_id)
     tunnel_id=int(get_widget_value(form.comboBox_tunnel))
-    spectrum_min=get_widget_value(form.doubleSpinBox_min)
-    spectrum_max=get_widget_value(form.doubleSpinBox_max)
+    spectrum_min=get_widget_value(form.doubleSpinBox_spectrumMin)
+    spectrum_max=get_widget_value(form.doubleSpinBox_spectrumMax)
 
     repre=get_widget_value(form.comboBox_representation)
 
@@ -201,12 +201,12 @@ class CaverAnalystPreviewer:
         
         self.num_frames=len(self.frame_ids)
         self.init_slider_range()
-        self._current_frame_id=1
+        self._current_frame_id=min(self.frame_ids)
     def init_slider_range(self):
         self.slider.setRange(min(self.frame_ids), max(self.frame_ids))
         # only released signal is emitted when the slider is released,
         # so we can use it to trigger the frame switch and skip the middle frames
-        self.slider.sliderReleased.connect(self._switch_frame)
+        self.slider.valueChanged.connect(self._switch_frame)
     
     @property
     def tunnel_objects_to_hide(self, ) -> str:
@@ -233,7 +233,7 @@ class CaverAnalystPreviewer:
     
     def forward(self):
         
-        if self._current_frame_id+1 >= self.num_frames:
+        if self._current_frame_id >= self.num_frames:
             raise IndexError("Reached the end of the tunnel")
         logging.debug(f"Moving forward to frame {self._current_frame_id+1}")
         self._current_frame_id+=1
@@ -241,18 +241,18 @@ class CaverAnalystPreviewer:
 
     def backward(self):
         
-        if self._current_frame_id-1 <= 0:
+        if self._current_frame_id <= 0:
             raise IndexError("Reached the beginning of the tunnel")
         logging.debug(f"Moving backward to frame {self._current_frame_id-1}")
         self._current_frame_id-=1
         self._sync_to_slider()
     def head(self):
         logging.debug(f"Moving to head of tunnel")
-        self._current_frame_id=1
+        self._current_frame_id=min(self.frame_ids)
         self._sync_to_slider()
     def tail(self):
         logging.debug(f"Moving to tail of tunnel")
-        self._current_frame_id=self.num_frames[-1]
+        self._current_frame_id=max(self.frame_ids)
         self._sync_to_slider()
 
     
