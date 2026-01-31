@@ -142,7 +142,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          distribution: 'oracle'
+          distribution: 'zulu'
           java-version: ${{ matrix.java }}
       
       - name: Setup PyMOL - (${{ matrix.pymol-tag }})-(${{ matrix.os }}-py${{ matrix.python-version }})
@@ -152,9 +152,6 @@ jobs:
           conda list
           which python
           which python3
-      - name: Install Caver on ${{ matrix.os }}
-        run: |
-          make install
     
 
       - name: Full Unit Test on Ubuntu

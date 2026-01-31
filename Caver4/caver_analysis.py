@@ -230,6 +230,8 @@ class CaverAnalystPreviewer:
 
     # the real work is done here
     def _switch_frame(self):
+        # force to sync the slider index 
+        self._current_frame_id = get_widget_value(self.form.horizontalSlider)
         logging.debug(f"Switching frame to {self._current_frame_id}")
         cmd.frame(self._current_frame_id)
         cmd.refresh()

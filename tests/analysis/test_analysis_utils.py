@@ -100,10 +100,11 @@ def test_tunnel_dynamic_from_result_dir_builds_frames(tmp_path):
     tunnel_frames = [frame for frame in dynamic.frames if not frame.is_empty]
     null_frames = [frame for frame in dynamic.frames if frame.is_empty]
 
-    assert len(tunnel_frames) == 1
-    assert tunnel_frames[0].frame_id == 36
-    assert len(null_frames) == 48
-    assert null_frames[0].frame_id == 1
+    assert len(tunnel_frames) == 48
+    assert tunnel_frames[0].frame_id == 1
+    assert tunnel_frames[-1].frame_id == 49
+    assert len(null_frames) == 1
+    assert null_frames[0].frame_id == 9
 
 
 def test_tunnel_dynamic_from_result_dir_requires_csv(tmp_path):
