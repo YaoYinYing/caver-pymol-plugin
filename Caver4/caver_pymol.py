@@ -402,8 +402,6 @@ class CaverPyMOL(QtWidgets.QWidget):
         
 
         # register as a pymol command
-        # TODO: test the pymol command `caver_set` to see if it works
-        # any posibility to create test cases against its autocompletion?
         cmd.extend("caver_set", self.caver_set)
 
         # autocompletion for key
