@@ -106,32 +106,6 @@ TUNNEL_REPRE=(
 
 )
 
-# TODO: create comprehensive and high coverage test cases for this class
-# use pytest and qtbot, organize test data using pytest.mark.parametrize
-# place these cases under `tests/gui/test_caver_pymol.py`
-# before making the tests, create a test worker in `tests/conftest.py`, 
-# like REvoDesign project does (see `tests/conftest.REvoDesign.py`).
-# the worker should take these works:
-# - Prepare directories
-# - load structure models into a PyMOL session and then Caver
-# - do GUI works, including editings, clicks, snapshots.
-# test data for the very first cases:
-# - static analysis: 
-#   - `tests/data/pdb/1AKD.pdb` 
-#   - `starting_point_coordinates 17.012 24.139 7.790`
-# - dynamic analysis:
-#   - `tests/data/md_snapshots/caver_md.snapshots.pze`
-#   - `starting_point_atom 578 1609 3258`, 
-#   - frame range: 1-50
-# caver output dir set to `tests/results/caver_cache`
-# snapshot before run analysis, make pymol snapshot (draw, not ray tracing, for saving time)
-# save snapshots to `tests/results/snapshots`, pymol images to `tests/results/pymol_images`
-# mark these two case as the first two test cases at integration test grade. 
-# also note: 
-# 0. use existing conda environment `REvoDesignLatestDev` for testing, in which you should have pymol installed.
-# 1. PyMOL is supposed to be installed already, so you dont have to mock Qt and PyMOL. Just do the real tests.
-# 2. DO NOT try to mock everything, just mock the things you need (eg, the Messagebox from Qt).
-# 3. Do not mock Java, as it has already been installed at PATH. run the real tests.
 class CaverPyMOL(QtWidgets.QWidget):
     # configuration binding from UI to CaverConfig
     config_bindings_main: dict[str, str] = {
