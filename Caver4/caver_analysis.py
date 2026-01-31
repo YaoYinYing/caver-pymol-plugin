@@ -200,13 +200,17 @@ class CaverAnalystPreviewer:
             self.frame_ids=[int(line.strip()) for line in f.readlines()]
         
         self.num_frames=len(self.frame_ids)
-        self.init_slider_range()
+
         self._current_frame_id=min(self.frame_ids)
+
+        self.init_slider_range()
+        
     def init_slider_range(self):
         self.slider.setRange(min(self.frame_ids), max(self.frame_ids))
         # only released signal is emitted when the slider is released,
         # so we can use it to trigger the frame switch and skip the middle frames
         self.slider.valueChanged.connect(self._switch_frame)
+        self._update_button_status()
     
     @property
     def tunnel_objects_to_hide(self, ) -> str:
@@ -229,32 +233,26 @@ class CaverAnalystPreviewer:
         logging.debug(f"Switching frame to {self._current_frame_id}")
         cmd.frame(self._current_frame_id)
         cmd.refresh()
-        # logging.debug(f"Hiding frames {self.tunnel_objects_to_hide}")
         cmd.disable(f'( {self.tunnel_objects_to_hide} )')
         cmd.refresh()
-        # logging.debug(f"Showing frame {self.tunnel_objects_to_show}")
         cmd.enable(self.tunnel_objects_to_show)
 
         cmd.refresh()
         self._update_button_status()
 
     def _update_index_to_slider(self):
-        # logging.debug(f"Syncing slider to frame {self._current_frame_id}")
+
         self.slider.setValue(self._current_frame_id)
     
     def forward(self):
         
-        if self._current_frame_id >= self.num_frames:
-            raise IndexError("Reached the end of the tunnel")
+        # button status checker will force to disable the button if the index reach the end
         # logging.debug(f"Moving forward to frame {self._current_frame_id+1}")
         self._current_frame_id+=1
         self._update_index_to_slider()
 
     def backward(self):
         
-        if self._current_frame_id <= 0:
-            raise IndexError("Reached the beginning of the tunnel")
-        # logging.debug(f"Moving backward to frame {self._current_frame_id-1}")
         self._current_frame_id-=1
         self._update_index_to_slider()
     def head(self):
