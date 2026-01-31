@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass,field
 import os
+import threading
 from typing import Optional, Union
+from PyQt5 import QtCore
 from pymol import cmd
 from pymol.constants_palette import palette_dict
 
@@ -222,18 +224,21 @@ class CaverAnalystPreviewer:
         self.tunnel_name=analyst.tunnels.name
 
         self.slider=form.horizontalSlider
-        self.autoplay_interval=get_widget_value(form.doubleSpinBox_autoPlayInterval)   
+        self.autoplay_interval=float(get_widget_value(form.doubleSpinBox_autoPlayInterval))   
         
         md_state_file=os.path.join(res_dir, str(run_id), "md_state_number.txt")
         with open(md_state_file, "r") as f:
             self.frame_ids=[int(line.strip()) for line in f.readlines()]
 
-        self._current_frame_id=min(self.frame_ids)
+        self._min_frame_id=min(self.frame_ids)
+        self._max_frame_id=max(self.frame_ids)
+        self._current_frame_id=self._min_frame_id
 
         self.init_slider_range()
+        self._setup_autoplay()
         
     def init_slider_range(self):
-        self.slider.setRange(min(self.frame_ids), max(self.frame_ids))
+        self.slider.setRange(self._min_frame_id, self._max_frame_id)
         # only released signal is emitted when the slider is released,
         # so we can use it to trigger the frame switch and skip the middle frames
         self.slider.valueChanged.connect(self._switch_frame)
@@ -257,11 +262,11 @@ class CaverAnalystPreviewer:
     
 
     def _update_button_status(self):
-        self.form.pushButton_firstFrame.setEnabled(self._current_frame_id != min(self.frame_ids))
-        self.form.pushButton_lastFrame.setEnabled(self._current_frame_id != max(self.frame_ids))
+        self.form.pushButton_firstFrame.setEnabled(self._current_frame_id != self._min_frame_id)
+        self.form.pushButton_lastFrame.setEnabled(self._current_frame_id != self._max_frame_id)
 
-        self.form.pushButton_nextFrame.setEnabled(self._current_frame_id != max(self.frame_ids))
-        self.form.pushButton_previousFrame.setEnabled(self._current_frame_id != min(self.frame_ids))
+        self.form.pushButton_nextFrame.setEnabled(self._current_frame_id != self._max_frame_id)
+        self.form.pushButton_previousFrame.setEnabled(self._current_frame_id != self._min_frame_id)
 
     # the real work is done here
     def _switch_frame(self):
@@ -275,7 +280,8 @@ class CaverAnalystPreviewer:
         cmd.enable(self.tunnel_objects_to_show)
 
         cmd.refresh()
-        self._update_button_status()
+        if not self._is_autoplay_running():
+            self._update_button_status()
 
     def _update_index_to_slider(self):
 
@@ -291,28 +297,91 @@ class CaverAnalystPreviewer:
         self._update_index_to_slider()
     def head(self):
         logging.debug(f"Moving to head of tunnel")
-        self._current_frame_id=min(self.frame_ids)
+        self._current_frame_id=self._min_frame_id
         self._update_index_to_slider()
     def tail(self):
         logging.debug(f"Moving to tail of tunnel")
-        self._current_frame_id=max(self.frame_ids)
+        self._current_frame_id=self._max_frame_id
         self._update_index_to_slider()
 
-        self.form.pushButton_clearTunnelsSpectrumStatic
+    def _setup_autoplay(self) -> None:
+        self._autoplay_thread: Optional[threading.Thread] = None
+        self._autoplay_stop_event = threading.Event()
+        self._autoplay_nav_buttons = (
+            self.form.pushButton_firstFrame,
+            self.form.pushButton_lastFrame,
+            self.form.pushButton_nextFrame,
+            self.form.pushButton_previousFrame,
+        )
+        self._autoplay_other_buttons = (
+            self.form.pushButton_aboutThisFrame,
+            self.form.pushButton_refreshTunnelPreview,
+            self.form.pushButton_applyTunnelsSpectrumStatic,
+            self.form.pushButton_clearTunnelsSpectrumStatic,
+        )
 
+        self.form.pushButton_autoPlay.clicked.connect(self.start_auto_play)
+        self.form.pushButton_pauseAutoPlay.clicked.connect(self.pause_auto_play)
+        self.form.doubleSpinBox_autoPlayInterval.valueChanged.connect(self._autoplay_interval_changed)
+        self.form.pushButton_pauseAutoPlay.setEnabled(False)
 
-    
-    # TODO: implement the auto-play mode
-    # buttons:
-    # - play: form.pushButton_autoPlay
-    # - pause: form.pushButton_pauseAutoPlay
-    # - interval: form.doubleSpinBox_autoPlayInterval
-    # use thread to run the auto-play so the GUI is not blocked
-    # disable these buttons while auto-play is running, release them when auto-play is paused:
-    # -  about this frame: form.pushButton_aboutThisFrame
-    # - forward/backward: form.pushButton_nextFrame, form.pushButton_previousFrame
-    # - first/last frame: form.pushButton_firstFrame, form.pushButton_lastFrame
-    # - refresh tunnel preview: form.pushButton_refreshTunnelPreview
-    # - analyze tunnel: form.pushButton_applyTunnelsSpectrumStatic
-    # - clear tunnel: form.pushButton_clearTunnelsSpectrumStatic
+    def _is_autoplay_running(self) -> bool:
+        thread = getattr(self, "_autoplay_thread", None)
+        return bool(thread and thread.is_alive())
 
+    def _autoplay_interval_changed(self, value: float) -> None:
+        try:
+            self.autoplay_interval = float(value)
+        except (TypeError, ValueError):
+            self.autoplay_interval = float(get_widget_value(self.form.doubleSpinBox_autoPlayInterval))
+
+    def _set_autoplay_running(self, running: bool) -> None:
+        if running:
+            for button in (*self._autoplay_nav_buttons, *self._autoplay_other_buttons):
+                button.setEnabled(False)
+            self.form.pushButton_autoPlay.setEnabled(False)
+            self.form.pushButton_pauseAutoPlay.setEnabled(True)
+        else:
+            for button in self._autoplay_other_buttons:
+                button.setEnabled(True)
+            self._update_button_status()
+            self.form.pushButton_autoPlay.setEnabled(True)
+            self.form.pushButton_pauseAutoPlay.setEnabled(False)
+
+    def _next_frame_id(self, current: int) -> int:
+        return self._min_frame_id if current >= self._max_frame_id else current + 1
+
+    def _auto_play_worker(self) -> None:
+        next_frame = self._current_frame_id
+        while not self._autoplay_stop_event.is_set():
+            next_frame = self._next_frame_id(next_frame)
+            QtCore.QMetaObject.invokeMethod(
+                self.slider,
+                "setValue",
+                QtCore.Qt.QueuedConnection,
+                QtCore.Q_ARG(int, next_frame),
+            )
+            interval = max(float(self.autoplay_interval), 0.01)
+            if self._autoplay_stop_event.wait(interval):
+                break
+
+        self._autoplay_thread = None
+
+    def start_auto_play(self) -> None:
+        if self._autoplay_thread and self._autoplay_thread.is_alive():
+            return
+        self.autoplay_interval = float(get_widget_value(self.form.doubleSpinBox_autoPlayInterval))
+        self._autoplay_stop_event.clear()
+        self._set_autoplay_running(True)
+        self._autoplay_thread = threading.Thread(target=self._auto_play_worker, daemon=True)
+        self._autoplay_thread.start()
+
+    def pause_auto_play(self) -> None:
+        thread = self._autoplay_thread
+        if not thread:
+            return
+        self._autoplay_stop_event.set()
+        thread.join()
+        self._autoplay_thread = None
+        self._autoplay_stop_event.clear()
+        self._set_autoplay_running(False)
