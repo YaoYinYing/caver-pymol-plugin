@@ -130,6 +130,7 @@ TUNNEL_REPRE=(
 # also note: 
 # 1. PyMOL is supposed to be installed already, so you dont have to mock Qt and PyMOL. Just do the real tests.
 # 2. DO NOT try to mock everything, just mock the things you need (eg, the Messagebox from Qt).
+# Do not mock Java, as it has already been installed at PATH. run the real tests.
 
 
 

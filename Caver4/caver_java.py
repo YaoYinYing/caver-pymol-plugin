@@ -23,8 +23,6 @@ from .caver_pymol import ROOT_LOGGER
 
 from .utils.live_run import run_command
 logging=ROOT_LOGGER.getChild('PyJava')
-
-
 class PyJava:
     def __init__(self, customized_memory_heap, caverfolder, caverjar, outdirInputs, cfgnew, out_dir):
         self.java_bin = shutil.which("java")
