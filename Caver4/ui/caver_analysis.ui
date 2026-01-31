@@ -84,6 +84,9 @@
              <property name="minimum">
               <double>0.000000000000000</double>
              </property>
+             <property name="value">
+              <double>1.000000000000000</double>
+             </property>
             </widget>
            </item>
            <item>
@@ -323,7 +326,7 @@
        <rect>
         <x>10</x>
         <y>30</y>
-        <width>571</width>
+        <width>575</width>
         <height>111</height>
        </rect>
       </property>
@@ -513,18 +516,12 @@
           </layout>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_refreshTunnelPreview">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
+          <widget class="QPushButton" name="pushButton_aboutThisFrame">
            <property name="toolTip">
-            <string>Refresh from output directory.</string>
+            <string>About this frame</string>
            </property>
            <property name="text">
-            <string>Refresh</string>
+            <string>?</string>
            </property>
           </widget>
          </item>
@@ -540,6 +537,22 @@
             </size>
            </property>
           </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_refreshTunnelPreview">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Refresh from output directory.</string>
+           </property>
+           <property name="text">
+            <string>Refresh</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>

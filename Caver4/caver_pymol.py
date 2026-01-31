@@ -377,12 +377,24 @@ class CaverPyMOL(QtWidgets.QWidget):
             set_widget_value(self.ui_analyst.comboBox_tunnel, range(1, num_tunnels+1))
 
         self.ui_analyst.pushButton_refreshTunnels.clicked.connect(refresh_tunnel_ids)
+        
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, list_palettes())
         set_widget_value(self.ui_analyst.comboBox_representation, TUNNEL_REPRE)
+
+        # respect to caver default
+        set_widget_value(self.ui_analyst.comboBox_spectrumPalette, 'red_green') 
+        
 
         self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)
 
         self.ui_analyst.pushButton_clearTunnelsSpectrumStatic.clicked.connect(_cleanup_analysis_preview)
+        def _about_this_frame():
+            if not self.analyst_previewer:
+                notify_box(message='No tunnel preview is available.',error_type= IndexError)
+            
+            self.analyst_previewer.about_this_frame()
+        self.ui_analyst.pushButton_aboutThisFrame.clicked.connect(_about_this_frame)
+        
 
         # register as a pymol command
         cmd.extend("caver_set", self.caver_set)
