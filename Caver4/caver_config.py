@@ -27,7 +27,9 @@ logging = ROOT_LOGGER.getChild('Config')
 THIS_DIR = os.path.dirname(__file__)
 CONFIG_TXT = os.path.join(THIS_DIR, "config", "config.txt")
 
-
+# TODO: create comprehensive and high coverage test cases for this class
+# use pytest, organize test data using pytest.mark.parametrize
+# place these cases under `tests/config/test_caver_config.py`
 @dataclass
 class CaverConfig:
 
