@@ -127,6 +127,9 @@ TUNNEL_REPRE=(
 # snapshot before run analysis, make pymol snapshot (draw, not ray tracing, for saving time)
 # save snapshots to `tests/results/snapshots`, pymol images to `tests/results/pymol_images`
 # mark these two case as the first two test cases at integration test grade. 
+# also note: 
+# 1. PyMOL is supposed to be installed already, so you dont have to mock Qt and PyMOL. Just do the real tests.
+# 2. DO NOT try to mock everything, just mock the things you need (eg, the Messagebox from Qt).
 
 
 
