@@ -21,14 +21,9 @@ import warnings
 import webbrowser
 from contextlib import contextmanager
 from functools import partial
-from typing import TYPE_CHECKING, Any, Optional, Union
-
+from typing import Any, Optional
+import shutil
 from pymol import cmd
-
-if TYPE_CHECKING:
-    from PyQt5 import QtWidgets
-else:
-    from pymol.Qt import QtWidgets
 
 import time
 
@@ -53,12 +48,13 @@ repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
 # internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
-from .caver_analysis import run_analysis, list_palettes, CaverAnalyst, CaverAnalystPreviewer
+from .caver_analysis import run_analysis, list_palettes, CaverAnalyst, CaverAnalystPreviewer,TUNNEL_REPRE,TUNNEL_SPECTRUM_EXPRE
 from .utils.upgrade import has_updates
+from .utils.caver_utils import IGNORED_STRUCTURES, THE_20s, find_centrial_pdb
 from .utils.tools import open_doc_pdf, cite_info
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
 from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
-from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
+from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
 from .utils.ui_tape import (
     CheckableListView,
     get_widget_value,
@@ -69,42 +65,10 @@ from .utils.ui_tape import (
     run_worker_thread_with_progress,
     set_widget_value,
     widget_signal_tape,
+    QtWidgets
 )
 
 
-
-
-THE_20s = [
-    "ALA",
-    "ARG",
-    "ASN",
-    "ASP",
-    "CYS",
-    "GLN",
-    "GLU",
-    "GLY",
-    "HIS",
-    "ILE",
-    "LEU",
-    "LYS",
-    "MET",
-    "PHE",
-    "PRO",
-    "SER",
-    "THR",
-    "TRP",
-    "TYR",
-    "VAL",
-]
-
-TUNNEL_REPRE=(
-    'lines',
-    'sticks',
-    'spheres',
-    'mesh',
-    'surface',
-
-)
 
 class CaverPyMOL(QtWidgets.QWidget):
     # configuration binding from UI to CaverConfig
@@ -266,8 +230,6 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.config = CaverConfig()
         self.run_id = 0
 
-        # ignore structures which match the follwing regexps
-        self.ignoreStructures = [r"^origins$", r"_origins$", r"_v_origins$", r"_t\d\d\d_\d$"]
 
         # make windows and setup the open dialog signal
         if self.dialog is None:
@@ -321,17 +283,22 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.analyst_previewer:Optional[CaverAnalystPreviewer] = None
 
         def _run_analysis():
-            self.analyst=run_analysis(
-                form=self.ui_analyst,
-                run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
-                res_dir=self.get_run_ids()[0]
-            )
+            with self.freeze_window(), hold_trigger_button(self.ui_analyst.pushButton_applyTunnelsSpectrumStatic):
+
+                # for long running tasks, use a worker thread
+                self.analyst=run_worker_thread_with_progress(
+                    run_analysis,
+                    form=self.ui_analyst,
+                    run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
+                    res_dir=self.get_run_ids()[0]
+                )
         
         def _run_analysis_preview():
             if not self.analyst:
                 raise UnboundLocalError('Analyst not initialized')
             
             logging.debug('Initializing analyst previewer')
+            
             self.analyst_previewer=CaverAnalystPreviewer(
                 form=self.ui_analyst,
                 analyst=self.analyst,
@@ -379,10 +346,13 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui_analyst.pushButton_refreshTunnels.clicked.connect(refresh_tunnel_ids)
         
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, list_palettes())
+
         set_widget_value(self.ui_analyst.comboBox_representation, TUNNEL_REPRE)
+        set_widget_value(self.ui_analyst.comboBox_spectrumBy, TUNNEL_SPECTRUM_EXPRE)
 
         # respect to caver default
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, 'red_green') 
+        set_widget_value(self.ui_analyst.comboBox_spectrumBy, 'vdw')
         
 
         self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)
@@ -455,15 +425,8 @@ class CaverPyMOL(QtWidgets.QWidget):
         if reinit_session:
             logging.warning(f"Reinitializing the session.")
             cmd.reinitialize()
-            pdb_files=[x for x in os.listdir(os.path.join(out_home, str(run_id), "data")) if x.endswith(".pdb") and x != 'v_origins.pdb' and x != 'origins.pdb']
-            
-            logging.debug(f'pdb_files: {pdb_files}')
-
-            if not pdb_files:
-                raise RuntimeError("No PDB files found in the output directory.")
-            input_pdb=pdb_files[0]
-            logging.debug(f'input_pdb: {input_pdb}')
-            cmd.load(os.path.join(out_home, str(run_id), "data", input_pdb))
+            input_pdb=find_centrial_pdb(out_home=out_home,run_id=run_id)
+            cmd.load(input_pdb)
 
         with self.freeze_window():
             # Run the PyMOL view plugin to visualize the results
@@ -528,7 +491,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         )
 
     def structureIgnored(self, name):
-        for key in self.ignoreStructures:
+        for key in IGNORED_STRUCTURES:
             if re.search(key, name):
                 return 1
         return 0
@@ -709,6 +672,12 @@ class CaverPyMOL(QtWidgets.QWidget):
         logging.info(f'Executing: {runview}')
         cmd.do(runview)
         logging.info("Done.")
+
+        if get_widget_value(self.ui.checkBox_reduceMD_Input):
+            logging.debug('Delete Input dir to save disk space.')
+            shutil.rmtree(outdirInputs)
+
+        logging.info('All set!')
 
     @staticmethod
     def fixPrecision(numberStr: Any) -> float:

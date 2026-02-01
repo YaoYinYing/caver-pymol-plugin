@@ -1,0 +1,8 @@
+[run]
+omit =
+    */tests/*
+    */Caver4/ui/*
+    */Caver4/bin/*
+    */Caver4/config/*
+    */Caver4/license/*
+    */Caver4/lib/*

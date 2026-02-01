@@ -2,20 +2,37 @@ from __future__ import annotations
 
 from dataclasses import dataclass,field
 import os
+import threading
 from typing import Optional, Union
+
 from pymol import cmd
 from pymol.constants_palette import palette_dict
 
 # pandas is not supposed to be installed with PyMOL
 
 from .caver_pymol import ROOT_LOGGER
-from .utils.ui_tape import get_widget_value, notify_box
-from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
+from .utils.ui_tape import get_widget_value, notify_box, QtCore
+from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
 
 logging=ROOT_LOGGER.getChild('Analyst')
 
 palette_tuple = tuple(palette_dict.keys())
 
+TUNNEL_REPRE=(
+    'lines',
+    'sticks',
+    'spheres',
+    'mesh',
+    'surface',
+
+)
+
+TUNNEL_SPECTRUM_EXPRE=(
+    'b',
+    'vdw',
+    'resi',
+    'index'
+)
 
 
 def list_palettes() -> tuple[str, ...]:
@@ -68,13 +85,14 @@ class TunnelFrame:
     def __repr__(self):
         return f'''TunnelFrame #{self.frame_id}
 -=-=-=-=
-Atoms: {self.node_number}
-Bonds: {self.num_bonds}
-Tunnel Length: {self.diameter_records_number}
+Node: {self.node_number}
+Connections: {self.num_bonds}
+Length: {self.diameter_records_number}
 Is empty: {self.is_empty}
 -=-=-=-=
 Valid Diameters: {[round(x, 2) for x in self.valid_diameters]}
 Full Diameters: {[round(x, 2) for x in self.diameters]}
+-=-=-=-=
 '''
 
     @property
@@ -101,7 +119,7 @@ Full Diameters: {[round(x, 2) for x in self.diameters]}
         obj_name=f'{name}.{self.frame_id}'
 
         if exists(obj_name):
-            logging.warning(f'Object {obj_name} already exists. Deleted.')
+            # delete the object for session safety
             cmd.delete(obj_name)
         
         cmd.load_raw(self.pdb_strings, format='pdb', object=obj_name)
@@ -110,10 +128,68 @@ Full Diameters: {[round(x, 2) for x in self.diameters]}
             # backpropagate vdw radius from b-factor
             cmd.alter(obj_name, "vdw=b")
         return obj_name
+    def render(self, *args, **kwargs) -> None:
+        expression=kwargs.get('expression')
+        # spectrum as normal way of PyMOL
+        # using vdw, b, index, etc.
+        if expression in TUNNEL_SPECTRUM_EXPRE:
+            logging.debug(f'rendering spectrum {expression}')
+            return self.spectrum(*args, **kwargs)
+        
+        # apply existing ramp to the object
+        # eg: 
+        # ```pymol
+        # create startpoint, sele
+        # cmd.ramp_new('r', 'startpoint', [0, 10], 'rainbow')
+        # ```
+        # use `r` as ramp name will force to use the proximity from the `startpoint`
+        # 
+        if expression in cmd.get_names_of_type('object:ramp'):
+            logging.debug(f'rendering existing ramp {expression}')
+            return cmd.color(expression, kwargs.get('obj_name'))
+
+        # build new ramp based on expression
+        # eg:
+        # ```pymol
+        # create startpoint, sele
+        # ```
+        # use `startpoint` as ramp starting point will force to use the proximity from the `startpoint`
+        logging.debug(f'rendering new ramp {expression}')
+        return self.ramp(*args, **kwargs)
+        
     
-    def render(self, obj_name: str, minimum: float=1.5, maximum: float=3.0, palette: str='red_green') -> None:
+    def ramp(self, obj_name: str, expression: str,minimum: float=1.5, maximum: float=3.0,palette: str='red_green' ) -> None:
+        if palette.startswith('rainbow'):
+            # fix to rainbow if palette is rainbow_*
+            palette='rainbow'
+        else:
+            # otherwise split it as a list
+            palette=palette.split('_')
+            
+        
+        # ramp for each frame and get it colored.
         try:
-            cmd.spectrum('vdw', palette, obj_name, minimum=minimum, maximum=maximum)
+            new_ramp=f'r_{obj_name}'
+            
+            cmd.ramp_new(
+                name=new_ramp, 
+                map_name=expression, 
+                color=palette, 
+                selection=obj_name,
+                range=[minimum, maximum],
+                state=self.frame_id
+                )
+            # hide all ramps
+            cmd.group('all_ramps', new_ramp)
+            
+            cmd.color(new_ramp, obj_name)
+        except Exception as e:
+            logging.error(e)
+
+
+    def spectrum(self, obj_name: str, minimum: float=1.5, maximum: float=3.0, palette: str='red_green', expression: str='vdw') -> None:
+        try:
+            cmd.spectrum(expression, palette, obj_name, minimum=minimum, maximum=maximum)
         except Exception as e:
             logging.error(f"Error rendering {obj_name} due to:\n {e}")
         
@@ -185,12 +261,18 @@ class CaverAnalyst:
 
         self.tunnels: TunnelDynamic = TunnelDynamic.from_result_dir(res_dir, run_id, tunnel_id)
     
-    def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green', show_as: str='lines') -> None:
+    def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green', show_as: str='lines', expression: str='vdw') -> None:
         for frame in self.tunnels.frames:
             logging.info(f"Rendering frame {frame.frame_id} ({repr(frame)}) ...")
             frame_name=frame.load(self.tunnels.name, group=f'{self.tunnels.name}_{self.run_id}_t{self.tunnel_id:03d}')
             cmd.show(show_as, frame_name)
-            frame.render(frame_name, minimum=minimum, maximum=maximum, palette=palette or self.palette)
+            frame.render(
+                obj_name=frame_name, 
+                minimum=minimum, 
+                maximum=maximum, 
+                palette=palette or self.palette, 
+                expression=expression
+            )
         logging.info(f"Rendered tunnel {self.tunnels.name}")
         
 
@@ -201,10 +283,18 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     spectrum_min=get_widget_value(form.doubleSpinBox_spectrumMin)
     spectrum_max=get_widget_value(form.doubleSpinBox_spectrumMax)
 
+    spectrum_expression=get_widget_value(form.comboBox_spectrumBy) or 'vdw'
+
     repre=get_widget_value(form.comboBox_representation)
 
     analyst=CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
-    analyst.render(minimum=spectrum_min, maximum=spectrum_max, palette=palette, show_as=repre)
+    analyst.render(
+        minimum=spectrum_min, 
+        maximum=spectrum_max, 
+        palette=palette, 
+        show_as=repre, 
+        expression=spectrum_expression
+        )
 
     return analyst
 
@@ -222,20 +312,21 @@ class CaverAnalystPreviewer:
         self.tunnel_name=analyst.tunnels.name
 
         self.slider=form.horizontalSlider
-        self.autoplay_interval=get_widget_value(form.doubleSpinBox_autoPlayInterval)   
+        self.autoplay_interval=float(get_widget_value(form.doubleSpinBox_autoPlayInterval))   
         
         md_state_file=os.path.join(res_dir, str(run_id), "md_state_number.txt")
         with open(md_state_file, "r") as f:
             self.frame_ids=[int(line.strip()) for line in f.readlines()]
-        
-        self.num_frames=len(self.frame_ids)
 
-        self._current_frame_id=min(self.frame_ids)
+        self._min_frame_id=min(self.frame_ids)
+        self._max_frame_id=max(self.frame_ids)
+        self._current_frame_id=self._min_frame_id
 
         self.init_slider_range()
+        self._setup_autoplay()
         
     def init_slider_range(self):
-        self.slider.setRange(min(self.frame_ids), max(self.frame_ids))
+        self.slider.setRange(self._min_frame_id, self._max_frame_id)
         # only released signal is emitted when the slider is released,
         # so we can use it to trigger the frame switch and skip the middle frames
         self.slider.valueChanged.connect(self._switch_frame)
@@ -259,11 +350,11 @@ class CaverAnalystPreviewer:
     
 
     def _update_button_status(self):
-        self.form.pushButton_firstFrame.setEnabled(self._current_frame_id != min(self.frame_ids))
-        self.form.pushButton_lastFrame.setEnabled(self._current_frame_id != max(self.frame_ids))
+        self.form.pushButton_firstFrame.setEnabled(self._current_frame_id != self._min_frame_id)
+        self.form.pushButton_lastFrame.setEnabled(self._current_frame_id != self._max_frame_id)
 
-        self.form.pushButton_nextFrame.setEnabled(self._current_frame_id != max(self.frame_ids))
-        self.form.pushButton_previousFrame.setEnabled(self._current_frame_id != min(self.frame_ids))
+        self.form.pushButton_nextFrame.setEnabled(self._current_frame_id != self._max_frame_id)
+        self.form.pushButton_previousFrame.setEnabled(self._current_frame_id != self._min_frame_id)
 
     # the real work is done here
     def _switch_frame(self):
@@ -277,16 +368,14 @@ class CaverAnalystPreviewer:
         cmd.enable(self.tunnel_objects_to_show)
 
         cmd.refresh()
-        self._update_button_status()
+        if not self._is_autoplay_running():
+            self._update_button_status()
 
     def _update_index_to_slider(self):
 
         self.slider.setValue(self._current_frame_id)
     
     def forward(self):
-        
-        # button status checker will force to disable the button if the index reach the end
-        # logging.debug(f"Moving forward to frame {self._current_frame_id+1}")
         self._current_frame_id+=1
         self._update_index_to_slider()
 
@@ -296,11 +385,104 @@ class CaverAnalystPreviewer:
         self._update_index_to_slider()
     def head(self):
         logging.debug(f"Moving to head of tunnel")
-        self._current_frame_id=min(self.frame_ids)
+        self._current_frame_id=self._min_frame_id
         self._update_index_to_slider()
     def tail(self):
         logging.debug(f"Moving to tail of tunnel")
-        self._current_frame_id=max(self.frame_ids)
+        self._current_frame_id=self._max_frame_id
         self._update_index_to_slider()
 
-    
+    def _setup_autoplay(self) -> None:
+        self._autoplay_thread: Optional[threading.Thread] = None
+        self._autoplay_stop_event = threading.Event()
+        self._autoplay_nav_buttons = (
+            self.form.pushButton_firstFrame,
+            self.form.pushButton_lastFrame,
+            self.form.pushButton_nextFrame,
+            self.form.pushButton_previousFrame,
+        )
+        self._autoplay_other_buttons = (
+            self.form.pushButton_aboutThisFrame,
+            self.form.pushButton_refreshTunnelPreview,
+            self.form.pushButton_applyTunnelsSpectrumStatic,
+            self.form.pushButton_clearTunnelsSpectrumStatic,
+        )
+
+        self.form.pushButton_autoPlay.clicked.connect(self.start_auto_play)
+        self.form.pushButton_pauseAutoPlay.clicked.connect(self.pause_auto_play)
+        self.form.doubleSpinBox_autoPlayInterval.valueChanged.connect(self._autoplay_interval_changed)
+        self.form.pushButton_pauseAutoPlay.setEnabled(False)
+
+    def _is_autoplay_running(self) -> bool:
+        thread = getattr(self, "_autoplay_thread", None)
+        return bool(thread and thread.is_alive())
+
+    def _autoplay_interval_changed(self, value: float) -> None:
+        try:
+            self.autoplay_interval = float(value)
+        except (TypeError, ValueError):
+            self.autoplay_interval = float(get_widget_value(self.form.doubleSpinBox_autoPlayInterval))
+
+    def _set_autoplay_running(self, running: bool) -> None:
+        if running:
+            for button in (*self._autoplay_nav_buttons, *self._autoplay_other_buttons):
+                button.setEnabled(False)
+            self.form.pushButton_autoPlay.setEnabled(False)
+            self.form.pushButton_pauseAutoPlay.setEnabled(True)
+        else:
+            for button in self._autoplay_other_buttons:
+                button.setEnabled(True)
+            self._update_button_status()
+            self.form.pushButton_autoPlay.setEnabled(True)
+            self.form.pushButton_pauseAutoPlay.setEnabled(False)
+
+    def _next_frame_id(self, current: int) -> int:
+        return self._min_frame_id if current >= self._max_frame_id else current + 1
+
+    def _auto_play_worker(self) -> None:
+        next_frame = self._current_frame_id
+        while not self._autoplay_stop_event.is_set():
+            next_frame = self._next_frame_id(next_frame)
+            QtCore.QMetaObject.invokeMethod(
+                self.slider,
+                "setValue",
+                QtCore.Qt.QueuedConnection,
+                QtCore.Q_ARG(int, next_frame),
+            )
+            interval = max(float(self.autoplay_interval), 0.01)
+            if self._autoplay_stop_event.wait(interval):
+                break
+
+        self._autoplay_thread = None
+
+    def start_auto_play(self) -> None:
+        if self._autoplay_thread and self._autoplay_thread.is_alive():
+            return
+        self.autoplay_interval = float(get_widget_value(self.form.doubleSpinBox_autoPlayInterval))
+        self._autoplay_stop_event.clear()
+        self._set_autoplay_running(True)
+        self._autoplay_thread = threading.Thread(target=self._auto_play_worker, daemon=True)
+        self._autoplay_thread.start()
+
+    def pause_auto_play(self) -> None:
+        thread = self._autoplay_thread
+        if not thread:
+            return
+        self._autoplay_stop_event.set()
+        thread.join()
+        self._autoplay_thread = None
+        self._autoplay_stop_event.clear()
+        self._set_autoplay_running(False)
+
+
+# ramp and spectrum
+
+# cmd.show_as("cartoon",mol)
+# cmd.cartoon("putty", mol)
+# cmd.set("cartoon_putty_scale_min", min(bfacts),obj)
+# cmd.set("cartoon_putty_scale_max", max(bfacts),obj)
+# cmd.set("cartoon_putty_transform", 0,obj)
+# cmd.set("cartoon_putty_radius", 0.2,obj)
+# cmd.spectrum("b","rainbow", "%s and n. CA " %mol)
+# cmd.ramp_new("count", obj, [min(bfacts), max(bfacts)], "rainbow")
+# cmd.recolor()
