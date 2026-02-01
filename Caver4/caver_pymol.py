@@ -426,7 +426,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             logging.warning(f"Reinitializing the session.")
             cmd.reinitialize()
             input_pdb=find_centrial_pdb(out_home=out_home,run_id=run_id)
-            cmd.load(os.path.join(out_home, str(run_id), "data", input_pdb))
+            cmd.load(input_pdb)
 
         with self.freeze_window():
             # Run the PyMOL view plugin to visualize the results
