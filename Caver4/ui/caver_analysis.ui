@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CaverAnalysis</class>
- <widget class="QWidget" name="CaverAnalysis">
+ <class>CaverAnalyst</class>
+ <widget class="QWidget" name="CaverAnalyst">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>636</width>
-    <height>420</height>
+    <height>350</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>636</width>
-    <height>420</height>
+    <height>350</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>636</width>
-    <height>420</height>
+    <height>350</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>Caver - Analysis</string>
+   <string>Caver - Analyst</string>
   </property>
   <widget class="QTabWidget" name="tabWidget_analysis">
    <property name="geometry">
@@ -31,40 +31,129 @@
      <x>10</x>
      <y>10</y>
      <width>611</width>
-     <height>391</height>
+     <height>331</height>
     </rect>
    </property>
    <property name="currentIndex">
     <number>0</number>
    </property>
-   <widget class="QWidget" name="tabSpectrum">
+   <widget class="QWidget" name="tabTimeline">
     <attribute name="title">
-     <string>Spectrum</string>
+     <string>Timeline</string>
     </attribute>
     <widget class="QGroupBox" name="groupBox">
      <property name="geometry">
       <rect>
        <x>10</x>
        <y>0</y>
-       <width>591</width>
-       <height>181</height>
+       <width>451</width>
+       <height>161</height>
       </rect>
      </property>
      <property name="title">
-      <string>Setup</string>
+      <string>Timeline Setup</string>
      </property>
      <widget class="QWidget" name="">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>30</y>
-        <width>571</width>
-        <height>141</height>
+        <width>425</width>
+        <height>121</height>
        </rect>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_15">
        <item>
         <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QComboBox" name="comboBox_spectrumPalette">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Palette code used for PyMOL spectrum</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Palette code used for PyMOL spectrum</string>
+           </property>
+           <property name="text">
+            <string>Palette:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Tunnel ID to be used for analyss.</string>
+           </property>
+           <property name="text">
+            <string>Tunnel:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QComboBox" name="comboBox_tunnel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Tunnel ID to be used for analyss.</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_refreshTunnels">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Refresh from output directory.</string>
+             </property>
+             <property name="text">
+              <string>Refresh</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Range:</string>
+           </property>
+          </widget>
+         </item>
          <item row="2" column="1">
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
@@ -123,95 +212,6 @@
            </item>
           </layout>
          </item>
-         <item row="0" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
-           <item>
-            <widget class="QComboBox" name="comboBox_spectrumPalette">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Palette code used for PyMOL spectrum</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_3">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Palette code used for PyMOL spectrum</string>
-           </property>
-           <property name="text">
-            <string>Palette:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Spectrum:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>Tunnel ID to be used for analyss.</string>
-           </property>
-           <property name="text">
-            <string>Tunnel:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <item>
-            <widget class="QComboBox" name="comboBox_tunnel">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Tunnel ID to be used for analyss.</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButton_refreshTunnels">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Refresh from output directory.</string>
-             </property>
-             <property name="text">
-              <string>Refresh</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
         </layout>
        </item>
        <item>
@@ -219,21 +219,8 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_10">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
-             <item>
-              <widget class="QLabel" name="label_5">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Repre:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
+            <layout class="QGridLayout" name="gridLayout_2">
+             <item row="0" column="1">
               <widget class="QComboBox" name="comboBox_representation">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -246,11 +233,20 @@
                </property>
               </widget>
              </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_11">
-             <item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Repre.:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
               <widget class="QLabel" name="label_7">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
@@ -259,12 +255,12 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Ramp by:</string>
+                <string>Spect.:</string>
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QComboBox" name="comboBox">
+             <item row="1" column="1">
+              <widget class="QComboBox" name="comboBox_spectrumBy">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -272,7 +268,10 @@
                 </sizepolicy>
                </property>
                <property name="toolTip">
-                <string>Ramp color for tunnels</string>
+                <string>What to run spectrum against </string>
+               </property>
+               <property name="editable">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -284,6 +283,12 @@
           <layout class="QHBoxLayout" name="horizontalLayout_12">
            <item>
             <widget class="QPushButton" name="pushButton_applyTunnelsSpectrumStatic">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="toolTip">
               <string>Run per tunnel-cluster analysis</string>
              </property>
@@ -294,6 +299,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_clearTunnelsSpectrumStatic">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="toolTip">
               <string>Cleanup the session</string>
              </property>
@@ -313,9 +324,9 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>190</y>
+       <y>160</y>
        <width>591</width>
-       <height>151</height>
+       <height>131</height>
       </rect>
      </property>
      <property name="title">
@@ -327,7 +338,7 @@
         <x>10</x>
         <y>30</y>
         <width>575</width>
-        <height>111</height>
+        <height>91</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -572,6 +583,120 @@
           </widget>
          </item>
         </layout>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="geometry">
+      <rect>
+       <x>480</x>
+       <y>0</y>
+       <width>120</width>
+       <height>161</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>Plot Window</string>
+     </property>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>101</width>
+        <height>121</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_17">
+           <item>
+            <widget class="QLabel" name="label_8">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Tunnel start </string>
+             </property>
+             <property name="text">
+              <string>Start:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spinBox_tunnelStart">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_18">
+           <item>
+            <widget class="QLabel" name="label_9">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Tunnel End</string>
+             </property>
+             <property name="text">
+              <string>End:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spinBox_tunnelEnd">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_tunnelPlot">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Plot</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

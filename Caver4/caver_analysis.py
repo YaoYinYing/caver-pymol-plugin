@@ -12,12 +12,27 @@ from pymol.constants_palette import palette_dict
 
 from .caver_pymol import ROOT_LOGGER
 from .utils.ui_tape import get_widget_value, notify_box
-from .ui.Ui_caver_analysis import Ui_CaverAnalysis as CaverAnalysisForm
+from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
 
 logging=ROOT_LOGGER.getChild('Analyst')
 
 palette_tuple = tuple(palette_dict.keys())
 
+TUNNEL_REPRE=(
+    'lines',
+    'sticks',
+    'spheres',
+    'mesh',
+    'surface',
+
+)
+
+TUNNEL_SPECTRUM_EXPRE=(
+    'b',
+    'vdw',
+    'resi',
+    'index'
+)
 
 
 def list_palettes() -> tuple[str, ...]:
@@ -70,13 +85,14 @@ class TunnelFrame:
     def __repr__(self):
         return f'''TunnelFrame #{self.frame_id}
 -=-=-=-=
-Atoms: {self.node_number}
-Bonds: {self.num_bonds}
-Tunnel Length: {self.diameter_records_number}
+Node: {self.node_number}
+Connections: {self.num_bonds}
+Length: {self.diameter_records_number}
 Is empty: {self.is_empty}
 -=-=-=-=
 Valid Diameters: {[round(x, 2) for x in self.valid_diameters]}
 Full Diameters: {[round(x, 2) for x in self.diameters]}
+-=-=-=-=
 '''
 
     @property
@@ -113,9 +129,9 @@ Full Diameters: {[round(x, 2) for x in self.diameters]}
             cmd.alter(obj_name, "vdw=b")
         return obj_name
     
-    def render(self, obj_name: str, minimum: float=1.5, maximum: float=3.0, palette: str='red_green') -> None:
+    def render(self, obj_name: str, minimum: float=1.5, maximum: float=3.0, palette: str='red_green', expression: str='vdw') -> None:
         try:
-            cmd.spectrum('vdw', palette, obj_name, minimum=minimum, maximum=maximum)
+            cmd.spectrum(expression, palette, obj_name, minimum=minimum, maximum=maximum)
         except Exception as e:
             logging.error(f"Error rendering {obj_name} due to:\n {e}")
         
@@ -187,12 +203,18 @@ class CaverAnalyst:
 
         self.tunnels: TunnelDynamic = TunnelDynamic.from_result_dir(res_dir, run_id, tunnel_id)
     
-    def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green', show_as: str='lines') -> None:
+    def render(self, minimum: float, maximum:float, palette: Optional[str]='red_green', show_as: str='lines', expression: str='vdw') -> None:
         for frame in self.tunnels.frames:
             logging.info(f"Rendering frame {frame.frame_id} ({repr(frame)}) ...")
             frame_name=frame.load(self.tunnels.name, group=f'{self.tunnels.name}_{self.run_id}_t{self.tunnel_id:03d}')
             cmd.show(show_as, frame_name)
-            frame.render(frame_name, minimum=minimum, maximum=maximum, palette=palette or self.palette)
+            frame.render(
+                frame_name, 
+                minimum=minimum, 
+                maximum=maximum, 
+                palette=palette or self.palette, 
+                expression=expression
+            )
         logging.info(f"Rendered tunnel {self.tunnels.name}")
         
 
@@ -203,10 +225,18 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     spectrum_min=get_widget_value(form.doubleSpinBox_spectrumMin)
     spectrum_max=get_widget_value(form.doubleSpinBox_spectrumMax)
 
+    spectrum_expression=get_widget_value(form.comboBox_spectrumBy) or 'vdw'
+
     repre=get_widget_value(form.comboBox_representation)
 
     analyst=CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
-    analyst.render(minimum=spectrum_min, maximum=spectrum_max, palette=palette, show_as=repre)
+    analyst.render(
+        minimum=spectrum_min, 
+        maximum=spectrum_max, 
+        palette=palette, 
+        show_as=repre, 
+        expression=spectrum_expression
+        )
 
     return analyst
 
@@ -385,3 +415,16 @@ class CaverAnalystPreviewer:
         self._autoplay_thread = None
         self._autoplay_stop_event.clear()
         self._set_autoplay_running(False)
+
+
+# ramp and spectrum
+
+# cmd.show_as("cartoon",mol)
+# cmd.cartoon("putty", mol)
+# cmd.set("cartoon_putty_scale_min", min(bfacts),obj)
+# cmd.set("cartoon_putty_scale_max", max(bfacts),obj)
+# cmd.set("cartoon_putty_transform", 0,obj)
+# cmd.set("cartoon_putty_radius", 0.2,obj)
+# cmd.spectrum("b","rainbow", "%s and n. CA " %mol)
+# cmd.ramp_new("count", obj, [min(bfacts), max(bfacts)], "rainbow")
+# cmd.recolor()
