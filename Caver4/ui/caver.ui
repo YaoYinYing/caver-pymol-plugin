@@ -513,7 +513,7 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>301</width>
+      <width>307</width>
       <height>41</height>
      </rect>
     </property>
@@ -584,6 +584,13 @@
          </property>
          <property name="value">
           <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_reduceMD_Input">
+         <property name="text">
+          <string>Reduce</string>
          </property>
         </widget>
        </item>
