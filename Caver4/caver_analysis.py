@@ -3,12 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass,field
 import os
 import threading
-from typing import Optional, Union, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from PyQt5 import QtCore
-else:
-    from pymol.Qt import QtCore
+from typing import Optional, Union
 
 from pymol import cmd
 from pymol.constants_palette import palette_dict
@@ -16,7 +11,7 @@ from pymol.constants_palette import palette_dict
 # pandas is not supposed to be installed with PyMOL
 
 from .caver_pymol import ROOT_LOGGER
-from .utils.ui_tape import get_widget_value, notify_box
+from .utils.ui_tape import get_widget_value, notify_box, QtCore
 from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
 
 logging=ROOT_LOGGER.getChild('Analyst')

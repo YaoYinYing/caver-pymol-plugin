@@ -53,7 +53,7 @@
      <property name="title">
       <string>Timeline Setup</string>
      </property>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -254,6 +254,9 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>What to run spectrum against </string>
+               </property>
                <property name="text">
                 <string>Spect.:</string>
                </property>
@@ -268,7 +271,7 @@
                 </sizepolicy>
                </property>
                <property name="toolTip">
-                <string>What to run spectrum against </string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This input box gives 3 options to render the tunnels.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;1. use normal spectrum mode by setting to 'b' or 'vdw' to visualize the tunnel according to diameters&lt;/p&gt;&lt;p&gt;2. use an existing ramp object to run the coloring. e.g.: '&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#4ec9b0;&quot;&gt;cmd&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;.&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#dcdcaa;&quot;&gt;create&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;(&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;&quot;&gt;'startpoint'&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;, &lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;&quot;&gt;'sele'&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;);&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#4ec9b0;&quot;&gt;cmd&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;.&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#dcdcaa;&quot;&gt;ramp_new&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;(&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;&quot;&gt;'r'&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;, &lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;&quot;&gt;'startpoint'&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;, [&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#b5cea8;&quot;&gt;0&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;, &lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#b5cea8;&quot;&gt;10&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;], &lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;&quot;&gt;'rainbow'&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;)&lt;/span&gt;'.&lt;/p&gt;&lt;p&gt;3. use a startpoint object as the proximity starting point. e.g.: '&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#4ec9b0;&quot;&gt;cmd&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;.&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#dcdcaa;&quot;&gt;create&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;(&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;&quot;&gt;'startpoint'&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;, &lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;&quot;&gt;'sele'&lt;/span&gt;&lt;span style=&quot; font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;&quot;&gt;)&lt;/span&gt;'&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="editable">
                 <bool>true</bool>
@@ -332,7 +335,7 @@
      <property name="title">
       <string>Preview</string>
      </property>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -708,7 +711,7 @@
     </attribute>
    </widget>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -719,7 +722,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_13"/>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>0</x>

@@ -21,14 +21,9 @@ import warnings
 import webbrowser
 from contextlib import contextmanager
 from functools import partial
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import Any, Optional
 import shutil
 from pymol import cmd
-
-if TYPE_CHECKING:
-    from PyQt5 import QtWidgets
-else:
-    from pymol.Qt import QtWidgets
 
 import time
 
@@ -70,6 +65,7 @@ from .utils.ui_tape import (
     run_worker_thread_with_progress,
     set_widget_value,
     widget_signal_tape,
+    QtWidgets
 )
 
 
