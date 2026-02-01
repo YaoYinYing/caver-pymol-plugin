@@ -124,7 +124,7 @@ Full Diameters: {[round(x, 2) for x in self.diameters]}
         obj_name=f'{name}.{self.frame_id}'
 
         if exists(obj_name):
-            logging.warning(f'Object {obj_name} already exists. Deleted.')
+            # delete the object for session safety
             cmd.delete(obj_name)
         
         cmd.load_raw(self.pdb_strings, format='pdb', object=obj_name)
@@ -133,8 +133,66 @@ Full Diameters: {[round(x, 2) for x in self.diameters]}
             # backpropagate vdw radius from b-factor
             cmd.alter(obj_name, "vdw=b")
         return obj_name
+    def render(self, *args, **kwargs) -> None:
+        expression=kwargs.get('expression')
+        # spectrum as normal way of PyMOL
+        # using vdw, b, index, etc.
+        if expression in TUNNEL_SPECTRUM_EXPRE:
+            logging.debug(f'rendering spectrum {expression}')
+            return self.spectrum(*args, **kwargs)
+        
+        # apply existing ramp to the object
+        # eg: 
+        # ```pymol
+        # create startpoint, sele
+        # cmd.ramp_new('r', 'startpoint', [0, 10], 'rainbow')
+        # ```
+        # use `r` as ramp name will force to use the proximity from the `startpoint`
+        # 
+        if expression in cmd.get_names_of_type('object:ramp'):
+            logging.debug(f'rendering existing ramp {expression}')
+            return cmd.color(expression, kwargs.get('obj_name'))
+
+        # build new ramp based on expression
+        # eg:
+        # ```pymol
+        # create startpoint, sele
+        # ```
+        # use `startpoint` as ramp starting point will force to use the proximity from the `startpoint`
+        logging.debug(f'rendering new ramp {expression}')
+        return self.ramp(*args, **kwargs)
+        
     
-    def render(self, obj_name: str, minimum: float=1.5, maximum: float=3.0, palette: str='red_green', expression: str='vdw') -> None:
+    def ramp(self, obj_name: str, expression: str,minimum: float=1.5, maximum: float=3.0,palette: str='red_green' ) -> None:
+        if palette.startswith('rainbow'):
+            # fix to rainbow if palette is rainbow_*
+            palette='rainbow'
+        else:
+            # otherwise split it as a list
+            palette=palette.split('_')
+            
+        
+        # ramp for each frame and get it colored.
+        try:
+            new_ramp=f'r_{obj_name}'
+            
+            cmd.ramp_new(
+                name=new_ramp, 
+                map_name=expression, 
+                color=palette, 
+                selection=obj_name,
+                range=[minimum, maximum],
+                state=self.frame_id
+                )
+            # hide all ramps
+            cmd.group('all_ramps', new_ramp)
+            
+            cmd.color(new_ramp, obj_name)
+        except Exception as e:
+            logging.error(e)
+
+
+    def spectrum(self, obj_name: str, minimum: float=1.5, maximum: float=3.0, palette: str='red_green', expression: str='vdw') -> None:
         try:
             cmd.spectrum(expression, palette, obj_name, minimum=minimum, maximum=maximum)
         except Exception as e:
@@ -214,7 +272,7 @@ class CaverAnalyst:
             frame_name=frame.load(self.tunnels.name, group=f'{self.tunnels.name}_{self.run_id}_t{self.tunnel_id:03d}')
             cmd.show(show_as, frame_name)
             frame.render(
-                frame_name, 
+                obj_name=frame_name, 
                 minimum=minimum, 
                 maximum=maximum, 
                 palette=palette or self.palette, 
