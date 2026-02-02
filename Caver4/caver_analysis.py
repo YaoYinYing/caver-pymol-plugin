@@ -474,6 +474,12 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
+# TODO:
+# 1. connect reset buttons:
+#   - pushButton_resetPlotTunnelRange: reset tunnel start/end to full range
+#   - pushButton_resetPlotTunnelImageSize: reset image size to default
+#   - pushButton_resetPlotTunnelCmap: reset colormap to default RdYlGn
+# 2. support customized x/y range from `lineEdit_XaxisRange` and `lineEdit_YaxisRange`, format: "min,max". e.g. "0,100". empty means auto.
 class CaverAnalystPlotter:
     """
     Plot time-series tunnel diameter heat maps from an Analyst instance.
