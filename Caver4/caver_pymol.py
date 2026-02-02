@@ -33,6 +33,7 @@ from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 from pymol.shortcut import Shortcut
 
+# fmt: off
 # internal modules import global variables (logger, version, etc.) 
 # so better to define them here before internal imports to avoid circular imports
 ROOT_LOGGER= pylogging.getLogger('Caver')
@@ -45,6 +46,7 @@ website_url = "https://www.caver.cz/index.php?sid=123"
 
 repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
 
+# fmt: on
 # internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
