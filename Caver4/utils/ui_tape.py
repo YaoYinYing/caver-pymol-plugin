@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Callable, NoReturn, Optional, TypeVar, Un
 
 from ..caver_pymol import ROOT_LOGGER
 
+# the only way to import Qt from PyMOL
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
 else:
@@ -661,6 +662,7 @@ class WorkerThread(QtCore.QThread):
 def run_worker_thread_with_progress(worker_function: Callable[..., R], *args, **kwargs) -> R: ...
 
 
+#
 def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]], *args, **kwargs) -> Optional[R]:
     """
     Runs a worker function in a separate thread and optionally updates a progress bar.
@@ -690,3 +692,58 @@ def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]],
     result = work_thread.handle_result()
 
     return result[0] if result else None
+
+
+
+def create_cmap_icon(cmap: str):
+    """
+    Creates a square pixmap representing the color pattern of a specified colormap.
+
+    Args:
+    - cmap (str): Name of the colormap.
+
+    Returns:
+    - QtGui.QPixmap: Pixmap representing the color gradient of the colormap.
+
+    Note:
+    This function uses Matplotlib's colormap to generate a color gradient and creates a square pixmap
+    with the color gradient to represent the colormap visually.
+
+    Example Usage:
+    ```python
+    from REvoDesign.Qt import QtWidgets
+    import matplotlib.pyplot as plt
+
+    # Assuming 'my_colormap' is a valid colormap name
+    icon = create_cmap_icon('my_colormap')
+    label = QtWidgets.QLabel()
+    label.setPixmap(icon)
+    label.show()
+    plt.show()
+    ```
+    """
+    import matplotlib
+
+    # Create a pixmap representing the color pattern of the colormap
+    color_map = matplotlib.colormaps[cmap]
+    pixmap = QtGui.QPixmap(100, 100)  # Changed to create a square pixmap
+    pixmap.fill(QtGui.QColor(0, 0, 0, 0))  # Fill with transparent background
+
+    # Draw color gradient representing the colormap
+    painter = QtGui.QPainter(pixmap)
+    gradient = QtGui.QLinearGradient(0, 0, 100, 100)  # Changed to create a square gradient
+    for i in range(100):
+        color = QtGui.QColor.fromRgbF(*color_map(i / 100)[:3])
+        gradient.setColorAt(i / 100, color)
+    painter.setBrush(QtGui.QBrush(gradient))
+    painter.drawRect(0, 0, 100, 100)  # Changed to draw a square
+    painter.end()
+
+    return pixmap
+
+
+def list_color_map() -> dict:
+    import matplotlib
+    
+    cmap_group = {_cmap: QtGui.QIcon(create_cmap_icon(cmap=_cmap)) for _cmap in matplotlib.colormaps()}
+    return cmap_group

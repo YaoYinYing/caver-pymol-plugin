@@ -39,7 +39,7 @@ ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('Caver')    
 
-VERSION = "4.1.0"
+VERSION = "4.1.1"
 
 website_url = "https://www.caver.cz/index.php?sid=123"
 
@@ -65,7 +65,8 @@ from .utils.ui_tape import (
     run_worker_thread_with_progress,
     set_widget_value,
     widget_signal_tape,
-    QtWidgets
+    QtWidgets, 
+    list_color_map
 )
 
 
@@ -211,16 +212,22 @@ class CaverPyMOL(QtWidgets.QWidget):
         return main_window, config_window, analysis_window
 
     @contextmanager
-    def freeze_window(self):
+    def freeze_window(self, dialogs: Optional[list[QtWidgets.QWidget]] = None):
         """
         Freezes the dialog while the plugin is running.
         """
         self.dialog.setEnabled(False)
+        if dialogs:
+            for dialog in dialogs:
+                dialog.setEnabled(False)
         try:
             yield
         except Exception as e:
             logging.error(f"Error occurred: {e}")
         self.dialog.setEnabled(True)
+        if dialogs:
+            for dialog in dialogs:
+                dialog.setEnabled(True)
 
     def run_plugin_gui(self):
         """PyMOL entry for running the plugin"""
@@ -283,7 +290,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.analyst_previewer:Optional[CaverAnalystPreviewer] = None
 
         def _run_analysis():
-            with self.freeze_window(), hold_trigger_button(self.ui_analyst.pushButton_applyTunnelsSpectrumStatic):
+            with self.freeze_window([self.analysis_dialog]), hold_trigger_button(self.ui_analyst.pushButton_applyTunnelsSpectrumStatic):
 
                 # for long running tasks, use a worker thread
                 self.analyst=run_worker_thread_with_progress(
@@ -353,6 +360,8 @@ class CaverPyMOL(QtWidgets.QWidget):
         # respect to caver default
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, 'red_green') 
         set_widget_value(self.ui_analyst.comboBox_spectrumBy, 'vdw')
+        set_widget_value(self.ui_analyst.comboBox_plotColormap, list_color_map())
+        set_widget_value(self.ui_analyst.comboBox_plotColormap, 'bwr_r')
         
 
         self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)

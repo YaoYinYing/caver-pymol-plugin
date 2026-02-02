@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass,field
 import os
-import threading
 from typing import Optional, Union
 
 from pymol import cmd
@@ -393,8 +392,7 @@ class CaverAnalystPreviewer:
         self._update_index_to_slider()
 
     def _setup_autoplay(self) -> None:
-        self._autoplay_thread: Optional[threading.Thread] = None
-        self._autoplay_stop_event = threading.Event()
+        self._autoplay_timer: Optional[QtCore.QTimer] = None
         self._autoplay_nav_buttons = (
             self.form.pushButton_firstFrame,
             self.form.pushButton_lastFrame,
@@ -412,16 +410,21 @@ class CaverAnalystPreviewer:
         self.form.pushButton_pauseAutoPlay.clicked.connect(self.pause_auto_play)
         self.form.doubleSpinBox_autoPlayInterval.valueChanged.connect(self._autoplay_interval_changed)
         self.form.pushButton_pauseAutoPlay.setEnabled(False)
+        self._autoplay_timer = QtCore.QTimer(self.slider)
+        self._autoplay_timer.setSingleShot(False)
+        self._autoplay_timer.timeout.connect(self._auto_play_tick)
 
     def _is_autoplay_running(self) -> bool:
-        thread = getattr(self, "_autoplay_thread", None)
-        return bool(thread and thread.is_alive())
+        timer = getattr(self, "_autoplay_timer", None)
+        return bool(timer and timer.isActive())
 
     def _autoplay_interval_changed(self, value: float) -> None:
         try:
             self.autoplay_interval = float(value)
         except (TypeError, ValueError):
             self.autoplay_interval = float(get_widget_value(self.form.doubleSpinBox_autoPlayInterval))
+        if self._is_autoplay_running():
+            self._start_autoplay_timer(restart=True)
 
     def _set_autoplay_running(self, running: bool) -> None:
         if running:
@@ -439,50 +442,52 @@ class CaverAnalystPreviewer:
     def _next_frame_id(self, current: int) -> int:
         return self._min_frame_id if current >= self._max_frame_id else current + 1
 
-    def _auto_play_worker(self) -> None:
-        next_frame = self._current_frame_id
-        while not self._autoplay_stop_event.is_set():
-            next_frame = self._next_frame_id(next_frame)
-            QtCore.QMetaObject.invokeMethod(
-                self.slider,
-                "setValue",
-                QtCore.Qt.QueuedConnection,
-                QtCore.Q_ARG(int, next_frame),
-            )
-            interval = max(float(self.autoplay_interval), 0.01)
-            if self._autoplay_stop_event.wait(interval):
-                break
+    def _auto_play_tick(self) -> None:
+        self.slider.setValue(self._next_frame_id(self._current_frame_id))
 
-        self._autoplay_thread = None
+    def _start_autoplay_timer(self, restart: bool = False) -> None:
+        if not self._autoplay_timer:
+            return
+        interval_ms = max(int(float(self.autoplay_interval) * 1000), 10)
+        if restart and self._autoplay_timer.isActive():
+            self._autoplay_timer.stop()
+        self._autoplay_timer.start(interval_ms)
 
     def start_auto_play(self) -> None:
-        if self._autoplay_thread and self._autoplay_thread.is_alive():
+        if self._is_autoplay_running():
             return
         self.autoplay_interval = float(get_widget_value(self.form.doubleSpinBox_autoPlayInterval))
-        self._autoplay_stop_event.clear()
         self._set_autoplay_running(True)
-        self._autoplay_thread = threading.Thread(target=self._auto_play_worker, daemon=True)
-        self._autoplay_thread.start()
+        self._start_autoplay_timer()
 
     def pause_auto_play(self) -> None:
-        thread = self._autoplay_thread
-        if not thread:
-            return
-        self._autoplay_stop_event.set()
-        thread.join()
-        self._autoplay_thread = None
-        self._autoplay_stop_event.clear()
+        timer = self._autoplay_timer
+        if timer and timer.isActive():
+            timer.stop()
         self._set_autoplay_running(False)
 
-
-# ramp and spectrum
-
-# cmd.show_as("cartoon",mol)
-# cmd.cartoon("putty", mol)
-# cmd.set("cartoon_putty_scale_min", min(bfacts),obj)
-# cmd.set("cartoon_putty_scale_max", max(bfacts),obj)
-# cmd.set("cartoon_putty_transform", 0,obj)
-# cmd.set("cartoon_putty_radius", 0.2,obj)
-# cmd.spectrum("b","rainbow", "%s and n. CA " %mol)
-# cmd.ramp_new("count", obj, [min(bfacts), max(bfacts)], "rainbow")
-# cmd.recolor()
+# TODO: class analyst plotter (CaverAnalystPlotter)
+# function: plot tunnel data from a given analyst object.
+# input: 
+#  - analyst object, which contains run id, tunnel id, tunnel data and Form
+#  - bool crop empty frames: crop empty frames or not. if true, empty frames will be cropped.
+# Widgets:
+#  - tunnel start/end (spinBox_tunnelStart, spinBox_tunnelEnd)
+#  - colormap (comboBox_plotColormap, default bwr_r)
+#  - size of the plot (spinBox_imageSizeWidthCm, spinBox_imageSizeHightCm,spinBox_imageSizeWidthPx , spinBox_imageSizeHightPx,)
+#  - dpi (comboBox_DPI, default 150)
+#  - aspect ratio lock (checkBox_lockAspectRatio)
+#  - save path (lineEdit_imageSavePath) and save path button (pushButton_openSaveImage)
+#  - plot button (pushButton_tunnelPlot)
+# mechanism:
+#  - when clicking the plot button, read all the widget data, and call matplotlib to plot the tunnel data, preview the plot, and save the plot to the save path
+# methods:
+#  - initialize with:
+#   - analyst object, read the min and max tunnel start and end of a tunnel frame (min is basically zero, while max is the length of self.diameters); fill them to `spinBox_tunnelStart` and `spinBox_tunnelEnd`
+#   - CaverAnalysisForm: for reading widget data
+#  - plot tunnel data
+#   - retrieve tunnel start/end, colormap, etc
+#   call matplotlib to plot tunnel data for time-series
+#   - 
+#  - save plot in preview window
+#   - open file dialog to select save path and save the plot if given
