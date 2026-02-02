@@ -683,17 +683,23 @@ def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]],
 
     # Create and start a worker thread with the given function and parameters
     work_thread = WorkerThread(worker_function, args=args, kwargs=kwargs)
+    work_thread.finished.connect(work_thread.deleteLater)
     work_thread.start()
 
-    # Keep the main thread running until the worker thread finishes
-    while not work_thread.isFinished():
+    try:
+        # Keep the main thread running until the worker thread finishes
+        while not work_thread.isFinished():
+            refresh_window()
+            time.sleep(0.01)
+
+        # Ensure Qt cleans up the native thread resources deterministically
+        work_thread.wait()
+        result = work_thread.handle_result()
+        return result[0] if result else None
+    finally:
+        # A finished thread may still have pending deleteLater() events.
+        # Process them now so Qt does not tear down QThread wrappers at interpreter exit.
         refresh_window()
-        time.sleep(0.01)
-
-    # Obtain and return the result of the worker function
-    result = work_thread.handle_result()
-
-    return result[0] if result else None
 
 
 def create_cmap_icon(cmap: str):
@@ -742,9 +748,19 @@ def create_cmap_icon(cmap: str):
 
     return pixmap
 
+# TODO: add test cases to this function when matplotlib is installed/absent
+# unit tests to `tests/utils/test_colormap.py`. Qtbot is required,as it uses Qt.
+# Integrated tests to `tests/utils/gui/test_matplotlib_color_map.py`
+#  workflow:
+#  1. open the main window
+#  2. open the analysis window (pushButton_analysis)
+#  3. switch to the plot tab (tabPlot)
+#  4. check the items of the combobox (comboBox_plotColormap)
+def list_color_map() -> Union[dict, list]:
+    try:
+        import matplotlib
 
-def list_color_map() -> dict:
-    import matplotlib
-
-    cmap_group = {_cmap: QtGui.QIcon(create_cmap_icon(cmap=_cmap)) for _cmap in matplotlib.colormaps()}
-    return cmap_group
+        cmap_group = {_cmap: QtGui.QIcon(create_cmap_icon(cmap=_cmap)) for _cmap in matplotlib.colormaps()}
+        return cmap_group
+    except ImportError:
+        return 'Please install matplotlib before using this feature'.split()

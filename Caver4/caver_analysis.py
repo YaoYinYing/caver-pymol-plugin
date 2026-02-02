@@ -704,13 +704,17 @@ class CaverAnalystPlotter:
         cmap_name = get_widget_value(self.form.comboBox_plotColormap).strip()  # type: ignore[attr-defined]
         if not cmap_name:
             cmap_name = self._DEFAULT_CMAP
-        import matplotlib.pyplot as plt
+        
 
         try:
+            import matplotlib.pyplot as plt
+            # cmap comes from matplotlib, so there is no index error.
             return plt.get_cmap(cmap_name)
-        except ValueError:
-            notify_box(f"Colormap '{cmap_name}' not found, falling back to {self._DEFAULT_CMAP}.", Warning)
-            return plt.get_cmap(self._DEFAULT_CMAP)
+        # although it has been guarded by external, keep it safe here so that codex won't complain.
+        except ImportError as e:
+            raise ImportError(
+                "Matplotlib is not installed. Please install matplotlib to use this feature."
+            ) from e
 
     def _color_limits(self) -> tuple[Optional[float], Optional[float]]:
         try:
@@ -915,11 +919,14 @@ class CaverAnalystPlotter:
 
         dpi = self._get_selected_dpi()
         figsize = self._figure_size_inches(dpi)
-        cmap = self._get_colormap()
-        vmin, vmax = self._color_limits()
-
         try:
             import matplotlib.pyplot as plt
+
+            cmap = self._get_colormap()
+            vmin, vmax = self._color_limits()
+
+        # this import error is raised when matplotlib is not installed, which raises from the import statement
+        # guarding the get color map function and all above.
         except ImportError as exc:
             notify_box(
                 "Matplotlib is required to plot tunnel data. Install matplotlib if you need plotting.",
