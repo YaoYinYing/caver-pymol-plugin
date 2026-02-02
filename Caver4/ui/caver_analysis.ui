@@ -35,7 +35,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tabTimeline">
     <attribute name="title">
@@ -803,7 +803,7 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_20">
                <item>
-                <widget class="QSpinBox" name="spinBox_imageSizeHightPx">
+                <widget class="QSpinBox" name="spinBox_imageSizeWidthPx">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -832,7 +832,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QSpinBox" name="spinBox_imageSizeWidthPx">
+                <widget class="QSpinBox" name="spinBox_imageSizeHightPx">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -869,10 +869,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="comboBox_DPI"/>
+            <widget class="QComboBox" name="comboBox_DPI">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox">
+            <widget class="QCheckBox" name="checkBox_lockAspectRatio">
              <property name="text">
               <string>Lock aspect ratio</string>
              </property>
@@ -890,7 +894,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="lineEdit"/>
+            <widget class="QLineEdit" name="lineEdit_imageSavePath"/>
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_openSaveImage">
