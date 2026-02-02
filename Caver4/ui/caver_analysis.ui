@@ -895,6 +895,9 @@
             <property name="text">
              <string>Y-axis</string>
             </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
            </widget>
           </item>
           <item row="1" column="2">
@@ -931,6 +934,9 @@
             <property name="text">
              <string>Label:</string>
             </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -940,6 +946,9 @@
             </property>
             <property name="text">
              <string>Formula:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
@@ -977,12 +986,18 @@
             <property name="text">
              <string>X-axis</string>
             </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
            </widget>
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_21">
             <property name="text">
              <string>Range:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>

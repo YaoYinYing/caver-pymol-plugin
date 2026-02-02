@@ -759,6 +759,84 @@ class CaverAnalystPlotter:
         return lower, upper
 
     @staticmethod
+    def _safe_transform_value(transform: Callable[[float], float], value: float) -> Optional[float]:
+        try:
+            result = transform(value)
+        except Exception:
+            return None
+        try:
+            numeric = float(result)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(numeric):
+            return None
+        return numeric
+
+    def _invert_rescaled_value(
+        self, target: float, transform: Callable[[float], float], axis_min: float, axis_max: float
+    ) -> Optional[float]:
+        if axis_min == axis_max:
+            return axis_min
+        data_low = min(axis_min, axis_max)
+        data_high = max(axis_min, axis_max)
+        start_val = self._safe_transform_value(transform, data_low)
+        end_val = self._safe_transform_value(transform, data_high)
+        if start_val is None or end_val is None:
+            return None
+        if math.isclose(start_val, end_val, rel_tol=1e-12, abs_tol=1e-12):
+            return None
+        ascending = end_val >= start_val
+        min_scaled = start_val if ascending else end_val
+        max_scaled = end_val if ascending else start_val
+        target_value = target
+        if target_value < min_scaled:
+            target_value = min_scaled
+        elif target_value > max_scaled:
+            target_value = max_scaled
+        low = data_low
+        high = data_high
+        for _ in range(60):
+            mid = 0.5 * (low + high)
+            scaled_mid = self._safe_transform_value(transform, mid)
+            if scaled_mid is None:
+                return None
+            if abs(scaled_mid - target_value) <= 1e-9 * max(1.0, abs(target_value)):
+                return mid
+            if ascending:
+                if scaled_mid < target_value:
+                    low = mid
+                else:
+                    high = mid
+            else:
+                if scaled_mid > target_value:
+                    low = mid
+                else:
+                    high = mid
+        return 0.5 * (low + high)
+
+    def _range_to_data_units(
+        self,
+        axis_range: Optional[tuple[float, float]],
+        transform: Optional[Callable[[float], float]],
+        axis_min: float,
+        axis_max: float,
+    ) -> Optional[tuple[float, float]]:
+        if not axis_range:
+            return None
+        if transform is None:
+            return axis_range
+        converted: list[float] = []
+        for bound in axis_range:
+            raw_value = self._invert_rescaled_value(bound, transform, axis_min, axis_max)
+            if raw_value is None:
+                return None
+            converted.append(raw_value)
+        lower, upper = converted
+        if lower > upper:
+            lower, upper = upper, lower
+        return lower, upper
+
+    @staticmethod
     def _compile_axis_formula(expression: str, axis_name: str) -> Optional[Callable[[float], float]]:
         sanitized = expression.replace("$t", "t")
         try:
@@ -847,6 +925,8 @@ class CaverAnalystPlotter:
         y_transform = self._axis_transform("lineEdit_YaxisFormula", "Y-axis")
         x_range = self._parse_axis_range("lineEdit_XaxisRange", "X-axis")
         y_range = self._parse_axis_range("lineEdit_YaxisRange", "Y-axis")
+        x_limits = self._range_to_data_units(x_range, x_transform, x_min, x_max)
+        y_limits = self._range_to_data_units(y_range, y_transform, y_min, y_max)
         im = ax.imshow(
             plot_data,
             aspect=aspect,
@@ -870,10 +950,14 @@ class CaverAnalystPlotter:
         y_formatter = FuncFormatter(self._make_tick_formatter(y_transform, force_integer=y_transform is None))
         ax.xaxis.set_major_formatter(x_formatter)
         ax.yaxis.set_major_formatter(y_formatter)
-        if x_range:
-            ax.set_xlim(*x_range)
-        if y_range:
-            ax.set_ylim(*y_range)
+        if x_limits is not None:
+            ax.set_xlim(*x_limits)
+        elif x_range and x_transform:
+            notify_box("Unable to apply X-axis range with the current rescale formula.", Warning)
+        if y_limits is not None:
+            ax.set_ylim(*y_limits)
+        elif y_range and y_transform:
+            notify_box("Unable to apply Y-axis range with the current rescale formula.", Warning)
         rotation = 45 if len(frame_ids) > max_x_ticks else 0
         ax.tick_params(axis="x", rotation=rotation)
         cbar = fig.colorbar(im, ax=ax)
