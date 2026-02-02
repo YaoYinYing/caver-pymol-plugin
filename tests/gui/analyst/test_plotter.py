@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import shutil
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import urlopen
 
 import pytest
 
@@ -26,6 +29,19 @@ def _ensure_cached_run(test_data_dir: Path) -> Path:
         return cache_root
 
     bundle = run_dir / "Caver4.md_results.zip"
+    if not bundle.is_file():
+        bundle.parent.mkdir(parents=True, exist_ok=True)
+        url = "https://github.com/YaoYinYing/caver-test-data/releases/download/md_snapshots/Caver4.md_results.zip"
+        tmp_path = bundle.with_suffix(bundle.suffix + ".tmp")
+        try:
+            with urlopen(url) as response, open(tmp_path, "wb") as downloaded:
+                shutil.copyfileobj(response, downloaded)
+            tmp_path.replace(bundle)
+        except URLError as exc:
+            if tmp_path.is_file():
+                tmp_path.unlink()
+            pytest.skip(f"Unable to download cached tunnel dataset: {exc}")
+
     if not bundle.is_file():
         pytest.skip("Missing cached tunnel dataset bundle.")
 
