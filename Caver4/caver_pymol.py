@@ -17,57 +17,59 @@ import logging as pylogging
 import math
 import os
 import re
+import shutil
+import time
 import warnings
 import webbrowser
 from contextlib import contextmanager
 from functools import partial
 from typing import Any, Optional
-import shutil
-from pymol import cmd
-
-import time
 
 # TODO: deprecated
-from pymol import stored
+from pymol import cmd, stored
 from pymol.cgo import BEGIN, END, LINE_STRIP, LINEWIDTH, VERTEX
 from pymol.Qt.utils import getSaveFileNameWithExt
 from pymol.shortcut import Shortcut
 
+# fmt: off
 # internal modules import global variables (logger, version, etc.) 
 # so better to define them here before internal imports to avoid circular imports
 ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('Caver')    
 
-VERSION = "4.1.0"
+VERSION = "4.1.1"
 
 website_url = "https://www.caver.cz/index.php?sid=123"
 
 repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
 
+from .caver_analysis import (TUNNEL_REPRE, TUNNEL_SPECTRUM_EXPRE, CaverAnalyst,
+                             CaverAnalystPlotter, CaverAnalystPreviewer,
+                             list_palettes, run_analysis)
+# fmt: on
 # internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
-from .caver_analysis import run_analysis, list_palettes, CaverAnalyst, CaverAnalystPreviewer,TUNNEL_REPRE,TUNNEL_SPECTRUM_EXPRE
-from .utils.upgrade import has_updates
-from .utils.caver_utils import IGNORED_STRUCTURES, THE_20s, find_centrial_pdb
-from .utils.tools import open_doc_pdf, cite_info
 from .ui.Ui_caver import Ui_CaverUI as CaverUI
-from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
 from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
+from .ui.Ui_caver_config import Ui_CaverConfigForm as CaverConfigForm
+from .utils.caver_utils import IGNORED_STRUCTURES, THE_20s, find_centrial_pdb
+from .utils.tools import cite_info, open_doc_pdf
 from .utils.ui_tape import (
     CheckableListView,
+    QtWidgets,
     get_widget_value,
     getExistingDirectory,
     getOpenFileNameWithExt,
     hold_trigger_button,
+    list_color_map,
     notify_box,
     run_worker_thread_with_progress,
     set_widget_value,
     widget_signal_tape,
-    QtWidgets
 )
-
+from .utils.upgrade import has_updates
 
 
 class CaverPyMOL(QtWidgets.QWidget):
@@ -211,16 +213,22 @@ class CaverPyMOL(QtWidgets.QWidget):
         return main_window, config_window, analysis_window
 
     @contextmanager
-    def freeze_window(self):
+    def freeze_window(self, dialogs: Optional[list[QtWidgets.QWidget]] = None):
         """
         Freezes the dialog while the plugin is running.
         """
         self.dialog.setEnabled(False)
+        if dialogs:
+            for dialog in dialogs:
+                dialog.setEnabled(False)
         try:
             yield
         except Exception as e:
             logging.error(f"Error occurred: {e}")
         self.dialog.setEnabled(True)
+        if dialogs:
+            for dialog in dialogs:
+                dialog.setEnabled(True)
 
     def run_plugin_gui(self):
         """PyMOL entry for running the plugin"""
@@ -229,7 +237,6 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.dialog = None
         self.config = CaverConfig()
         self.run_id = 0
-
 
         # make windows and setup the open dialog signal
         if self.dialog is None:
@@ -263,47 +270,49 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui.pushButton_cite.clicked.connect(cite_info)
         self.ui.pushButton_doc.clicked.connect(open_doc_pdf)
 
-
         def upgrade_check():
             with self.freeze_window(), hold_trigger_button(self.ui.pushButton_upgrade):
                 has_new_updates = run_worker_thread_with_progress(has_updates, repo_url)
                 if has_new_updates:
-                    notify_box(
-                        "New updates available!"
-                    )
-                    webbrowser.open('https://github.com/YaoYinYing/caver-pymol-plugin')
+                    notify_box("New updates available!")
+                    webbrowser.open("https://github.com/YaoYinYing/caver-pymol-plugin")
                 else:
                     notify_box("No updates available.")
 
-        self.ui.pushButton_upgrade.clicked.connect(
-            lambda: upgrade_check()
-            )
-        
-        self.analyst:Optional[CaverAnalyst] = None
-        self.analyst_previewer:Optional[CaverAnalystPreviewer] = None
+        self.ui.pushButton_upgrade.clicked.connect(lambda: upgrade_check())
+
+        self.analyst: Optional[CaverAnalyst] = None
+        self.analyst_previewer: Optional[CaverAnalystPreviewer] = None
+        self.analyst_plotter: Optional[CaverAnalystPlotter] = None
+        self._plot_size_guard = False
+        self._plot_aspect_ratio: Optional[float] = None
 
         def _run_analysis():
-            with self.freeze_window(), hold_trigger_button(self.ui_analyst.pushButton_applyTunnelsSpectrumStatic):
+            with self.freeze_window([self.analysis_dialog]), hold_trigger_button(
+                self.ui_analyst.pushButton_applyTunnelsSpectrumStatic
+            ):
 
                 # for long running tasks, use a worker thread
-                self.analyst=run_worker_thread_with_progress(
+                self.analyst = run_worker_thread_with_progress(
                     run_analysis,
                     form=self.ui_analyst,
-                    run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
-                    res_dir=self.get_run_ids()[0]
+                    run_id=get_widget_value(self.ui.comboBox_RunID) or self.run_id,
+                    res_dir=self.get_run_ids()[0],
                 )
-        
+                if self.analyst:
+                    _ensure_analyst_plotter()
+
         def _run_analysis_preview():
             if not self.analyst:
-                raise UnboundLocalError('Analyst not initialized')
-            
-            logging.debug('Initializing analyst previewer')
-            
-            self.analyst_previewer=CaverAnalystPreviewer(
+                raise UnboundLocalError("Analyst not initialized")
+
+            logging.debug("Initializing analyst previewer")
+
+            self.analyst_previewer = CaverAnalystPreviewer(
                 form=self.ui_analyst,
                 analyst=self.analyst,
                 res_dir=self.get_run_ids()[0],
-                run_id=get_widget_value(self.ui.comboBox_RunID) or self.run_id
+                run_id=get_widget_value(self.ui.comboBox_RunID) or self.run_id,
             )
             # self.analyst_previewer.init_slider_range()
             # self.analyst_previewer.slider.valueChanged.connect(self.analyst_previewer._sync_to_slider)
@@ -313,11 +322,10 @@ class CaverPyMOL(QtWidgets.QWidget):
 
             self.ui_analyst.pushButton_nextFrame.clicked.connect(self.analyst_previewer.forward)
             self.ui_analyst.pushButton_previousFrame.clicked.connect(self.analyst_previewer.backward)
-            logging.debug('Analyst previewer initialized')
+            logging.debug("Analyst previewer initialized")
 
-            
         def _cleanup_analysis_preview():
-            logging.debug('Cleaning up analyst previewer')
+            logging.debug("Cleaning up analyst previewer")
             try:
                 # self.analyst_previewer.slider.valueChanged.disconnect(self.analyst_previewer._sync_to_slider)
 
@@ -328,43 +336,216 @@ class CaverPyMOL(QtWidgets.QWidget):
                 self.ui_analyst.pushButton_previousFrame.clicked.disconnect(self.analyst_previewer.backward)
             except Exception as e:
                 logging.error(f"Error occurred: {e}")
-            self.analyst_previewer=None
-            logging.debug('Analyst previewer cleaned up')
+            self.analyst_previewer = None
+            logging.debug("Analyst previewer cleaned up")
 
         # analysis module
         self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(_run_analysis)
-        
+
+        def _ensure_analyst_plotter():
+            if not self.analyst:
+                return
+            if self.analyst_plotter:
+                try:
+                    self.ui_analyst.pushButton_tunnelPlot.clicked.disconnect(self.analyst_plotter.plot)
+                except Exception:
+                    pass
+                try:
+                    self.ui_analyst.pushButton_openSaveImage.clicked.disconnect(self.analyst_plotter._select_save_path)
+                except Exception:
+                    pass
+            try:
+                self.analyst_plotter = CaverAnalystPlotter(self.ui_analyst, self.analyst)
+            except Exception as exc:
+                logging.error(f"Failed to initialize analyst plotter: {exc}")
+
+        def _setup_plot_size_controls():
+            width_cm_box = self.ui_analyst.spinBox_imageSizeWidthCm
+            height_cm_box = self.ui_analyst.spinBox_imageSizeHightCm
+            width_px_box = self.ui_analyst.spinBox_imageSizeWidthPx
+            height_px_box = self.ui_analyst.spinBox_imageSizeHightPx
+            dpi_combo = self.ui_analyst.comboBox_DPI
+            aspect_checkbox = getattr(
+                self.ui_analyst, "checkBox_lockAspectRatio", getattr(self.ui_analyst, "checkBox", None)
+            )
+
+            def _current_dpi_value() -> int:
+                value = str(get_widget_value(dpi_combo))
+                try:
+                    return max(1, int(float(value)))
+                except (TypeError, ValueError):
+                    return CaverAnalystPlotter._DEFAULT_DPI
+
+            def _cm_to_px(value_cm: int, dpi: int) -> int:
+                if value_cm <= 0 or dpi <= 0:
+                    return 0
+                return max(1, int(round(value_cm / 2.54 * dpi)))
+
+            def _px_to_cm(value_px: int, dpi: int) -> int:
+                if value_px <= 0 or dpi <= 0:
+                    return 0
+                return max(1, int(round(value_px / dpi * 2.54)))
+
+            def _capture_aspect_ratio() -> Optional[float]:
+                width_cm = width_cm_box.value()
+                height_cm = height_cm_box.value()
+                if width_cm > 0 and height_cm > 0:
+                    return width_cm / height_cm
+                width_px = width_px_box.value()
+                height_px = height_px_box.value()
+                if width_px > 0 and height_px > 0:
+                    return width_px / height_px
+                return None
+
+            def _handle_aspect_toggle():
+                if aspect_checkbox and aspect_checkbox.isChecked():
+                    self._plot_aspect_ratio = _capture_aspect_ratio()
+                else:
+                    self._plot_aspect_ratio = None
+
+            def _handle_size_change(axis: str, unit: str):
+                if self._plot_size_guard:
+                    return
+                self._plot_size_guard = True
+                try:
+                    dpi = _current_dpi_value()
+                    lock_enabled = bool(aspect_checkbox and aspect_checkbox.isChecked())
+                    ratio = self._plot_aspect_ratio if lock_enabled else None
+                    if lock_enabled and (not ratio or ratio <= 0):
+                        ratio = _capture_aspect_ratio()
+                        self._plot_aspect_ratio = ratio
+
+                    if unit == "cm":
+                        width_cm = width_cm_box.value()
+                        height_cm = height_cm_box.value()
+                        if lock_enabled and ratio and ratio > 0:
+                            if axis == "width" and width_cm > 0:
+                                target = max(1, int(round(width_cm / ratio)))
+                                if target != height_cm:
+                                    height_cm_box.setValue(target)
+                                    height_cm = target
+                            elif axis == "height" and height_cm > 0:
+                                target = max(1, int(round(height_cm * ratio)))
+                                if target != width_cm:
+                                    width_cm_box.setValue(target)
+                                    width_cm = target
+                        width_cm = width_cm_box.value()
+                        height_cm = height_cm_box.value()
+                        if dpi > 0:
+                            converted = _cm_to_px(width_cm, dpi)
+                            if converted:
+                                width_px_box.setValue(converted)
+                            converted = _cm_to_px(height_cm, dpi)
+                            if converted:
+                                height_px_box.setValue(converted)
+                    else:
+                        width_px = width_px_box.value()
+                        height_px = height_px_box.value()
+                        if lock_enabled and ratio and ratio > 0:
+                            if axis == "width" and width_px > 0:
+                                target = max(1, int(round(width_px / ratio)))
+                                if target != height_px:
+                                    height_px_box.setValue(target)
+                                    height_px = target
+                            elif axis == "height" and height_px > 0:
+                                target = max(1, int(round(height_px * ratio)))
+                                if target != width_px:
+                                    width_px_box.setValue(target)
+                                    width_px = target
+                        width_px = width_px_box.value()
+                        height_px = height_px_box.value()
+                        if dpi > 0:
+                            converted = _px_to_cm(width_px, dpi)
+                            if converted:
+                                width_cm_box.setValue(converted)
+                            converted = _px_to_cm(height_px, dpi)
+                            if converted:
+                                height_cm_box.setValue(converted)
+                finally:
+                    self._plot_size_guard = False
+
+            def _handle_dpi_change():
+                if self._plot_size_guard:
+                    return
+                self._plot_size_guard = True
+                try:
+                    dpi = _current_dpi_value()
+                    if dpi <= 0:
+                        return
+                    width_cm = width_cm_box.value()
+                    height_cm = height_cm_box.value()
+                    if width_cm > 0:
+                        converted = _cm_to_px(width_cm, dpi)
+                        if converted:
+                            width_px_box.setValue(converted)
+                    elif width_px_box.value() > 0:
+                        converted = _px_to_cm(width_px_box.value(), dpi)
+                        if converted:
+                            width_cm_box.setValue(converted)
+                    if height_cm > 0:
+                        converted = _cm_to_px(height_cm, dpi)
+                        if converted:
+                            height_px_box.setValue(converted)
+                    elif height_px_box.value() > 0:
+                        converted = _px_to_cm(height_px_box.value(), dpi)
+                        if converted:
+                            height_cm_box.setValue(converted)
+                finally:
+                    self._plot_size_guard = False
+
+            width_cm_box.valueChanged.connect(lambda _value: _handle_size_change("width", "cm"))
+            height_cm_box.valueChanged.connect(lambda _value: _handle_size_change("height", "cm"))
+            width_px_box.valueChanged.connect(lambda _value: _handle_size_change("width", "px"))
+            height_px_box.valueChanged.connect(lambda _value: _handle_size_change("height", "px"))
+            if hasattr(dpi_combo, "currentTextChanged"):
+                dpi_combo.currentTextChanged.connect(lambda _text: _handle_dpi_change())
+            else:
+                dpi_combo.currentIndexChanged.connect(lambda _index: _handle_dpi_change())
+            if aspect_checkbox:
+                aspect_checkbox.stateChanged.connect(lambda _state: _handle_aspect_toggle())
+            _handle_aspect_toggle()
+            _handle_dpi_change()
+
+        _setup_plot_size_controls()
+
         def refresh_tunnel_ids():
-            output_dir=os.path.join(
-                        get_widget_value(self.ui.lineEdit_outputDir), 
-                        'caver_output',
-                        get_widget_value(self.ui.comboBox_RunID) or self.run_id)
-            tunnel_clusters=[x for x in os.listdir(os.path.join(output_dir, "data", "clusters_timeless")) if x.endswith(".pdb") and x.startswith('tun_cl_')]
+            output_dir = os.path.join(
+                get_widget_value(self.ui.lineEdit_outputDir),
+                "caver_output",
+                get_widget_value(self.ui.comboBox_RunID) or self.run_id,
+            )
+            tunnel_clusters = [
+                x
+                for x in os.listdir(os.path.join(output_dir, "data", "clusters_timeless"))
+                if x.endswith(".pdb") and x.startswith("tun_cl_")
+            ]
             num_tunnels = len(tunnel_clusters)
-            set_widget_value(self.ui_analyst.comboBox_tunnel, range(1, num_tunnels+1))
+            set_widget_value(self.ui_analyst.comboBox_tunnel, range(1, num_tunnels + 1))
 
         self.ui_analyst.pushButton_refreshTunnels.clicked.connect(refresh_tunnel_ids)
-        
+
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, list_palettes())
 
         set_widget_value(self.ui_analyst.comboBox_representation, TUNNEL_REPRE)
         set_widget_value(self.ui_analyst.comboBox_spectrumBy, TUNNEL_SPECTRUM_EXPRE)
 
         # respect to caver default
-        set_widget_value(self.ui_analyst.comboBox_spectrumPalette, 'red_green') 
-        set_widget_value(self.ui_analyst.comboBox_spectrumBy, 'vdw')
-        
+        set_widget_value(self.ui_analyst.comboBox_spectrumPalette, "red_green")
+        set_widget_value(self.ui_analyst.comboBox_spectrumBy, "vdw")
+        set_widget_value(self.ui_analyst.comboBox_plotColormap, list_color_map())
+        set_widget_value(self.ui_analyst.comboBox_plotColormap, "RdYlGn")
 
         self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)
 
         self.ui_analyst.pushButton_clearTunnelsSpectrumStatic.clicked.connect(_cleanup_analysis_preview)
+
         def _about_this_frame():
             if not self.analyst_previewer:
-                notify_box(message='No tunnel preview is available.',error_type= IndexError)
-            
+                notify_box(message="No tunnel preview is available.", error_type=IndexError)
+
             self.analyst_previewer.about_this_frame()
+
         self.ui_analyst.pushButton_aboutThisFrame.clicked.connect(_about_this_frame)
-        
 
         # register as a pymol command
         cmd.extend("caver_set", self.caver_set)
@@ -421,11 +602,11 @@ class CaverPyMOL(QtWidgets.QWidget):
             notify_box(
                 f"Run ID '{run_id}' does not contain a valid output file ({expected_view_file}).", FileNotFoundError
             )
-        reinit_session=get_widget_value(self.ui.checkBox_playback_reinit)
+        reinit_session = get_widget_value(self.ui.checkBox_playback_reinit)
         if reinit_session:
             logging.warning(f"Reinitializing the session.")
             cmd.reinitialize()
-            input_pdb=find_centrial_pdb(out_home=out_home,run_id=run_id)
+            input_pdb = find_centrial_pdb(out_home=out_home, run_id=run_id)
             cmd.load(input_pdb)
 
         with self.freeze_window():
@@ -567,7 +748,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             _ = max_idx
             max_idx += 1
             logging.warning(f"Run ID {_} already exists. Trying {max_idx}")
-            self.run_id=max_idx
+            self.run_id = max_idx
 
         os.makedirs(new_dir)
 
@@ -628,7 +809,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             cmd.set("retain_order", 1)
             cmd.sort()
             cmd.save(input, selected_model)
-        
+
         # otherwise, save the MD trajectory
         else:
             self.prepare_md_pdb_traj(selected_model, outdirInputs)
@@ -669,15 +850,15 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         # Run the PyMOL view plugin to visualize the results
         runview = f"run {runview_file}"
-        logging.info(f'Executing: {runview}')
+        logging.info(f"Executing: {runview}")
         cmd.do(runview)
         logging.info("Done.")
 
         if get_widget_value(self.ui.checkBox_reduceMD_Input):
-            logging.debug('Delete Input dir to save disk space.')
+            logging.debug("Delete Input dir to save disk space.")
             shutil.rmtree(outdirInputs)
 
-        logging.info('All set!')
+        logging.info("All set!")
 
     @staticmethod
     def fixPrecision(numberStr: Any) -> float:
@@ -968,25 +1149,24 @@ class CaverPyMOL(QtWidgets.QWidget):
         # state index are both 1-based and stop is inclusive
         state_start = get_widget_value(self.ui.spinBox_MD_StateMin)
         state_stop = get_widget_value(self.ui.spinBox_MD_StateMax)
-        
 
         if state_start > state_stop:
             notify_box("Starting state is greater than the stoping state", ValueError)
 
-        state_count=[]
+        state_count = []
 
         for state in range(state_start, state_stop + 1):
             try:
                 cmd.save(os.path.join(input_dir, f"{state}.pdb"), state=state, selection=selected_model)
-                logging.debug(f'Saved state {state} to {state}.pdb')
+                logging.debug(f"Saved state {state} to {state}.pdb")
                 state_count.append(state)
             except Exception as e:
-                logging.error(f'Error saving state {state} to {state}.pdb: {e}')
-        
+                logging.error(f"Error saving state {state} to {state}.pdb: {e}")
+
         # save the state number to a file that can be used for per-frame analysis
 
-        with open(os.path.join(input_dir, '..',"md_state_number.txt"), "w") as f:
-            f.writelines(str(x)+'\n' for x in state_count)
+        with open(os.path.join(input_dir, "..", "md_state_number.txt"), "w") as f:
+            f.writelines(str(x) + "\n" for x in state_count)
 
     def caver_set(self, key, value):
         """

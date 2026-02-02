@@ -27,6 +27,7 @@ def test_static_analysis_workflow(caver_worker) -> None:
     assert static_ui.is_file(), "UI snapshot for static run was not captured"
     assert static_scene.is_file(), "PyMOL scene for static run was not captured"
 
+
 # def test_dynamic_analysis_workflow(caver_worker) -> None:
 #     """
 #     Execute the dynamic MD workflow and ensure expected caches are generated.

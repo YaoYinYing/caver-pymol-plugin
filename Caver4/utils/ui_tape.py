@@ -2,7 +2,6 @@
 Advanced UI for Caver, originally written by Yinying for REvoDesign Project.
 """
 
-
 import math
 import os
 import time
@@ -13,19 +12,23 @@ from typing import TYPE_CHECKING, Any, Callable, NoReturn, Optional, TypeVar, Un
 
 from ..caver_pymol import ROOT_LOGGER
 
+# the only way to import Qt from PyMOL
 if TYPE_CHECKING:
     from PyQt5 import QtCore, QtGui, QtWidgets
 else:
     from pymol.Qt import QtCore, QtGui, QtWidgets
 
-logging=ROOT_LOGGER.getChild('UI_Tape')
+logging = ROOT_LOGGER.getChild("UI_Tape")
+
 
 @overload
 def set_widget_value(widget: QtWidgets.QStackedWidget, value: list): ...
 
 
 @overload
-def set_widget_value(widget: Union[QtWidgets.QProgressBar, QtWidgets.QSlider], value: Union[int, list[int], tuple[int, int]]): ...
+def set_widget_value(
+    widget: Union[QtWidgets.QProgressBar, QtWidgets.QSlider], value: Union[int, list[int], tuple[int, int]]
+): ...
 
 
 @overload
@@ -661,6 +664,7 @@ class WorkerThread(QtCore.QThread):
 def run_worker_thread_with_progress(worker_function: Callable[..., R], *args, **kwargs) -> R: ...
 
 
+#
 def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]], *args, **kwargs) -> Optional[R]:
     """
     Runs a worker function in a separate thread and optionally updates a progress bar.
@@ -679,14 +683,76 @@ def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]],
 
     # Create and start a worker thread with the given function and parameters
     work_thread = WorkerThread(worker_function, args=args, kwargs=kwargs)
+    work_thread.finished.connect(work_thread.deleteLater)
     work_thread.start()
 
-    # Keep the main thread running until the worker thread finishes
-    while not work_thread.isFinished():
+    try:
+        # Keep the main thread running until the worker thread finishes
+        while not work_thread.isFinished():
+            refresh_window()
+            time.sleep(0.01)
+
+        # Ensure Qt cleans up the native thread resources deterministically
+        work_thread.wait()
+        result = work_thread.handle_result()
+        return result[0] if result else None
+    finally:
+        # A finished thread may still have pending deleteLater() events.
+        # Process them now so Qt does not tear down QThread wrappers at interpreter exit.
         refresh_window()
-        time.sleep(0.01)
 
-    # Obtain and return the result of the worker function
-    result = work_thread.handle_result()
 
-    return result[0] if result else None
+def create_cmap_icon(cmap: str):
+    """
+    Creates a square pixmap representing the color pattern of a specified colormap.
+
+    Args:
+    - cmap (str): Name of the colormap.
+
+    Returns:
+    - QtGui.QPixmap: Pixmap representing the color gradient of the colormap.
+
+    Note:
+    This function uses Matplotlib's colormap to generate a color gradient and creates a square pixmap
+    with the color gradient to represent the colormap visually.
+
+    Example Usage:
+    ```python
+    from REvoDesign.Qt import QtWidgets
+    import matplotlib.pyplot as plt
+
+    # Assuming 'my_colormap' is a valid colormap name
+    icon = create_cmap_icon('my_colormap')
+    label = QtWidgets.QLabel()
+    label.setPixmap(icon)
+    label.show()
+    plt.show()
+    ```
+    """
+    import matplotlib
+
+    # Create a pixmap representing the color pattern of the colormap
+    color_map = matplotlib.colormaps[cmap]
+    pixmap = QtGui.QPixmap(100, 100)  # Changed to create a square pixmap
+    pixmap.fill(QtGui.QColor(0, 0, 0, 0))  # Fill with transparent background
+
+    # Draw color gradient representing the colormap
+    painter = QtGui.QPainter(pixmap)
+    gradient = QtGui.QLinearGradient(0, 0, 100, 100)  # Changed to create a square gradient
+    for i in range(100):
+        color = QtGui.QColor.fromRgbF(*color_map(i / 100)[:3])
+        gradient.setColorAt(i / 100, color)
+    painter.setBrush(QtGui.QBrush(gradient))
+    painter.drawRect(0, 0, 100, 100)  # Changed to draw a square
+    painter.end()
+
+    return pixmap
+
+def list_color_map() -> Union[dict, list]:
+    try:
+        import matplotlib
+
+        cmap_group = {_cmap: QtGui.QIcon(create_cmap_icon(cmap=_cmap)) for _cmap in matplotlib.colormaps()}
+        return cmap_group
+    except ImportError:
+        return 'Please install matplotlib before using this feature'.split()

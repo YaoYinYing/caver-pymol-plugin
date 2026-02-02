@@ -1,6 +1,6 @@
-from pathlib import Path
 import shutil
 import sys
+from pathlib import Path
 
 import pytest
 from pytest import approx
@@ -9,22 +9,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from Caver4.caver_analysis import (
-    TunnelDynamic,
-    read_tunnel_csv,
-    read_tunnel_pdb,
-)
+from Caver4.caver_analysis import TunnelDynamic, read_tunnel_csv, read_tunnel_pdb
 
-
-DATA_FILE = (
-    Path(__file__).resolve().parents[1] / "data" / "csv" / "cl_000001_heat_map.csv"
-)
-PDB_FILE = (
-    Path(__file__).resolve().parents[1]
-    / "data"
-    / "tunnel_pdb"
-    / "tun_cl_001_1.pdb"
-)
+DATA_FILE = Path(__file__).resolve().parents[1] / "data" / "csv" / "cl_000001_heat_map.csv"
+PDB_FILE = Path(__file__).resolve().parents[1] / "data" / "tunnel_pdb" / "tun_cl_001_1.pdb"
 
 
 def test_read_tunnel_csv_returns_column_major_structure():

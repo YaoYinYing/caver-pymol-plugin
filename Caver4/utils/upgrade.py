@@ -1,14 +1,11 @@
-
-
-
-
 import json
 import urllib
 from urllib.error import HTTPError, URLError
 
-from ..caver_pymol import ROOT_LOGGER,VERSION
+from ..caver_pymol import ROOT_LOGGER, VERSION
 
-logging=ROOT_LOGGER.getChild('upgrade')
+logging = ROOT_LOGGER.getChild("upgrade")
+
 
 def get_github_repo_tags(repo_url) -> list[str]:
     """
@@ -51,17 +48,16 @@ def get_github_repo_tags(repo_url) -> list[str]:
         # Handle URL errors (e.g., network issues)
         logging.error(f"Failed to reach the server. Reason: {e.reason}")
         return []
-    
+
 
 def has_updates(url) -> bool:
-    
-    tags=get_github_repo_tags(url)
-    logging.debug(f'Available tags: {tags}')
+
+    tags = get_github_repo_tags(url)
+    logging.debug(f"Available tags: {tags}")
 
     if tags:
-        latest_tag = tags[0].lstrip('v')
-        logging.debug(f'Latest tag: {latest_tag}')
+        latest_tag = tags[0].lstrip("v")
+        logging.debug(f"Latest tag: {latest_tag}")
         return latest_tag > VERSION
     else:
         return False
-    

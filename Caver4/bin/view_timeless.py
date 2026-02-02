@@ -1,6 +1,5 @@
 import os
 
-
 from pymol import cmd
 
 if not os.path.exists("../data/clusters_timeless"):
@@ -9,6 +8,7 @@ if not os.path.exists("../data/clusters_timeless"):
 cmd.cd("modules")
 
 import caver
+
 cmd.cd("..")
 
 filename = "./modules/rgb.py"

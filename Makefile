@@ -1,12 +1,6 @@
 CAVER_PLUGIN_VERSION=3.0.3
 PROJECT=Caver4
 
-dist:
-	mkdir dist
-	zip -r dist/caver_${CAVER_PLUGIN_VERSION}.zip README.md LICENSE CHANGELOG COPYING Caver3
-
-clean:
-	rm -rf dist
 
 install:
 	cp -r Caver4 /Users/yyy/.pymol/startup/
@@ -24,3 +18,8 @@ prepare-test:
 
 test:
 	python -m pytest --cov-config=.coveragerc --cov-report=term-missing -v --pyargs --durations=0 -vvv --emoji --cov=$(PROJECT) ./tests
+
+
+test-faulthandler:
+	# see: https://blog.xmatthias.com/post/pytest-debug-segfault/
+	python -X faulthandler -m pytest  -p no:faulthandler --cov-config=.coveragerc --cov-report=term-missing -v --pyargs --durations=0 -vvv --emoji --cov=$(PROJECT) ./tests
