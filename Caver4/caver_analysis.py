@@ -473,6 +473,12 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
+# TODO: 
+# 1. support customized x/y label from lineEdit_XaxisLabel/lineEdit_XaxisLabel, 
+# 2. support customized x/y rescale formula from lineEdit_XaxisFormula/lineEdit_YaxisFormula, `$t` serves as the original value
+#  - eg. `$t/10` to rescale the values by division by 10; `$t*10` to rescale the values by multiplication by 10
+#  - left blank to use the original values
+
 class CaverAnalystPlotter:
     """
     Plot time-series tunnel diameter heat maps from an Analyst instance.
@@ -482,16 +488,16 @@ class CaverAnalystPlotter:
     """
 
     _DEFAULT_CMAP = "RdYlGn"
-    _DEFAULT_DPI = 150
+    _DEFAULT_DPI = 300
     _DPI_CHOICES = ("72", "96", "150", "200", "300", "600")
-    _FILE_FILTER = (
-        "PNG Image (*.png);;"
-        "JPEG Image (*.jpg *.jpeg);;"
-        "TIFF Image (*.tif *.tiff);;"
-        "PDF Document (*.pdf);;"
-        "SVG Image (*.svg);;"
-        "All Files (*)"
-    )
+    # _FILE_FILTER = (
+    #     "PNG Image (*.png);;"
+    #     "JPEG Image (*.jpg *.jpeg);;"
+    #     "TIFF Image (*.tif *.tiff);;"
+    #     "PDF Document (*.pdf);;"
+    #     "SVG Image (*.svg);;"
+    #     "All Files (*)"
+    # )
 
     def __init__(self, form: CaverAnalysisForm, analyst: CaverAnalyst, crop_empty_frames: bool = False):
         if analyst is None:
@@ -501,7 +507,7 @@ class CaverAnalystPlotter:
         self.analyst = analyst
         self.crop_empty_frames = crop_empty_frames
 
-        self._save_path_widget: QtWidgets.QLineEdit = self._locate_save_path_widget()
+        # self._save_path_widget: QtWidgets.QLineEdit = self._locate_save_path_widget()
         self._aspect_checkbox: Optional[QtWidgets.QCheckBox] = getattr(
             form, "checkBox_lockAspectRatio", getattr(form, "checkBox", None)
         )
@@ -514,15 +520,15 @@ class CaverAnalystPlotter:
         self._init_widgets()
 
         self.form.pushButton_tunnelPlot.clicked.connect(self.plot)  # type: ignore[attr-defined]
-        self.form.pushButton_openSaveImage.clicked.connect(self._select_save_path)  # type: ignore[attr-defined]
+        # self.form.pushButton_openSaveImage.clicked.connect(self._select_save_path)  # type: ignore[attr-defined]
 
-    def _locate_save_path_widget(self) -> QtWidgets.QLineEdit:
-        widget = getattr(self.form, "lineEdit_imageSavePath", None)
-        if widget is None:
-            widget = getattr(self.form, "lineEdit", None)
-        if widget is None:
-            raise AttributeError("Save path line edit is missing from the form.")
-        return widget
+    # def _locate_save_path_widget(self) -> QtWidgets.QLineEdit:
+    #     widget = getattr(self.form, "lineEdit_imageSavePath", None)
+    #     if widget is None:
+    #         widget = getattr(self.form, "lineEdit", None)
+    #     if widget is None:
+    #         raise AttributeError("Save path line edit is missing from the form.")
+    #     return widget
 
     def _prepare_frames(self) -> list[TunnelFrame]:
         frames = list(self.analyst.tunnels.frames)
@@ -538,7 +544,7 @@ class CaverAnalystPlotter:
     def _init_widgets(self) -> None:
         self._init_range_inputs()
         self._init_dpi_combo()
-        self._ensure_default_save_path()
+        # self._ensure_default_save_path()
         self._ensure_default_sizes()
 
     def _init_range_inputs(self) -> None:
@@ -559,9 +565,9 @@ class CaverAnalystPlotter:
             set_widget_value(combo, self._DPI_CHOICES)
         set_widget_value(combo, str(self._DEFAULT_DPI))
 
-    def _ensure_default_save_path(self) -> None:
-        if not get_widget_value(self._save_path_widget).strip():
-            self._save_path_widget.setText(self._default_filename())
+    # def _ensure_default_save_path(self) -> None:
+    #     if not get_widget_value(self._save_path_widget).strip():
+    #         self._save_path_widget.setText(self._default_filename())
 
     def _ensure_default_sizes(self) -> None:
         width_cm: QtWidgets.QSpinBox = self.form.spinBox_imageSizeWidthCm  # type: ignore[attr-defined]
@@ -579,17 +585,17 @@ class CaverAnalystPlotter:
         if height_px.value() == 0:
             height_px.setValue(estimated_pixels // 2)
 
-    def _default_filename(self) -> str:
-        base = f"run_{self.analyst.run_id}_tunnel_{self.analyst.tunnel_id}.png"
-        return os.path.join(self.analyst.res_dir, base)
+    # def _default_filename(self) -> str:
+    #     base = f"run_{self.analyst.run_id}_tunnel_{self.analyst.tunnel_id}.png"
+    #     return os.path.join(self.analyst.res_dir, base)
 
-    def _select_save_path(self) -> None:
-        default = self._save_path_widget.text() or self._default_filename()
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self.form.tabPlot, "Save tunnel plot", default, self._FILE_FILTER  # type: ignore[attr-defined]
-        )
-        if filename:
-            self._save_path_widget.setText(filename)
+    # def _select_save_path(self) -> None:
+    #     default = self._save_path_widget.text() or self._default_filename()
+    #     filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+    #         self.form.tabPlot, "Save tunnel plot", default, self._FILE_FILTER  # type: ignore[attr-defined]
+    #     )
+    #     if filename:
+    #         self._save_path_widget.setText(filename)
 
     def _read_range(self) -> tuple[int, int]:
         start = max(1, min(self._max_section, int(get_widget_value(self.form.spinBox_tunnelStart))))  # type: ignore[attr-defined]
@@ -736,10 +742,10 @@ class CaverAnalystPlotter:
             except Exception:
                 pass
 
-        save_path = self._save_path_widget.text().strip()
-        if save_path:
-            save_dir = os.path.dirname(save_path)
-            if save_dir and not os.path.exists(save_dir):
-                os.makedirs(save_dir, exist_ok=True)
-            fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+        # save_path = self._save_path_widget.text().strip()
+        # if save_path:
+        #     save_dir = os.path.dirname(save_path)
+        #     if save_dir and not os.path.exists(save_dir):
+        #         os.makedirs(save_dir, exist_ok=True)
+        #     fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
         fig.show()
