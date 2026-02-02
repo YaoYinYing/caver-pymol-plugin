@@ -474,12 +474,6 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
-# TODO:
-# 1. connect reset buttons:
-#   - pushButton_resetPlotTunnelRange: reset tunnel start/end to full range
-#   - pushButton_resetPlotTunnelImageSize: reset image size to default
-#   - pushButton_resetPlotTunnelCmap: reset colormap to default RdYlGn
-# 2. support customized x/y range from `lineEdit_XaxisRange` and `lineEdit_YaxisRange`, format: "min,max". e.g. "0,100". empty means auto.
 class CaverAnalystPlotter:
     """
     Plot time-series tunnel diameter heat maps from an Analyst instance.
@@ -491,6 +485,10 @@ class CaverAnalystPlotter:
     _DEFAULT_CMAP = "RdYlGn"
     _DEFAULT_DPI = 300
     _DPI_CHOICES = ("72", "96", "150", "200", "300", "600")
+    _DEFAULT_IMAGE_WIDTH_CM = 15
+    _DEFAULT_IMAGE_HEIGHT_CM = 10
+    _PIXELS_PER_SECTION = 4
+    _MIN_PIXEL_WIDTH = 200
     # _FILE_FILTER = (
     #     "PNG Image (*.png);;"
     #     "JPEG Image (*.jpg *.jpeg);;"
@@ -519,6 +517,7 @@ class CaverAnalystPlotter:
             raise ValueError("No tunnel diameter data available for plotting.")
 
         self._init_widgets()
+        self._connect_reset_buttons()
 
         self.form.pushButton_tunnelPlot.clicked.connect(self.plot)  # type: ignore[attr-defined]
         # self.form.pushButton_openSaveImage.clicked.connect(self._select_save_path)  # type: ignore[attr-defined]
@@ -547,6 +546,20 @@ class CaverAnalystPlotter:
         self._init_dpi_combo()
         # self._ensure_default_save_path()
         self._ensure_default_sizes()
+
+    def _connect_reset_buttons(self) -> None:
+        handlers = (
+            ("pushButton_resetPlotTunnelRange", self._reset_tunnel_range),
+            ("pushButton_resetPlotTunnelImageSize", self._reset_plot_image_size),
+            ("pushButton_resetPlotTunnelCmap", self._reset_plot_colormap),
+        )
+        for name, handler in handlers:
+            button = getattr(self.form, name, None)
+            if button is not None:
+                try:
+                    button.clicked.connect(handler)  # type: ignore[attr-defined]
+                except AttributeError:
+                    continue
 
     def _init_range_inputs(self) -> None:
         start_spin: QtWidgets.QSpinBox = self.form.spinBox_tunnelStart  # type: ignore[attr-defined]
@@ -577,14 +590,46 @@ class CaverAnalystPlotter:
         height_px: QtWidgets.QSpinBox = self.form.spinBox_imageSizeHightPx  # type: ignore[attr-defined]
 
         if width_cm.value() == 0:
-            width_cm.setValue(15)
+            width_cm.setValue(self._DEFAULT_IMAGE_WIDTH_CM)
         if height_cm.value() == 0:
-            height_cm.setValue(10)
-        estimated_pixels = max(self._max_section * 4, 200)
+            height_cm.setValue(self._DEFAULT_IMAGE_HEIGHT_CM)
+        width_px_val, height_px_val = self._default_pixel_dimensions()
         if width_px.value() == 0:
-            width_px.setValue(estimated_pixels)
+            width_px.setValue(width_px_val)
         if height_px.value() == 0:
-            height_px.setValue(estimated_pixels // 2)
+            height_px.setValue(height_px_val)
+
+    def _default_pixel_dimensions(self) -> tuple[int, int]:
+        width = max(self._max_section * self._PIXELS_PER_SECTION, self._MIN_PIXEL_WIDTH)
+        height = max(width // 2, 1)
+        return width, height
+
+    def _reset_tunnel_range(self) -> None:
+        start_spin: Optional[QtWidgets.QSpinBox] = getattr(self.form, "spinBox_tunnelStart", None)
+        end_spin: Optional[QtWidgets.QSpinBox] = getattr(self.form, "spinBox_tunnelEnd", None)
+        if start_spin is None or end_spin is None:
+            return
+        start_spin.setValue(1)
+        end_spin.setValue(max(1, self._max_section))
+
+    def _reset_plot_image_size(self) -> None:
+        width_cm: Optional[QtWidgets.QSpinBox] = getattr(self.form, "spinBox_imageSizeWidthCm", None)
+        height_cm: Optional[QtWidgets.QSpinBox] = getattr(self.form, "spinBox_imageSizeHightCm", None)
+        width_px: Optional[QtWidgets.QSpinBox] = getattr(self.form, "spinBox_imageSizeWidthPx", None)
+        height_px: Optional[QtWidgets.QSpinBox] = getattr(self.form, "spinBox_imageSizeHightPx", None)
+        if None in (width_cm, height_cm, width_px, height_px):
+            return
+        width_cm.setValue(self._DEFAULT_IMAGE_WIDTH_CM)
+        height_cm.setValue(self._DEFAULT_IMAGE_HEIGHT_CM)
+        width_px_val, height_px_val = self._default_pixel_dimensions()
+        width_px.setValue(width_px_val)
+        height_px.setValue(height_px_val)
+
+    def _reset_plot_colormap(self) -> None:
+        combo: Optional[QtWidgets.QComboBox] = getattr(self.form, "comboBox_plotColormap", None)
+        if combo is None:
+            return
+        set_widget_value(combo, self._DEFAULT_CMAP)
 
     # def _default_filename(self) -> str:
     #     base = f"run_{self.analyst.run_id}_tunnel_{self.analyst.tunnel_id}.png"
@@ -686,6 +731,33 @@ class CaverAnalystPlotter:
             return None
         return self._compile_axis_formula(expression, axis_name)
 
+    def _parse_axis_range(self, widget_name: str, axis_name: str) -> Optional[tuple[float, float]]:
+        widget = getattr(self.form, widget_name, None)
+        if widget is None:
+            return None
+        try:
+            text = str(get_widget_value(widget)).strip()
+        except Exception:
+            return None
+        if not text:
+            return None
+        parts = [part.strip() for part in text.split(",")]
+        if len(parts) != 2 or not parts[0] or not parts[1]:
+            notify_box(f"Invalid {axis_name} range. Use format min,max (e.g. 0,100).", Warning)
+            return None
+        try:
+            lower = float(parts[0])
+            upper = float(parts[1])
+        except ValueError as exc:
+            notify_box(f"Invalid {axis_name} range values.", Warning, details=str(exc))
+            return None
+        if lower == upper:
+            notify_box(f"{axis_name} range requires two different values.", Warning)
+            return None
+        if lower > upper:
+            lower, upper = upper, lower
+        return lower, upper
+
     @staticmethod
     def _compile_axis_formula(expression: str, axis_name: str) -> Optional[Callable[[float], float]]:
         sanitized = expression.replace("$t", "t")
@@ -773,6 +845,8 @@ class CaverAnalystPlotter:
         y_max = end + 0.5
         x_transform = self._axis_transform("lineEdit_XaxisFormula", "X-axis")
         y_transform = self._axis_transform("lineEdit_YaxisFormula", "Y-axis")
+        x_range = self._parse_axis_range("lineEdit_XaxisRange", "X-axis")
+        y_range = self._parse_axis_range("lineEdit_YaxisRange", "Y-axis")
         im = ax.imshow(
             plot_data,
             aspect=aspect,
@@ -796,6 +870,10 @@ class CaverAnalystPlotter:
         y_formatter = FuncFormatter(self._make_tick_formatter(y_transform, force_integer=y_transform is None))
         ax.xaxis.set_major_formatter(x_formatter)
         ax.yaxis.set_major_formatter(y_formatter)
+        if x_range:
+            ax.set_xlim(*x_range)
+        if y_range:
+            ax.set_ylim(*y_range)
         rotation = 45 if len(frame_ids) > max_x_ticks else 0
         ax.tick_params(axis="x", rotation=rotation)
         cbar = fig.colorbar(im, ax=ax)
