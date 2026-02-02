@@ -619,7 +619,7 @@
        <rect>
         <x>6</x>
         <y>20</y>
-        <width>521</width>
+        <width>566</width>
         <height>150</height>
        </rect>
       </property>
@@ -681,6 +681,13 @@
                  </property>
                  <property name="value">
                   <number>10</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_resetPlotTunnelRange">
+                 <property name="text">
+                  <string>Reset</string>
                  </property>
                 </widget>
                </item>

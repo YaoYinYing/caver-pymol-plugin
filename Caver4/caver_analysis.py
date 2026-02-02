@@ -481,7 +481,7 @@ class CaverAnalystPlotter:
     without leaving the plugin window.
     """
 
-    _DEFAULT_CMAP = "bwr_r"
+    _DEFAULT_CMAP = "RdYlGn"
     _DEFAULT_DPI = 150
     _DPI_CHOICES = ("72", "96", "150", "200", "300", "600")
     _FILE_FILTER = (
@@ -537,7 +537,6 @@ class CaverAnalystPlotter:
 
     def _init_widgets(self) -> None:
         self._init_range_inputs()
-        self._init_colormap_combo()
         self._init_dpi_combo()
         self._ensure_default_save_path()
         self._ensure_default_sizes()
@@ -552,20 +551,6 @@ class CaverAnalystPlotter:
         if end_spin.value() <= 0 or end_spin.value() < start_spin.value():
             end_spin.setValue(self._max_section)
 
-    # no need to init the colormap combo, it has been done in the parent class
-    def _init_colormap_combo(self) -> None:
-        combo: QtWidgets.QComboBox = self.form.comboBox_plotColormap  # type: ignore[attr-defined]
-        if combo.count() == 0:
-            try:
-                import matplotlib
-
-                cmap_names = sorted(matplotlib.colormaps(), key=str.lower)
-            except Exception:
-                cmap_names = ["viridis", "plasma", "inferno", "magma", "cividis", "coolwarm", self._DEFAULT_CMAP]
-            combo.addItems(cmap_names)
-        idx = combo.findText(self._DEFAULT_CMAP)
-        if idx >= 0:
-            combo.setCurrentIndex(idx)
 
     def _init_dpi_combo(self) -> None:
         combo: QtWidgets.QComboBox = self.form.comboBox_DPI  # type: ignore[attr-defined]
