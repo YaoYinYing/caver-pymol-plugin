@@ -538,7 +538,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         set_widget_value(self.ui_analyst.comboBox_spectrumPalette, 'red_green') 
         set_widget_value(self.ui_analyst.comboBox_spectrumBy, 'vdw')
         set_widget_value(self.ui_analyst.comboBox_plotColormap, list_color_map())
-        set_widget_value(self.ui_analyst.comboBox_plotColormap, 'bwr_r')
+        set_widget_value(self.ui_analyst.comboBox_plotColormap, 'RdYlGn')
         
 
         self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)

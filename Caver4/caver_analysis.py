@@ -620,7 +620,7 @@ class CaverAnalystPlotter:
         lower = start - 1
         upper = min(end, self._max_section)
         for frame in self._frames:
-            slice_data = frame.diameters[lower:upper]
+            slice_data = frame.reversed_diameters[lower:upper]
             sanitized = [value if value >= 0 else float("nan") for value in slice_data]
             if not sanitized:
                 sanitized = [float("nan")] * width
@@ -672,7 +672,6 @@ class CaverAnalystPlotter:
             vmax = vmin + 1e-9
         return vmin, vmax
 
-    # TODO: the start and end of tunnels are currently reversed, use `reversed_diameters` property to reverse it
     def plot(self) -> None:
         if not self._frames:
             notify_box("No tunnel frames available for plotting.", RuntimeError)
