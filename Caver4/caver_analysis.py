@@ -305,26 +305,6 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
 
     return analyst
 
-# TODO: create test cases for this class
-# test data (zip): https://github.com/YaoYinYing/caver-test-data/releases/download/md_snapshots/Caver4.md_results.zip
-# testworker must fetch the test data and unzip it to stored at `tests/data/cache/caver_output/1`, skip fetching if it exists
-# test workflow:
-#  1. set output dir to `tests/data/cache` (lineEdit_outputDir)
-#  2. enable result playback (checkBox_EnablePlayBack), 
-#  3. refresh the run ids (pushButton_RefreshRunID)
-#  4. ensure the run id is correct as `1` (comboBox_RunID)
-#  5. open analysis window (pushButton_analysis)
-#  6. goto the timeline tab (tabTimeline)
-#  7. refresh tunnel ids (pushButton_refreshTunnels)
-#  8. ensure the tunnel id is correct as `1` (comboBox_tunnel)
-#  9. apply the tunnel loading (pushButton_applyTunnelsSpectrumStatic)
-#  10. refresh the tunnel preview from pymol session to load via timeline (pushButton_refreshTunnelPreview)
-#  11. test pressing the preview buttons (pushButton_firstFrame, pushButton_previousFrame, pushButton_nextFrame, pushButton_lastFrame)
-#  12. test pressing the play/pause button (pushButton_autoPlay, pushButton_pauseAutoPlay)
-#  13. test the frame slider (horizontalSlider)
-#  14. test the Frame's about button (pushButton_aboutThisFrame), message box should mocked to avoid blocking the test worker
-#  15. test reprentation button (comboBox_representation) and spectrumBy button (comboBox_spectrumBy), checked by reapplying of `pushButton_applyTunnelsSpectrumStatic`
-
 class CaverAnalystPreviewer:
     def __init__(self, form: CaverAnalysisForm,analyst:CaverAnalyst, res_dir: str, run_id: int):
         
