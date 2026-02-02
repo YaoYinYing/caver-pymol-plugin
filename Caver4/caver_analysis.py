@@ -486,7 +486,7 @@ class CaverAnalystPlotter:
         "All Files (*)"
     )
 
-    def __init__(self, form: CaverAnalysisForm, analyst: CaverAnalyst, crop_empty_frames: bool = True):
+    def __init__(self, form: CaverAnalysisForm, analyst: CaverAnalyst, crop_empty_frames: bool = False):
         if analyst is None:
             raise ValueError("Analyst instance is required for plotting.")
 
@@ -702,18 +702,23 @@ class CaverAnalystPlotter:
         ax.set_xlabel("Frame ID")
         ax.set_ylabel("Tunnel position (index)")
         ax.set_title(f"Tunnel {self.analyst.tunnel_id} · Run {self.analyst.run_id}")
+        from matplotlib.ticker import FuncFormatter, MaxNLocator
+
+        def _format_tick(value: float, _pos: int) -> str:
+            try:
+                return str(int(round(value)))
+            except (TypeError, ValueError):
+                return ""
+
         max_x_ticks = 12
-        step = max(1, len(frame_ids) // max_x_ticks)
-        xticks = [frame_ids[i] for i in range(0, len(frame_ids), step)]
-        if frame_ids[-1] not in xticks:
-            xticks.append(frame_ids[-1])
-        ax.set_xticks(xticks)
         max_y_ticks = 15
-        step_y = max(1, (end - start + 1) // max_y_ticks)
-        yticks = list(range(start, end + 1, step_y))
-        if yticks[-1] != end:
-            yticks.append(end)
-        ax.set_yticks(yticks)
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=max_x_ticks, integer=True, min_n_ticks=4))
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=max_y_ticks, integer=True, min_n_ticks=4))
+        formatter = FuncFormatter(_format_tick)
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
+        rotation = 45 if len(frame_ids) > max_x_ticks else 0
+        ax.tick_params(axis="x", rotation=rotation)
         cbar = fig.colorbar(im, ax=ax)
         cbar.set_label("Diameter (Å)")
         fig.tight_layout()
