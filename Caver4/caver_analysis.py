@@ -305,6 +305,26 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
 
     return analyst
 
+# TODO: create test cases for this class
+# test data (zip): https://github.com/YaoYinYing/caver-test-data/releases/download/md_snapshots/Caver4.md_results.zip
+# testworker must fetch the test data and unzip it to stored at `tests/data/cache/caver_output/1`, skip fetching if it exists
+# test workflow:
+#  1. set output dir to `tests/data/cache` (lineEdit_outputDir)
+#  2. enable result playback (checkBox_EnablePlayBack), 
+#  3. refresh the run ids (pushButton_RefreshRunID)
+#  4. ensure the run id is correct as `1` (comboBox_RunID)
+#  5. open analysis window (pushButton_analysis)
+#  6. goto the timeline tab (tabTimeline)
+#  7. refresh tunnel ids (pushButton_refreshTunnels)
+#  8. ensure the tunnel id is correct as `1` (comboBox_tunnel)
+#  9. apply the tunnel loading (pushButton_applyTunnelsSpectrumStatic)
+#  10. refresh the tunnel preview from pymol session to load via timeline (pushButton_refreshTunnelPreview)
+#  11. test pressing the preview buttons (pushButton_firstFrame, pushButton_previousFrame, pushButton_nextFrame, pushButton_lastFrame)
+#  12. test pressing the play/pause button (pushButton_autoPlay, pushButton_pauseAutoPlay)
+#  13. test the frame slider (horizontalSlider)
+#  14. test the Frame's about button (pushButton_aboutThisFrame), message box should mocked to avoid blocking the test worker
+#  15. test reprentation button (comboBox_representation) and spectrumBy button (comboBox_spectrumBy), checked by reapplying of `pushButton_applyTunnelsSpectrumStatic`
+
 class CaverAnalystPreviewer:
     def __init__(self, form: CaverAnalysisForm,analyst:CaverAnalyst, res_dir: str, run_id: int):
         
@@ -474,27 +494,6 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
-# TODO: create test cases for this class
-# test data (zip): https://github.com/YaoYinYing/caver-test-data/releases/download/md_snapshots/Caver4.md_results.zip
-# testworker must fetch the test data and unzip it to stored at `tests/data/cache/caver_output/1`, skip fetching if it exists
-# test workflow:
-#  1. set output dir to `tests/data/cache` (lineEdit_outputDir)
-#  2. enable result playback (checkBox_EnablePlayBack), 
-#  3. refresh the run ids (pushButton_RefreshRunID)
-#  4. ensure the run id is correct as `1` (comboBox_RunID)
-#  5. open analysis window (pushButton_analysis)
-#  6. goto the timeline tab (tabTimeline)
-#  7. refresh tunnel ids (pushButton_refreshTunnels)
-#  8. ensure the tunnel id is correct as `1` (comboBox_tunnel)
-#  9. apply the tunnel loading (pushButton_applyTunnelsSpectrumStatic)
-#  10. goto tab plot (tabPlot)
-#  11. reset the tunnel range (pushButton_resetPlotTunnelRange)
-#  12. plot the tunnel spectrum (pushButton_tunnelPlot)
-# test note:
-#  1. before click analysis buttons for processing, make a snapshot of the current state of the window
-# test cases store at `tests/gui/analyst/test_plotter.py`
-
-
 class CaverAnalystPlotter:
     """
     Plot time-series tunnel diameter heat maps from an Analyst instance.
@@ -643,8 +642,12 @@ class CaverAnalystPlotter:
         width_cm.setValue(self._DEFAULT_IMAGE_WIDTH_CM)
         height_cm.setValue(self._DEFAULT_IMAGE_HEIGHT_CM)
         width_px_val, height_px_val = self._default_pixel_dimensions()
-        width_px.setValue(width_px_val)
-        height_px.setValue(height_px_val)
+        for spin_box, value in ((width_px, width_px_val), (height_px, height_px_val)):
+            previous_state = spin_box.blockSignals(True)
+            try:
+                spin_box.setValue(value)
+            finally:
+                spin_box.blockSignals(previous_state)
 
     def _reset_plot_colormap(self) -> None:
         combo: Optional[QtWidgets.QComboBox] = getattr(self.form, "comboBox_plotColormap", None)
