@@ -10,7 +10,7 @@ from pymol.constants_palette import palette_dict
 # pandas is not supposed to be installed with PyMOL
 
 from .caver_pymol import ROOT_LOGGER
-from .utils.ui_tape import get_widget_value, notify_box, QtCore
+from .utils.ui_tape import get_widget_value, notify_box, QtCore, QtWidgets
 from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
 
 logging=ROOT_LOGGER.getChild('Analyst')
@@ -466,28 +466,263 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
-# TODO: class analyst plotter (CaverAnalystPlotter)
-# function: plot tunnel data from a given analyst object.
-# input: 
-#  - analyst object, which contains run id, tunnel id, tunnel data and Form
-#  - bool crop empty frames: crop empty frames or not. if true, empty frames will be cropped.
-# Widgets:
-#  - tunnel start/end (spinBox_tunnelStart, spinBox_tunnelEnd)
-#  - colormap (comboBox_plotColormap, default bwr_r)
-#  - size of the plot (spinBox_imageSizeWidthCm, spinBox_imageSizeHightCm,spinBox_imageSizeWidthPx , spinBox_imageSizeHightPx,)
-#  - dpi (comboBox_DPI, default 150)
-#  - aspect ratio lock (checkBox_lockAspectRatio)
-#  - save path (lineEdit_imageSavePath) and save path button (pushButton_openSaveImage)
-#  - plot button (pushButton_tunnelPlot)
-# mechanism:
-#  - when clicking the plot button, read all the widget data, and call matplotlib to plot the tunnel data, preview the plot, and save the plot to the save path
-# methods:
-#  - initialize with:
-#   - analyst object, read the min and max tunnel start and end of a tunnel frame (min is basically zero, while max is the length of self.diameters); fill them to `spinBox_tunnelStart` and `spinBox_tunnelEnd`
-#   - CaverAnalysisForm: for reading widget data
-#  - plot tunnel data
-#   - retrieve tunnel start/end, colormap, etc
-#   call matplotlib to plot tunnel data for time-series
-#   - 
-#  - save plot in preview window
-#   - open file dialog to select save path and save the plot if given
+# TODO: update the code according to the TODO tags nearby
+class CaverAnalystPlotter:
+    """
+    Plot time-series tunnel diameter heat maps from an Analyst instance.
+
+    The plotter wires UI widgets to Matplotlib so users can preview and export plots
+    without leaving the plugin window.
+    """
+
+    _DEFAULT_CMAP = "bwr_r"
+    _DEFAULT_DPI = 150
+    _DPI_CHOICES = ("72", "96", "150", "200", "300", "600")
+    # TODO: support JPG, TIFF, PNG, PDF, SVG
+    _FILE_FILTER = "PNG Image (*.png);;PDF Document (*.pdf);;SVG Image (*.svg);;All Files (*)"
+
+    def __init__(self, form: CaverAnalysisForm, analyst: CaverAnalyst, crop_empty_frames: bool = True):
+        if analyst is None:
+            raise ValueError("Analyst instance is required for plotting.")
+
+        self.form = form
+        self.analyst = analyst
+        self.crop_empty_frames = crop_empty_frames
+
+        self._save_path_widget: QtWidgets.QLineEdit = self._locate_save_path_widget()
+        self._aspect_checkbox: Optional[QtWidgets.QCheckBox] = getattr(
+            form, "checkBox_lockAspectRatio", getattr(form, "checkBox", None)
+        )
+
+        self._frames = self._prepare_frames()
+        self._max_section = self._compute_max_section()
+        if not self._max_section:
+            raise ValueError("No tunnel diameter data available for plotting.")
+
+        self._init_widgets()
+
+        self.form.pushButton_tunnelPlot.clicked.connect(self.plot)  # type: ignore[attr-defined]
+        self.form.pushButton_openSaveImage.clicked.connect(self._select_save_path)  # type: ignore[attr-defined]
+
+    def _locate_save_path_widget(self) -> QtWidgets.QLineEdit:
+        widget = getattr(self.form, "lineEdit_imageSavePath", None)
+        if widget is None:
+            widget = getattr(self.form, "lineEdit", None)
+        if widget is None:
+            raise AttributeError("Save path line edit is missing from the form.")
+        return widget
+
+    def _prepare_frames(self) -> list[TunnelFrame]:
+        frames = list(self.analyst.tunnels.frames)
+        if self.crop_empty_frames:
+            filtered = [frame for frame in frames if not frame.is_empty]
+            if filtered:
+                frames = filtered
+        return frames
+
+    def _compute_max_section(self) -> int:
+        return max((len(frame.diameters) for frame in self.analyst.tunnels.frames if frame.diameters), default=0)
+
+    def _init_widgets(self) -> None:
+        self._init_range_inputs()
+        self._init_colormap_combo()
+        self._init_dpi_combo()
+        self._ensure_default_save_path()
+        self._ensure_default_sizes()
+
+    def _init_range_inputs(self) -> None:
+        start_spin: QtWidgets.QSpinBox = self.form.spinBox_tunnelStart  # type: ignore[attr-defined]
+        end_spin: QtWidgets.QSpinBox = self.form.spinBox_tunnelEnd  # type: ignore[attr-defined]
+        start_spin.setRange(1, self._max_section)
+        end_spin.setRange(1, self._max_section)
+        if start_spin.value() <= 0:
+            start_spin.setValue(1)
+        if end_spin.value() <= 0 or end_spin.value() < start_spin.value():
+            end_spin.setValue(self._max_section)
+
+    # no need to init the colormap combo, it has been done in the parent class
+    def _init_colormap_combo(self) -> None:
+        combo: QtWidgets.QComboBox = self.form.comboBox_plotColormap  # type: ignore[attr-defined]
+        if combo.count() == 0:
+            try:
+                import matplotlib
+
+                cmap_names = sorted(matplotlib.colormaps(), key=str.lower)
+            except Exception:
+                cmap_names = ["viridis", "plasma", "inferno", "magma", "cividis", "coolwarm", self._DEFAULT_CMAP]
+            combo.addItems(cmap_names)
+        idx = combo.findText(self._DEFAULT_CMAP)
+        if idx >= 0:
+            combo.setCurrentIndex(idx)
+
+    # TODO: use set_widget_value to simplify the code
+    def _init_dpi_combo(self) -> None:
+        combo: QtWidgets.QComboBox = self.form.comboBox_DPI  # type: ignore[attr-defined]
+        if combo.count() == 0:
+            combo.addItems(self._DPI_CHOICES)
+        else:
+            for dpi in self._DPI_CHOICES:
+                if combo.findText(dpi) == -1:
+                    combo.addItem(dpi)
+        idx = combo.findText(str(self._DEFAULT_DPI))
+        if idx == -1:
+            combo.addItem(str(self._DEFAULT_DPI))
+            idx = combo.findText(str(self._DEFAULT_DPI))
+        combo.setCurrentIndex(idx)
+
+    def _ensure_default_save_path(self) -> None:
+        if not get_widget_value(self._save_path_widget).strip():
+            self._save_path_widget.setText(self._default_filename())
+
+    def _ensure_default_sizes(self) -> None:
+        width_cm: QtWidgets.QSpinBox = self.form.spinBox_imageSizeWidthCm  # type: ignore[attr-defined]
+        height_cm: QtWidgets.QSpinBox = self.form.spinBox_imageSizeHightCm  # type: ignore[attr-defined]
+        width_px: QtWidgets.QSpinBox = self.form.spinBox_imageSizeWidthPx  # type: ignore[attr-defined]
+        height_px: QtWidgets.QSpinBox = self.form.spinBox_imageSizeHightPx  # type: ignore[attr-defined]
+
+        if width_cm.value() == 0:
+            width_cm.setValue(15)
+        if height_cm.value() == 0:
+            height_cm.setValue(10)
+        estimated_pixels = max(self._max_section * 4, 200)
+        if width_px.value() == 0:
+            width_px.setValue(estimated_pixels)
+        if height_px.value() == 0:
+            height_px.setValue(estimated_pixels // 2)
+
+    def _default_filename(self) -> str:
+        base = f"run_{self.analyst.run_id}_tunnel_{self.analyst.tunnel_id}.png"
+        return os.path.join(self.analyst.res_dir, base)
+
+    def _select_save_path(self) -> None:
+        default = self._save_path_widget.text() or self._default_filename()
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self.form.tabPlot, "Save tunnel plot", default, self._FILE_FILTER  # type: ignore[attr-defined]
+        )
+        if filename:
+            self._save_path_widget.setText(filename)
+
+    def _read_range(self) -> tuple[int, int]:
+        start = max(1, min(self._max_section, int(get_widget_value(self.form.spinBox_tunnelStart))))  # type: ignore[attr-defined]
+        end = max(1, min(self._max_section, int(get_widget_value(self.form.spinBox_tunnelEnd))))  # type: ignore[attr-defined]
+        if start > end:
+            start, end = end, start
+        return start, end
+
+    def _gather_heatmap_data(self, start: int, end: int) -> tuple[list[list[float]], list[int]]:
+        width = end - start + 1
+        matrix: list[list[float]] = []
+        ids: list[int] = []
+        lower = start - 1
+        upper = min(end, self._max_section)
+        for frame in self._frames:
+            slice_data = frame.diameters[lower:upper]
+            sanitized = [value if value >= 0 else float("nan") for value in slice_data]
+            if not sanitized:
+                sanitized = [float("nan")] * width
+            if len(sanitized) < width:
+                sanitized.extend(float("nan") for _ in range(width - len(sanitized)))
+            matrix.append(sanitized)
+            ids.append(frame.frame_id)
+        return matrix, ids
+
+    def _figure_size_inches(self, dpi: int) -> tuple[float, float]:
+        width_cm: int = get_widget_value(self.form.spinBox_imageSizeWidthCm)  # type: ignore[attr-defined]
+        height_cm: int = get_widget_value(self.form.spinBox_imageSizeHightCm)  # type: ignore[attr-defined]
+        if width_cm > 0 and height_cm > 0:
+            return width_cm / 2.54, height_cm / 2.54
+        width_px: int = get_widget_value(self.form.spinBox_imageSizeWidthPx)  # type: ignore[attr-defined]
+        height_px: int = get_widget_value(self.form.spinBox_imageSizeHightPx)  # type: ignore[attr-defined]
+        if width_px > 0 and height_px > 0 and dpi > 0:
+            return width_px / dpi, height_px / dpi
+        return 8.0, 5.0
+
+    def _get_selected_dpi(self) -> int:
+        text = str(get_widget_value(self.form.comboBox_DPI))  # type: ignore[attr-defined]
+        try:
+            return max(1, int(float(text)))
+        except ValueError:
+            return self._DEFAULT_DPI
+
+    def _get_colormap(self):
+        cmap_name = get_widget_value(self.form.comboBox_plotColormap).strip()  # type: ignore[attr-defined]
+        if not cmap_name:
+            cmap_name = self._DEFAULT_CMAP
+        import matplotlib.pyplot as plt
+
+        try:
+            return plt.get_cmap(cmap_name)
+        except ValueError:
+            notify_box(f"Colormap '{cmap_name}' not found, falling back to {self._DEFAULT_CMAP}.", Warning)
+            return plt.get_cmap(self._DEFAULT_CMAP)
+
+    def plot(self) -> None:
+        if not self._frames:
+            notify_box("No tunnel frames available for plotting.", RuntimeError)
+            return
+
+        start, end = self._read_range()
+        if start == end:
+            notify_box("Tunnel start and end must be different positions.", Warning)
+            return
+
+        data, frame_ids = self._gather_heatmap_data(start, end)
+        if not data:
+            notify_box("No tunnel data exists in the selected range.", Warning)
+            return
+
+        dpi = self._get_selected_dpi()
+        figsize = self._figure_size_inches(dpi)
+        cmap = self._get_colormap()
+
+        # TODO  capture the import error here to remind user to install matplotlib if they need plotting
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        aspect = "equal" if self._aspect_checkbox and self._aspect_checkbox.isChecked() else "auto"
+        x_min = start - 0.5
+        x_max = end + 0.5
+        first_id = frame_ids[0]
+        last_id = frame_ids[-1]
+        y_min = first_id - 0.5
+        y_max = last_id + 0.5 if last_id != first_id else first_id + 0.5
+        im = ax.imshow(
+            data,
+            aspect=aspect,
+            cmap=cmap,
+            origin="lower",
+            interpolation="nearest",
+            extent=[x_min, x_max, y_min, y_max],
+        )
+        ax.set_xlabel("Tunnel position (index)")
+        ax.set_ylabel("Frame ID")
+        ax.set_title(f"Tunnel {self.analyst.tunnel_id} · Run {self.analyst.run_id}")
+        max_x_ticks = 15
+        step_x = max(1, (end - start + 1) // max_x_ticks)
+        xticks = list(range(start, end + 1, step_x))
+        if xticks[-1] != end:
+            xticks.append(end)
+        ax.set_xticks(xticks)
+        max_y_ticks = 12
+        step = max(1, len(frame_ids) // max_y_ticks)
+        yticks = [frame_ids[i] for i in range(0, len(frame_ids), step)]
+        if frame_ids[-1] not in yticks:
+            yticks.append(frame_ids[-1])
+        ax.set_yticks(yticks)
+        cbar = fig.colorbar(im, ax=ax)
+        cbar.set_label("Diameter (Å)")
+        fig.tight_layout()
+        manager = getattr(fig.canvas, "manager", None)
+        if manager is not None:
+            try:
+                manager.set_window_title(f"Caver Tunnel Plot - Run {self.analyst.run_id}")
+            except Exception:
+                pass
+
+        save_path = self._save_path_widget.text().strip()
+        if save_path:
+            save_dir = os.path.dirname(save_path)
+            if save_dir and not os.path.exists(save_dir):
+                os.makedirs(save_dir, exist_ok=True)
+            fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+        fig.show()
