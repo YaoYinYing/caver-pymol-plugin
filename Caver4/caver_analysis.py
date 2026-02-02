@@ -474,6 +474,27 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
+# TODO: create test cases for this class
+# test data (zip): https://github.com/YaoYinYing/caver-test-data/releases/download/md_snapshots/Caver4.md_results.zip
+# testworker must fetch the test data and unzip it to stored at `tests/data/cache/caver_output/1`, skip fetching if it exists
+# test workflow:
+#  1. set output dir to `tests/data/cache` (lineEdit_outputDir)
+#  2. enable result playback (checkBox_EnablePlayBack), 
+#  3. refresh the run ids (pushButton_RefreshRunID)
+#  4. ensure the run id is correct as `1` (comboBox_RunID)
+#  5. open analysis window (pushButton_analysis)
+#  6. goto the timeline tab (tabTimeline)
+#  7. refresh tunnel ids (pushButton_refreshTunnels)
+#  8. ensure the tunnel id is correct as `1` (comboBox_tunnel)
+#  9. apply the tunnel loading (pushButton_applyTunnelsSpectrumStatic)
+#  10. goto tab plot (tabPlot)
+#  11. reset the tunnel range (pushButton_resetPlotTunnelRange)
+#  12. plot the tunnel spectrum (pushButton_tunnelPlot)
+# test note:
+#  1. before click analysis buttons for processing, make a snapshot of the current state of the window
+# test cases store at `tests/gui/analyst/test_plotter.py`
+
+
 class CaverAnalystPlotter:
     """
     Plot time-series tunnel diameter heat maps from an Analyst instance.
