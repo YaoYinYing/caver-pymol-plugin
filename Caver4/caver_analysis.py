@@ -667,6 +667,7 @@ class CaverAnalystPlotter:
         if not data:
             notify_box("No tunnel data exists in the selected range.", Warning)
             return
+        plot_data = [list(column) for column in zip(*data)]
 
         dpi = self._get_selected_dpi()
         figsize = self._figure_size_inches(dpi)
@@ -684,34 +685,34 @@ class CaverAnalystPlotter:
 
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         aspect = "equal" if self._aspect_checkbox and self._aspect_checkbox.isChecked() else "auto"
-        x_min = start - 0.5
-        x_max = end + 0.5
         first_id = frame_ids[0]
         last_id = frame_ids[-1]
-        y_min = first_id - 0.5
-        y_max = last_id + 0.5 if last_id != first_id else first_id + 0.5
+        x_min = first_id - 0.5
+        x_max = last_id + 0.5 if last_id != first_id else first_id + 0.5
+        y_min = start - 0.5
+        y_max = end + 0.5
         im = ax.imshow(
-            data,
+            plot_data,
             aspect=aspect,
             cmap=cmap,
             origin="lower",
             interpolation="nearest",
             extent=[x_min, x_max, y_min, y_max],
         )
-        ax.set_xlabel("Tunnel position (index)")
-        ax.set_ylabel("Frame ID")
+        ax.set_xlabel("Frame ID")
+        ax.set_ylabel("Tunnel position (index)")
         ax.set_title(f"Tunnel {self.analyst.tunnel_id} · Run {self.analyst.run_id}")
-        max_x_ticks = 15
-        step_x = max(1, (end - start + 1) // max_x_ticks)
-        xticks = list(range(start, end + 1, step_x))
-        if xticks[-1] != end:
-            xticks.append(end)
+        max_x_ticks = 12
+        step = max(1, len(frame_ids) // max_x_ticks)
+        xticks = [frame_ids[i] for i in range(0, len(frame_ids), step)]
+        if frame_ids[-1] not in xticks:
+            xticks.append(frame_ids[-1])
         ax.set_xticks(xticks)
-        max_y_ticks = 12
-        step = max(1, len(frame_ids) // max_y_ticks)
-        yticks = [frame_ids[i] for i in range(0, len(frame_ids), step)]
-        if frame_ids[-1] not in yticks:
-            yticks.append(frame_ids[-1])
+        max_y_ticks = 15
+        step_y = max(1, (end - start + 1) // max_y_ticks)
+        yticks = list(range(start, end + 1, step_y))
+        if yticks[-1] != end:
+            yticks.append(end)
         ax.set_yticks(yticks)
         cbar = fig.colorbar(im, ax=ax)
         cbar.set_label("Diameter (Å)")
