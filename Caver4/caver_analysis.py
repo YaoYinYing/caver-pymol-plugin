@@ -10,7 +10,7 @@ from pymol.constants_palette import palette_dict
 # pandas is not supposed to be installed with PyMOL
 
 from .caver_pymol import ROOT_LOGGER
-from .utils.ui_tape import get_widget_value, notify_box, QtCore, QtWidgets
+from .utils.ui_tape import get_widget_value, notify_box, set_widget_value, QtCore, QtWidgets
 from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
 
 logging=ROOT_LOGGER.getChild('Analyst')
@@ -466,7 +466,6 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
-# TODO: update the code according to the TODO tags nearby
 class CaverAnalystPlotter:
     """
     Plot time-series tunnel diameter heat maps from an Analyst instance.
@@ -478,8 +477,14 @@ class CaverAnalystPlotter:
     _DEFAULT_CMAP = "bwr_r"
     _DEFAULT_DPI = 150
     _DPI_CHOICES = ("72", "96", "150", "200", "300", "600")
-    # TODO: support JPG, TIFF, PNG, PDF, SVG
-    _FILE_FILTER = "PNG Image (*.png);;PDF Document (*.pdf);;SVG Image (*.svg);;All Files (*)"
+    _FILE_FILTER = (
+        "PNG Image (*.png);;"
+        "JPEG Image (*.jpg *.jpeg);;"
+        "TIFF Image (*.tif *.tiff);;"
+        "PDF Document (*.pdf);;"
+        "SVG Image (*.svg);;"
+        "All Files (*)"
+    )
 
     def __init__(self, form: CaverAnalysisForm, analyst: CaverAnalyst, crop_empty_frames: bool = True):
         if analyst is None:
@@ -555,20 +560,12 @@ class CaverAnalystPlotter:
         if idx >= 0:
             combo.setCurrentIndex(idx)
 
-    # TODO: use set_widget_value to simplify the code
     def _init_dpi_combo(self) -> None:
         combo: QtWidgets.QComboBox = self.form.comboBox_DPI  # type: ignore[attr-defined]
-        if combo.count() == 0:
-            combo.addItems(self._DPI_CHOICES)
-        else:
-            for dpi in self._DPI_CHOICES:
-                if combo.findText(dpi) == -1:
-                    combo.addItem(dpi)
-        idx = combo.findText(str(self._DEFAULT_DPI))
-        if idx == -1:
-            combo.addItem(str(self._DEFAULT_DPI))
-            idx = combo.findText(str(self._DEFAULT_DPI))
-        combo.setCurrentIndex(idx)
+        current_items = [combo.itemText(i) for i in range(combo.count())]
+        if current_items != list(self._DPI_CHOICES):
+            set_widget_value(combo, self._DPI_CHOICES)
+        set_widget_value(combo, str(self._DEFAULT_DPI))
 
     def _ensure_default_save_path(self) -> None:
         if not get_widget_value(self._save_path_widget).strip():
@@ -675,8 +672,15 @@ class CaverAnalystPlotter:
         figsize = self._figure_size_inches(dpi)
         cmap = self._get_colormap()
 
-        # TODO  capture the import error here to remind user to install matplotlib if they need plotting
-        import matplotlib.pyplot as plt
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError as exc:
+            notify_box(
+                "Matplotlib is required to plot tunnel data. Install matplotlib if you need plotting.",
+                Warning,
+                details=str(exc),
+            )
+            return
 
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         aspect = "equal" if self._aspect_checkbox and self._aspect_checkbox.isChecked() else "auto"

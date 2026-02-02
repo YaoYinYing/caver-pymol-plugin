@@ -48,7 +48,15 @@ repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
 # internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
 from .caver_java import PyJava
-from .caver_analysis import run_analysis, list_palettes, CaverAnalyst, CaverAnalystPreviewer,TUNNEL_REPRE,TUNNEL_SPECTRUM_EXPRE
+from .caver_analysis import (
+    run_analysis,
+    list_palettes,
+    CaverAnalyst,
+    CaverAnalystPlotter,
+    CaverAnalystPreviewer,
+    TUNNEL_REPRE,
+    TUNNEL_SPECTRUM_EXPRE,
+)
 from .utils.upgrade import has_updates
 from .utils.caver_utils import IGNORED_STRUCTURES, THE_20s, find_centrial_pdb
 from .utils.tools import open_doc_pdf, cite_info
@@ -288,6 +296,9 @@ class CaverPyMOL(QtWidgets.QWidget):
         
         self.analyst:Optional[CaverAnalyst] = None
         self.analyst_previewer:Optional[CaverAnalystPreviewer] = None
+        self.analyst_plotter:Optional[CaverAnalystPlotter] = None
+        self._plot_size_guard = False
+        self._plot_aspect_ratio:Optional[float] = None
 
         def _run_analysis():
             with self.freeze_window([self.analysis_dialog]), hold_trigger_button(self.ui_analyst.pushButton_applyTunnelsSpectrumStatic):
@@ -299,6 +310,8 @@ class CaverPyMOL(QtWidgets.QWidget):
                     run_id=get_widget_value(self.ui.comboBox_RunID)  or self.run_id,
                     res_dir=self.get_run_ids()[0]
                 )
+                if self.analyst:
+                    _ensure_analyst_plotter()
         
         def _run_analysis_preview():
             if not self.analyst:
@@ -340,6 +353,170 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         # analysis module
         self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(_run_analysis)
+
+        def _ensure_analyst_plotter():
+            if not self.analyst:
+                return
+            if self.analyst_plotter:
+                try:
+                    self.ui_analyst.pushButton_tunnelPlot.clicked.disconnect(self.analyst_plotter.plot)
+                except Exception:
+                    pass
+                try:
+                    self.ui_analyst.pushButton_openSaveImage.clicked.disconnect(self.analyst_plotter._select_save_path)
+                except Exception:
+                    pass
+            try:
+                self.analyst_plotter=CaverAnalystPlotter(self.ui_analyst, self.analyst)
+            except Exception as exc:
+                logging.error(f'Failed to initialize analyst plotter: {exc}')
+
+        def _setup_plot_size_controls():
+            width_cm_box=self.ui_analyst.spinBox_imageSizeWidthCm
+            height_cm_box=self.ui_analyst.spinBox_imageSizeHightCm
+            width_px_box=self.ui_analyst.spinBox_imageSizeWidthPx
+            height_px_box=self.ui_analyst.spinBox_imageSizeHightPx
+            dpi_combo=self.ui_analyst.comboBox_DPI
+            aspect_checkbox=getattr(self.ui_analyst, 'checkBox_lockAspectRatio', getattr(self.ui_analyst, 'checkBox', None))
+
+            def _current_dpi_value()->int:
+                value=str(get_widget_value(dpi_combo))
+                try:
+                    return max(1, int(float(value)))
+                except (TypeError, ValueError):
+                    return CaverAnalystPlotter._DEFAULT_DPI
+
+            def _cm_to_px(value_cm: int, dpi: int)->int:
+                if value_cm <= 0 or dpi <= 0:
+                    return 0
+                return max(1, int(round(value_cm / 2.54 * dpi)))
+
+            def _px_to_cm(value_px: int, dpi: int)->int:
+                if value_px <= 0 or dpi <= 0:
+                    return 0
+                return max(1, int(round(value_px / dpi * 2.54)))
+
+            def _capture_aspect_ratio()->Optional[float]:
+                width_cm=width_cm_box.value()
+                height_cm=height_cm_box.value()
+                if width_cm > 0 and height_cm > 0:
+                    return width_cm / height_cm
+                width_px=width_px_box.value()
+                height_px=height_px_box.value()
+                if width_px > 0 and height_px > 0:
+                    return width_px / height_px
+                return None
+
+            def _handle_aspect_toggle():
+                if aspect_checkbox and aspect_checkbox.isChecked():
+                    self._plot_aspect_ratio=_capture_aspect_ratio()
+                else:
+                    self._plot_aspect_ratio=None
+
+            def _handle_size_change(axis: str, unit: str):
+                if self._plot_size_guard:
+                    return
+                self._plot_size_guard=True
+                try:
+                    dpi=_current_dpi_value()
+                    lock_enabled=bool(aspect_checkbox and aspect_checkbox.isChecked())
+                    ratio=self._plot_aspect_ratio if lock_enabled else None
+                    if lock_enabled and (not ratio or ratio <= 0):
+                        ratio=_capture_aspect_ratio()
+                        self._plot_aspect_ratio=ratio
+
+                    if unit == 'cm':
+                        width_cm=width_cm_box.value()
+                        height_cm=height_cm_box.value()
+                        if lock_enabled and ratio and ratio > 0:
+                            if axis == 'width' and width_cm > 0:
+                                target=max(1, int(round(width_cm / ratio)))
+                                if target != height_cm:
+                                    height_cm_box.setValue(target)
+                                    height_cm=target
+                            elif axis == 'height' and height_cm > 0:
+                                target=max(1, int(round(height_cm * ratio)))
+                                if target != width_cm:
+                                    width_cm_box.setValue(target)
+                                    width_cm=target
+                        width_cm=width_cm_box.value()
+                        height_cm=height_cm_box.value()
+                        if dpi > 0:
+                            converted=_cm_to_px(width_cm, dpi)
+                            if converted:
+                                width_px_box.setValue(converted)
+                            converted=_cm_to_px(height_cm, dpi)
+                            if converted:
+                                height_px_box.setValue(converted)
+                    else:
+                        width_px=width_px_box.value()
+                        height_px=height_px_box.value()
+                        if lock_enabled and ratio and ratio > 0:
+                            if axis == 'width' and width_px > 0:
+                                target=max(1, int(round(width_px / ratio)))
+                                if target != height_px:
+                                    height_px_box.setValue(target)
+                                    height_px=target
+                            elif axis == 'height' and height_px > 0:
+                                target=max(1, int(round(height_px * ratio)))
+                                if target != width_px:
+                                    width_px_box.setValue(target)
+                                    width_px=target
+                        width_px=width_px_box.value()
+                        height_px=height_px_box.value()
+                        if dpi > 0:
+                            converted=_px_to_cm(width_px, dpi)
+                            if converted:
+                                width_cm_box.setValue(converted)
+                            converted=_px_to_cm(height_px, dpi)
+                            if converted:
+                                height_cm_box.setValue(converted)
+                finally:
+                    self._plot_size_guard=False
+
+            def _handle_dpi_change():
+                if self._plot_size_guard:
+                    return
+                self._plot_size_guard=True
+                try:
+                    dpi=_current_dpi_value()
+                    if dpi <= 0:
+                        return
+                    width_cm=width_cm_box.value()
+                    height_cm=height_cm_box.value()
+                    if width_cm > 0:
+                        converted=_cm_to_px(width_cm, dpi)
+                        if converted:
+                            width_px_box.setValue(converted)
+                    elif width_px_box.value() > 0:
+                        converted=_px_to_cm(width_px_box.value(), dpi)
+                        if converted:
+                            width_cm_box.setValue(converted)
+                    if height_cm > 0:
+                        converted=_cm_to_px(height_cm, dpi)
+                        if converted:
+                            height_px_box.setValue(converted)
+                    elif height_px_box.value() > 0:
+                        converted=_px_to_cm(height_px_box.value(), dpi)
+                        if converted:
+                            height_cm_box.setValue(converted)
+                finally:
+                    self._plot_size_guard=False
+
+            width_cm_box.valueChanged.connect(lambda _value: _handle_size_change('width', 'cm'))
+            height_cm_box.valueChanged.connect(lambda _value: _handle_size_change('height', 'cm'))
+            width_px_box.valueChanged.connect(lambda _value: _handle_size_change('width', 'px'))
+            height_px_box.valueChanged.connect(lambda _value: _handle_size_change('height', 'px'))
+            if hasattr(dpi_combo, 'currentTextChanged'):
+                dpi_combo.currentTextChanged.connect(lambda _text: _handle_dpi_change())
+            else:
+                dpi_combo.currentIndexChanged.connect(lambda _index: _handle_dpi_change())
+            if aspect_checkbox:
+                aspect_checkbox.stateChanged.connect(lambda _state: _handle_aspect_toggle())
+            _handle_aspect_toggle()
+            _handle_dpi_change()
+
+        _setup_plot_size_controls()
         
         def refresh_tunnel_ids():
             output_dir=os.path.join(
