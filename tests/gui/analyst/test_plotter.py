@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-import zipfile
 
 import pytest
 

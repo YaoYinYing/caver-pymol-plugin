@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Iterable
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, cast
+from typing import cast
 
 import pytest
+
 from tests.data.test_data import DYNAMIC_WORKFLOW, STATIC_WORKFLOW, WorkflowScenario
 
 TESTS_DIR = Path(__file__).resolve().parent
@@ -64,7 +66,7 @@ def notify_box_spy(monkeypatch: pytest.MonkeyPatch) -> _NotifyRecorder:
     """
 
     pytest.importorskip("pymol")
-    from Caver4 import caver_pymol, caver_analysis
+    from Caver4 import caver_analysis, caver_pymol
     from Caver4.utils import ui_tape
 
     recorder = _NotifyRecorder()
@@ -90,6 +92,7 @@ class CaverPluginWorker:
     def __init__(self, qtbot, data_dir: Path, results_root: Path) -> None:
         pytest.importorskip("pymol")
         import pymol
+
         from Caver4.caver_pymol import CaverPyMOL, QtWidgets
         from Caver4.utils.ui_tape import get_widget_value, set_widget_value
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-import zipfile
 
 import pytest
 
@@ -142,7 +142,6 @@ def test_previewer_autoplay_about_and_reapply(analyst_previewer_context, notify_
     ctx.worker.process_events()
     assert not previewer._is_autoplay_running()
     assert ui.pushButton_autoPlay.isEnabled()
-
 
     prior_messages = len(notify_box_spy.messages)
     ui.pushButton_aboutThisFrame.click()

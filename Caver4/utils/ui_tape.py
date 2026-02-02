@@ -2,7 +2,6 @@
 Advanced UI for Caver, originally written by Yinying for REvoDesign Project.
 """
 
-
 import math
 import os
 import time
@@ -19,14 +18,17 @@ if TYPE_CHECKING:
 else:
     from pymol.Qt import QtCore, QtGui, QtWidgets
 
-logging=ROOT_LOGGER.getChild('UI_Tape')
+logging = ROOT_LOGGER.getChild("UI_Tape")
+
 
 @overload
 def set_widget_value(widget: QtWidgets.QStackedWidget, value: list): ...
 
 
 @overload
-def set_widget_value(widget: Union[QtWidgets.QProgressBar, QtWidgets.QSlider], value: Union[int, list[int], tuple[int, int]]): ...
+def set_widget_value(
+    widget: Union[QtWidgets.QProgressBar, QtWidgets.QSlider], value: Union[int, list[int], tuple[int, int]]
+): ...
 
 
 @overload
@@ -694,7 +696,6 @@ def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]],
     return result[0] if result else None
 
 
-
 def create_cmap_icon(cmap: str):
     """
     Creates a square pixmap representing the color pattern of a specified colormap.
@@ -744,6 +745,6 @@ def create_cmap_icon(cmap: str):
 
 def list_color_map() -> dict:
     import matplotlib
-    
+
     cmap_group = {_cmap: QtGui.QIcon(create_cmap_icon(cmap=_cmap)) for _cmap in matplotlib.colormaps()}
     return cmap_group

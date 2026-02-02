@@ -93,13 +93,17 @@ def _build_pyjava(
         str(config_file),
         str(output_dir),
     )
-    return instance, records, {
-        "caver_folder": caver_folder,
-        "jar_path": jar_path,
-        "pdb_dir": pdb_dir,
-        "config_file": config_file,
-        "output_dir": output_dir,
-    }
+    return (
+        instance,
+        records,
+        {
+            "caver_folder": caver_folder,
+            "jar_path": jar_path,
+            "pdb_dir": pdb_dir,
+            "config_file": config_file,
+            "output_dir": output_dir,
+        },
+    )
 
 
 @pytest.mark.parametrize(
@@ -119,7 +123,9 @@ def _build_pyjava(
         ),
     ],
 )
-def test_optimize_memory_tracks_highest_success(monkeypatch, tmp_path, customized_heap, success_heaps, expected_heap, expected_calls):
+def test_optimize_memory_tracks_highest_success(
+    monkeypatch, tmp_path, customized_heap, success_heaps, expected_heap, expected_calls
+):
     pyjava, records, _ = _build_pyjava(monkeypatch, tmp_path, customized_heap, success_heaps)
     assert pyjava.memory_heap_level == expected_heap
     assert records["heaps"] == expected_calls

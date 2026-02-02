@@ -1,5 +1,4 @@
 import io
-
 import os
 import subprocess
 import threading
@@ -8,7 +7,7 @@ from typing import Optional, Union
 
 from ..caver_pymol import ROOT_LOGGER
 
-logging=ROOT_LOGGER.getChild('Runner')
+logging = ROOT_LOGGER.getChild("Runner")
 
 
 class LiveProcessResult(subprocess.CompletedProcess):
