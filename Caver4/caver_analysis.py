@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass,field
+import math
 import os
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 from pymol import cmd
 from pymol.constants_palette import palette_dict
@@ -473,12 +474,6 @@ class CaverAnalystPreviewer:
             timer.stop()
         self._set_autoplay_running(False)
 
-# TODO: 
-# 1. support customized x/y label from lineEdit_XaxisLabel/lineEdit_XaxisLabel, 
-# 2. support customized x/y rescale formula from lineEdit_XaxisFormula/lineEdit_YaxisFormula, `$t` serves as the original value
-#  - eg. `$t/10` to rescale the values by division by 10; `$t*10` to rescale the values by multiplication by 10
-#  - left blank to use the original values
-
 class CaverAnalystPlotter:
     """
     Plot time-series tunnel diameter heat maps from an Analyst instance.
@@ -663,6 +658,74 @@ class CaverAnalystPlotter:
             vmax = vmin + 1e-9
         return vmin, vmax
 
+    def _axis_label(self, widget_name: str, fallback: str) -> str:
+        widget = getattr(self.form, widget_name, None)
+        if widget is None:
+            return fallback
+        try:
+            text = str(get_widget_value(widget)).strip()
+        except Exception:
+            return fallback
+        return text or fallback
+
+    def _axis_transform(self, widget_name: str, axis_name: str) -> Optional[Callable[[float], float]]:
+        widget = getattr(self.form, widget_name, None)
+        if widget is None:
+            return None
+        try:
+            expression = str(get_widget_value(widget)).strip()
+        except Exception:
+            return None
+        if not expression:
+            return None
+        return self._compile_axis_formula(expression, axis_name)
+
+    @staticmethod
+    def _compile_axis_formula(expression: str, axis_name: str) -> Optional[Callable[[float], float]]:
+        sanitized = expression.replace("$t", "t")
+        try:
+            code = compile(sanitized, f"<{axis_name} formula>", "eval")
+        except SyntaxError as exc:
+            notify_box(f"Invalid {axis_name} rescale formula. Using default scale.", Warning, details=str(exc))
+            return None
+        eval_globals = {"__builtins__": {}, "math": math}
+        locals_dict = {"t": 0.0}
+
+        def _transform(value: float) -> float:
+            locals_dict["t"] = value
+            try:
+                result = eval(code, eval_globals, locals_dict)
+            except Exception:
+                return float("nan")
+            try:
+                return float(result)
+            except (TypeError, ValueError):
+                return float("nan")
+
+        return _transform
+
+    def _make_tick_formatter(
+        self, transform: Optional[Callable[[float], float]], force_integer: bool
+    ) -> Callable[[float, int], str]:
+        def _formatter(value: float, _pos: int) -> str:
+            scaled = value
+            if transform is not None:
+                try:
+                    scaled = transform(value)
+                except Exception:
+                    scaled = float("nan")
+            if not isinstance(scaled, (int, float)) or not math.isfinite(float(scaled)):
+                return ""
+            scaled = float(scaled)
+            if force_integer:
+                return str(int(round(scaled)))
+            rounded = round(scaled)
+            if abs(scaled - rounded) < 1e-9:
+                return str(int(rounded))
+            return f"{scaled:.6g}"
+
+        return _formatter
+
     def plot(self) -> None:
         if not self._frames:
             notify_box("No tunnel frames available for plotting.", RuntimeError)
@@ -702,6 +765,8 @@ class CaverAnalystPlotter:
         x_max = last_id + 0.5 if last_id != first_id else first_id + 0.5
         y_min = start - 0.5
         y_max = end + 0.5
+        x_transform = self._axis_transform("lineEdit_XaxisFormula", "X-axis")
+        y_transform = self._axis_transform("lineEdit_YaxisFormula", "Y-axis")
         im = ax.imshow(
             plot_data,
             aspect=aspect,
@@ -712,24 +777,19 @@ class CaverAnalystPlotter:
             vmin=vmin,
             vmax=vmax,
         )
-        ax.set_xlabel("Frame ID")
-        ax.set_ylabel("Tunnel position (index)")
+        ax.set_xlabel(self._axis_label("lineEdit_XaxisLabel", "Frame ID"))
+        ax.set_ylabel(self._axis_label("lineEdit_YaxisLabel", "Tunnel position (index)"))
         ax.set_title(f"Tunnel {self.analyst.tunnel_id} · Run {self.analyst.run_id}")
         from matplotlib.ticker import FuncFormatter, MaxNLocator
-
-        def _format_tick(value: float, _pos: int) -> str:
-            try:
-                return str(int(round(value)))
-            except (TypeError, ValueError):
-                return ""
 
         max_x_ticks = 12
         max_y_ticks = 15
         ax.xaxis.set_major_locator(MaxNLocator(nbins=max_x_ticks, integer=True, min_n_ticks=4))
         ax.yaxis.set_major_locator(MaxNLocator(nbins=max_y_ticks, integer=True, min_n_ticks=4))
-        formatter = FuncFormatter(_format_tick)
-        ax.xaxis.set_major_formatter(formatter)
-        ax.yaxis.set_major_formatter(formatter)
+        x_formatter = FuncFormatter(self._make_tick_formatter(x_transform, force_integer=x_transform is None))
+        y_formatter = FuncFormatter(self._make_tick_formatter(y_transform, force_integer=y_transform is None))
+        ax.xaxis.set_major_formatter(x_formatter)
+        ax.yaxis.set_major_formatter(y_formatter)
         rotation = 45 if len(frame_ids) > max_x_ticks else 0
         ax.tick_params(axis="x", rotation=rotation)
         cbar = fig.colorbar(im, ax=ax)
