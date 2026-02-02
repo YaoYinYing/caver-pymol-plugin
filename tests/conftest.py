@@ -64,12 +64,13 @@ def notify_box_spy(monkeypatch: pytest.MonkeyPatch) -> _NotifyRecorder:
     """
 
     pytest.importorskip("pymol")
-    from Caver4 import caver_pymol
+    from Caver4 import caver_pymol, caver_analysis
     from Caver4.utils import ui_tape
 
     recorder = _NotifyRecorder()
     monkeypatch.setattr(ui_tape, "notify_box", recorder)
     monkeypatch.setattr(caver_pymol, "notify_box", recorder)
+    monkeypatch.setattr(caver_analysis, "notify_box", recorder)
     return recorder
 
 

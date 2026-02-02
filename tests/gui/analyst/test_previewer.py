@@ -144,14 +144,13 @@ def test_previewer_autoplay_about_and_reapply(analyst_previewer_context, notify_
     assert ui.pushButton_autoPlay.isEnabled()
 
 
-    # TODO: the notify box is not mocked and popped up. fix it
-    # prior_messages = len(notify_box_spy.messages)
-    # ui.pushButton_aboutThisFrame.click()
-    # ctx.worker.process_events()
-    # assert len(notify_box_spy.messages) == prior_messages + 1
-    # about_text = notify_box_spy.messages[-1][0]
-    # assert "TunnelFrame #" in about_text
-    # assert f"#{previewer._current_frame_id}" in about_text
+    prior_messages = len(notify_box_spy.messages)
+    ui.pushButton_aboutThisFrame.click()
+    ctx.worker.process_events()
+    assert len(notify_box_spy.messages) == prior_messages + 1
+    about_text = notify_box_spy.messages[-1][0]
+    assert "TunnelFrame #" in about_text
+    assert f"#{previewer._current_frame_id}" in about_text
 
     repr_combo = ui.comboBox_representation
     spec_combo = ui.comboBox_spectrumBy
