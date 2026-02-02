@@ -748,14 +748,6 @@ def create_cmap_icon(cmap: str):
 
     return pixmap
 
-# TODO: add test cases to this function when matplotlib is installed/absent
-# unit tests to `tests/utils/test_colormap.py`. Qtbot is required,as it uses Qt.
-# Integrated tests to `tests/utils/gui/test_matplotlib_color_map.py`
-#  workflow:
-#  1. open the main window
-#  2. open the analysis window (pushButton_analysis)
-#  3. switch to the plot tab (tabPlot)
-#  4. check the items of the combobox (comboBox_plotColormap)
 def list_color_map() -> Union[dict, list]:
     try:
         import matplotlib
