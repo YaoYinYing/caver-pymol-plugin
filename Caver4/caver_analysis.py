@@ -93,6 +93,13 @@ Valid Diameters: {[round(x, 2) for x in self.valid_diameters]}
 Full Diameters: {[round(x, 2) for x in self.diameters]}
 -=-=-=-=
 '''
+    @property
+    def reversed_diameters(self) -> list[float]:
+        return list(reversed(self.diameters))
+    
+    @property
+    def reversed_valid_diameters(self) -> list[float]:
+        return list(reversed(self.valid_diameters))
 
     @property
     def is_empty(self) -> bool:
@@ -653,6 +660,19 @@ class CaverAnalystPlotter:
             notify_box(f"Colormap '{cmap_name}' not found, falling back to {self._DEFAULT_CMAP}.", Warning)
             return plt.get_cmap(self._DEFAULT_CMAP)
 
+    def _color_limits(self) -> tuple[Optional[float], Optional[float]]:
+        try:
+            vmin = float(get_widget_value(self.form.doubleSpinBox_spectrumMin))  # type: ignore[attr-defined]
+            vmax = float(get_widget_value(self.form.doubleSpinBox_spectrumMax))  # type: ignore[attr-defined]
+        except (AttributeError, TypeError, ValueError):
+            return None, None
+        if vmin > vmax:
+            vmin, vmax = vmax, vmin
+        if vmin == vmax:
+            vmax = vmin + 1e-9
+        return vmin, vmax
+
+    # TODO: the start and end of tunnels are currently reversed, use `reversed_diameters` property to reverse it
     def plot(self) -> None:
         if not self._frames:
             notify_box("No tunnel frames available for plotting.", RuntimeError)
@@ -672,6 +692,7 @@ class CaverAnalystPlotter:
         dpi = self._get_selected_dpi()
         figsize = self._figure_size_inches(dpi)
         cmap = self._get_colormap()
+        vmin, vmax = self._color_limits()
 
         try:
             import matplotlib.pyplot as plt
@@ -698,6 +719,8 @@ class CaverAnalystPlotter:
             origin="lower",
             interpolation="nearest",
             extent=[x_min, x_max, y_min, y_max],
+            vmin=vmin,
+            vmax=vmax,
         )
         ax.set_xlabel("Frame ID")
         ax.set_ylabel("Tunnel position (index)")
