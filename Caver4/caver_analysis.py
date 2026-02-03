@@ -305,13 +305,15 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
 def render_analysis(form: CaverAnalysisForm, analyst: CaverAnalyst):
     if analyst is None:
         raise ValueError("No analyst to render")
+    # allow user to change palette just before rendering
+    palette = get_widget_value(form.comboBox_spectrumPalette)
     spectrum_min = get_widget_value(form.doubleSpinBox_spectrumMin)
     spectrum_max = get_widget_value(form.doubleSpinBox_spectrumMax)
 
     spectrum_expression = get_widget_value(form.comboBox_spectrumBy) or "vdw"
 
     repre = get_widget_value(form.comboBox_representation)
-    analyst.render(minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression)
+    analyst.render(minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression, palette=palette)
 
 
 class CaverAnalystPreviewer:
