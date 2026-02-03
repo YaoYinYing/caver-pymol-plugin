@@ -243,7 +243,9 @@ class CaverPluginWorker:
 
     def capture_pymol_scene(self, filename: str) -> Path:
         target = self.pymol_image_dir / filename
-        self.cmd.png(str(target), ray=0)
+        # PyMOL segfaults on macOS when OpenGL screenshots are requested without a live viewer.
+        # Force the CPU ray-tracer so we can capture scenes headlessly during tests.
+        self.cmd.png(str(target), ray=1)
         return target
 
     def run_static_analysis(self) -> Path:
