@@ -676,20 +676,37 @@ def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]],
     Parameters:
     - worker_function: The function to execute in a separate thread.
     - *args, **kwargs: Additional arguments and keyword arguments to pass to the worker function.
+      Reserved keywords:
+        - _ui_progress_callback: callable invoked periodically while the worker is running.
+        - _ui_progress_interval: seconds between progress callback invocations (defaults to 0.01).
 
     Returns:
     - The result of the worker function or None if no result is available.
     """
 
+    progress_callback = kwargs.pop("_ui_progress_callback", None)
+    progress_interval = float(kwargs.pop("_ui_progress_interval", 0.01))
+    progress_interval = max(progress_interval, 0.01)
     # Create and start a worker thread with the given function and parameters
     work_thread = WorkerThread(worker_function, args=args, kwargs=kwargs)
     work_thread.finished.connect(work_thread.deleteLater)
     work_thread.start()
 
     try:
+        next_progress_update = time.monotonic()
         # Keep the main thread running until the worker thread finishes
         while not work_thread.isFinished():
             refresh_window()
+            if progress_callback:
+                now = time.monotonic()
+                if now >= next_progress_update:
+                    try:
+                        progress_callback()
+                    except Exception:
+                        logging.exception("Progress callback failed")
+                        progress_callback = None
+                    else:
+                        next_progress_update = now + progress_interval
             time.sleep(0.01)
 
         # Ensure Qt cleans up the native thread resources deterministically

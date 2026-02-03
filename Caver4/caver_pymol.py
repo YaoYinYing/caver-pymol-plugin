@@ -880,7 +880,33 @@ class CaverPyMOL(QtWidgets.QWidget):
             notify_box(str(e), RuntimeError)
 
         with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
-            ret = run_worker_thread_with_progress(pj.run_caver)
+            progress_bar = self.ui.progressBar
+
+            def count_matching_files(directory: str, suffix: str) -> int:
+                suffix = suffix.lower()
+                try:
+                    with os.scandir(directory) as entries:
+                        return sum(1 for entry in entries if entry.is_file() and entry.name.lower().endswith(suffix))
+                except FileNotFoundError:
+                    return 0
+
+            total_tasks = count_matching_files(outdirInputs, ".pdb")
+            progress_bar.setRange(0, max(total_tasks, 1))
+            progress_bar.setValue(0)
+            tunnels_dir = os.path.join(self.out_dir, "data", "tunnels")
+
+            def update_tunnel_progress():
+                if total_tasks == 0:
+                    return
+                completed = count_matching_files(tunnels_dir, ".pdb.obj")
+                progress_bar.setValue(min(completed, total_tasks))
+
+            ret = run_worker_thread_with_progress(
+                pj.run_caver,
+                _ui_progress_callback=update_tunnel_progress,
+                _ui_progress_interval=0.5,
+            )
+            progress_bar.setValue(progress_bar.maximum())
 
         # Check for out of memory errors in Caver's output
         if "OutOfMemory" in ret.stdout or "OutOfMemory" in ret.stderr:
