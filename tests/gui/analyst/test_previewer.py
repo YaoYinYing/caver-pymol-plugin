@@ -63,9 +63,12 @@ def analyst_previewer_context(caver_worker, test_data_dir) -> PreviewerTestConte
     set_widget_value(analysis_ui.comboBox_tunnel, "1")
     assert str(get_widget_value(analysis_ui.comboBox_tunnel)) == "1"
 
-    analysis_ui.pushButton_applyTunnelsSpectrumStatic.click()
+    analysis_ui.pushButton_runTunnelsSpectrum.click()
     caver_worker.process_events()
     assert plugin.analyst is not None
+
+    analysis_ui.pushButton_renderTunnelsSpectrum.click()
+    caver_worker.process_events()
 
     analysis_ui.pushButton_refreshTunnelPreview.click()
     caver_worker.process_events()
@@ -164,7 +167,7 @@ def test_previewer_autoplay_about_and_reapply(analyst_previewer_context, notify_
     new_repr = _select_alternate(repr_combo)
     new_expr = _select_alternate(spec_combo)
     previous_analyst = ctx.worker.plugin.analyst
-    ui.pushButton_applyTunnelsSpectrumStatic.click()
+    ui.pushButton_runTunnelsSpectrum.click()
     ctx.worker.process_events()
     assert ctx.worker.plugin.analyst is not None
     assert ctx.worker.plugin.analyst is not previous_analyst

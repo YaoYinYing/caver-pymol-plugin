@@ -46,7 +46,7 @@ repo_url='https://github.com/YaoYinYing/caver-pymol-plugin'
 
 from .caver_analysis import (TUNNEL_REPRE, TUNNEL_SPECTRUM_EXPRE, CaverAnalyst,
                              CaverAnalystPlotter, CaverAnalystPreviewer,
-                             list_palettes, run_analysis)
+                             list_palettes, render_analysis, run_analysis)
 # fmt: on
 # internal imports
 from .caver_config import CONFIG_TXT, THIS_DIR, CaverConfig, CaverShortcut
@@ -284,14 +284,33 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.analyst: Optional[CaverAnalyst] = None
         self.analyst_previewer: Optional[CaverAnalystPreviewer] = None
         self.analyst_plotter: Optional[CaverAnalystPlotter] = None
+        self._analysis_rendered = False
         self._plot_size_guard = False
         self._plot_aspect_ratio: Optional[float] = None
 
+        def _update_analysis_control_states():
+            has_analyst = self.analyst is not None
+            render_ready = has_analyst and self._analysis_rendered
+            render_btn = self.ui_analyst.pushButton_renderTunnelsSpectrum
+            clear_btn = self.ui_analyst.pushButton_clearTunnelsSpectrumStatic
+            preview_group = self.ui_analyst.groupBox_previewTunnelSlider
+            slider = self.ui_analyst.horizontalSlider
+            render_btn.setEnabled(has_analyst)
+            clear_btn.setEnabled(has_analyst)
+            preview_group.setEnabled(render_ready)
+            slider.setEnabled(bool(self.analyst_previewer))
+
+        _update_analysis_control_states()
+
         def _run_analysis():
             with self.freeze_window([self.analysis_dialog]), hold_trigger_button(
-                self.ui_analyst.pushButton_applyTunnelsSpectrumStatic
+                self.ui_analyst.pushButton_runTunnelsSpectrum
             ):
 
+                if self.analyst_previewer:
+                    _cleanup_analysis_preview()
+                self._analysis_rendered = False
+                _update_analysis_control_states()
                 # for long running tasks, use a worker thread
                 self.analyst = run_worker_thread_with_progress(
                     run_analysis,
@@ -301,10 +320,34 @@ class CaverPyMOL(QtWidgets.QWidget):
                 )
                 if self.analyst:
                     _ensure_analyst_plotter()
+                _update_analysis_control_states()
+
+        def _render_analysis():
+            if not self.analyst:
+                notify_box("Run tunnel analysis before rendering the spectrum.", Warning)
+                return
+
+            with self.freeze_window([self.analysis_dialog]), hold_trigger_button(
+                self.ui_analyst.pushButton_renderTunnelsSpectrum
+            ):
+                try:
+                    render_analysis(
+                        form=self.ui_analyst,
+                        analyst=self.analyst,
+                    )
+                except Exception as exc:
+                    logging.error(f"Failed to render tunnel spectrum: {exc}")
+                    notify_box("Failed to render tunnel spectrum.", RuntimeError, details=str(exc))
+                    return
+            self._analysis_rendered = True
+            _update_analysis_control_states()
 
         def _run_analysis_preview():
             if not self.analyst:
                 raise UnboundLocalError("Analyst not initialized")
+            if not self._analysis_rendered:
+                notify_box("Render tunnel spectrum before previewing.", Warning)
+                return
 
             logging.debug("Initializing analyst previewer")
 
@@ -323,24 +366,31 @@ class CaverPyMOL(QtWidgets.QWidget):
             self.ui_analyst.pushButton_nextFrame.clicked.connect(self.analyst_previewer.forward)
             self.ui_analyst.pushButton_previousFrame.clicked.connect(self.analyst_previewer.backward)
             logging.debug("Analyst previewer initialized")
+            _update_analysis_control_states()
 
         def _cleanup_analysis_preview():
             logging.debug("Cleaning up analyst previewer")
+            previewer = self.analyst_previewer
+            if not previewer:
+                _update_analysis_control_states()
+                return
             try:
                 # self.analyst_previewer.slider.valueChanged.disconnect(self.analyst_previewer._sync_to_slider)
 
-                self.ui_analyst.pushButton_firstFrame.clicked.disconnect(self.analyst_previewer.head)
-                self.ui_analyst.pushButton_lastFrame.clicked.disconnect(self.analyst_previewer.tail)
+                self.ui_analyst.pushButton_firstFrame.clicked.disconnect(previewer.head)
+                self.ui_analyst.pushButton_lastFrame.clicked.disconnect(previewer.tail)
 
-                self.ui_analyst.pushButton_nextFrame.clicked.disconnect(self.analyst_previewer.forward)
-                self.ui_analyst.pushButton_previousFrame.clicked.disconnect(self.analyst_previewer.backward)
+                self.ui_analyst.pushButton_nextFrame.clicked.disconnect(previewer.forward)
+                self.ui_analyst.pushButton_previousFrame.clicked.disconnect(previewer.backward)
             except Exception as e:
                 logging.error(f"Error occurred: {e}")
             self.analyst_previewer = None
             logging.debug("Analyst previewer cleaned up")
+            _update_analysis_control_states()
 
         # analysis module
-        self.ui_analyst.pushButton_applyTunnelsSpectrumStatic.clicked.connect(_run_analysis)
+        self.ui_analyst.pushButton_runTunnelsSpectrum.clicked.connect(_run_analysis)
+        self.ui_analyst.pushButton_renderTunnelsSpectrum.clicked.connect(_render_analysis)
 
         def _ensure_analyst_plotter():
             if not self.analyst:
@@ -534,6 +584,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         set_widget_value(self.ui_analyst.comboBox_spectrumBy, "vdw")
         set_widget_value(self.ui_analyst.comboBox_plotColormap, list_color_map())
         set_widget_value(self.ui_analyst.comboBox_plotColormap, "RdYlGn")
+        self.ui.checkBox_pruneMD_Input.setChecked(False)
 
         self.ui_analyst.pushButton_refreshTunnelPreview.clicked.connect(_run_analysis_preview)
 

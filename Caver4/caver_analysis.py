@@ -292,12 +292,6 @@ class CaverAnalyst:
         logging.info(f"Rendered tunnel {self.tunnels.name}")
 
 
-# TODO: separate analysis and rendering
-# run_analysis: triggerred by pushButton_runTunnelsSpectrum
-# render_analysis: triggerred by pushButton_renderTunnelsSpectrum
-# drop uses of pushButton_applyTunnelsSpectrumStatic
-# button enabled status update: if analyst obj is not ready, disable pushButton_renderTunnelsSpectrum and pushButton_clearTunnelsSpectrumStatic
-# if not rendered, disable groupBox_previewTunnelSlider
 def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str) -> CaverAnalyst:
     palette = get_widget_value(form.comboBox_spectrumPalette)
     run_id = int(run_id)
@@ -307,7 +301,9 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     
     return analyst
 
-def render_analysis(form: CaverAnalysisForm,analyst: CaverAnalyst):
+def render_analysis(form: CaverAnalysisForm, analyst: CaverAnalyst):
+    if analyst is None:
+        raise ValueError("No analyst to render")
     spectrum_min = get_widget_value(form.doubleSpinBox_spectrumMin)
     spectrum_max = get_widget_value(form.doubleSpinBox_spectrumMax)
 
@@ -429,7 +425,8 @@ class CaverAnalystPreviewer:
         self._autoplay_other_buttons = (
             self.form.pushButton_aboutThisFrame,
             self.form.pushButton_refreshTunnelPreview,
-            self.form.pushButton_applyTunnelsSpectrumStatic,
+            self.form.pushButton_runTunnelsSpectrum,
+            self.form.pushButton_renderTunnelsSpectrum,
             self.form.pushButton_clearTunnelsSpectrumStatic,
         )
 
