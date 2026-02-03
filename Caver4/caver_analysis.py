@@ -349,6 +349,7 @@ class CaverAnalystPreviewer:
         self.slider.setRange(self._min_frame_id, self._max_frame_id)
         # only released signal is emitted when the slider is released,
         # so we can use it to trigger the frame switch and skip the middle frames
+        # TODO: slider operation sometimes triggers segfault here (moving to quickly??). find the root cause of this bug and fix it.
         self.slider.valueChanged.connect(self._switch_frame)
         self._update_button_status()
         # update the frame by the initial preview
