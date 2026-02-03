@@ -355,7 +355,6 @@ class CaverPyMOL(QtWidgets.QWidget):
                 form=self.ui_analyst,
                 analyst=self.analyst,
                 res_dir=self.get_run_ids()[0],
-                run_id=get_widget_value(self.ui.comboBox_RunID) or self.run_id,
             )
             # self.analyst_previewer.init_slider_range()
             # self.analyst_previewer.slider.valueChanged.connect(self.analyst_previewer._sync_to_slider)
@@ -562,7 +561,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             output_dir = os.path.join(
                 get_widget_value(self.ui.lineEdit_outputDir),
                 "caver_output",
-                get_widget_value(self.ui.comboBox_RunID) or self.run_id,
+                get_widget_value(self.ui.comboBox_RunID) or str(self.run_id),
             )
             tunnel_clusters = [
                 x
@@ -863,7 +862,11 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         # otherwise, save the MD trajectory
         else:
-            self.prepare_md_pdb_traj(selected_model, outdirInputs)
+            with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
+                self.prepare_md_pdb_traj(selected_model, outdirInputs)
+            # trim the MD trajectory to save memory for caver
+            if self.ui.checkBox_trimMD_InputSession.isChecked():
+                cmd.reinitialize()
 
         # Get the path to the Caver JAR file
         caverjar = os.path.join(THIS_DIR, "caver.jar")

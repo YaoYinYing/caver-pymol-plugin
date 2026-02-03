@@ -313,11 +313,13 @@ def render_analysis(form: CaverAnalysisForm, analyst: CaverAnalyst):
     spectrum_expression = get_widget_value(form.comboBox_spectrumBy) or "vdw"
 
     repre = get_widget_value(form.comboBox_representation)
-    analyst.render(minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression, palette=palette)
+    analyst.render(
+        minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression, palette=palette
+    )
 
 
 class CaverAnalystPreviewer:
-    def __init__(self, form: CaverAnalysisForm, analyst: CaverAnalyst, res_dir: str, run_id: int):
+    def __init__(self, form: CaverAnalysisForm, analyst: CaverAnalyst, res_dir: str):
 
         self.form = form
         self.analyst = analyst
@@ -332,7 +334,7 @@ class CaverAnalystPreviewer:
         self.slider = form.horizontalSlider
         self.autoplay_interval = float(get_widget_value(form.doubleSpinBox_autoPlayInterval))
 
-        md_state_file = os.path.join(res_dir, str(run_id), "md_state_number.txt")
+        md_state_file = os.path.join(res_dir, str(self.run_id), "md_state_number.txt")
         with open(md_state_file) as f:
             self.frame_ids = [int(line.strip()) for line in f.readlines()]
 

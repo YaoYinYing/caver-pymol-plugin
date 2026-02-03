@@ -471,6 +471,19 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="checkBox_pruneMD_Input">
+           <property name="toolTip">
+            <string>Delete &lt;run-id&gt;/input to save disk space.</string>
+           </property>
+           <property name="text">
+            <string>Prune</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="pushButton_LoadRunID">
            <property name="enabled">
             <bool>false</bool>
@@ -588,12 +601,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_pruneMD_Input">
+        <widget class="QCheckBox" name="checkBox_trimMD_InputSession">
          <property name="toolTip">
-          <string>Delete &lt;run-id&gt;/input to save disk space.</string>
+          <string>Trim PyMOL sessions before executing caver</string>
          </property>
          <property name="text">
-          <string>Prune</string>
+          <string>Trim</string>
          </property>
          <property name="checked">
           <bool>true</bool>
