@@ -765,6 +765,7 @@ def create_cmap_icon(cmap: str):
 
     return pixmap
 
+
 def list_color_map() -> Union[dict, list]:
     try:
         import matplotlib
@@ -772,4 +773,4 @@ def list_color_map() -> Union[dict, list]:
         cmap_group = {_cmap: QtGui.QIcon(create_cmap_icon(cmap=_cmap)) for _cmap in matplotlib.colormaps()}
         return cmap_group
     except ImportError:
-        return 'Please install matplotlib before using this feature'.split()
+        return "Please install matplotlib before using this feature".split()

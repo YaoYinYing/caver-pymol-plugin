@@ -296,10 +296,11 @@ def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str)
     palette = get_widget_value(form.comboBox_spectrumPalette)
     run_id = int(run_id)
     tunnel_id = int(get_widget_value(form.comboBox_tunnel))
-    
+
     analyst = CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
-    
+
     return analyst
+
 
 def render_analysis(form: CaverAnalysisForm, analyst: CaverAnalyst):
     if analyst is None:
@@ -310,9 +311,7 @@ def render_analysis(form: CaverAnalysisForm, analyst: CaverAnalyst):
     spectrum_expression = get_widget_value(form.comboBox_spectrumBy) or "vdw"
 
     repre = get_widget_value(form.comboBox_representation)
-    analyst.render(
-        minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression
-    )
+    analyst.render(minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression)
 
 
 class CaverAnalystPreviewer:
@@ -709,17 +708,15 @@ class CaverAnalystPlotter:
         cmap_name = get_widget_value(self.form.comboBox_plotColormap).strip()  # type: ignore[attr-defined]
         if not cmap_name:
             cmap_name = self._DEFAULT_CMAP
-        
 
         try:
             import matplotlib.pyplot as plt
+
             # cmap comes from matplotlib, so there is no index error.
             return plt.get_cmap(cmap_name)
         # although it has been guarded by external, keep it safe here so that codex won't complain.
         except ImportError as e:
-            raise ImportError(
-                "Matplotlib is not installed. Please install matplotlib to use this feature."
-            ) from e
+            raise ImportError("Matplotlib is not installed. Please install matplotlib to use this feature.") from e
 
     def _color_limits(self) -> tuple[Optional[float], Optional[float]]:
         try:
