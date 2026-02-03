@@ -292,7 +292,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_12">
            <item>
-            <widget class="QPushButton" name="pushButton_applyTunnelsSpectrumStatic">
+            <widget class="QPushButton" name="pushButton_runTunnelsSpectrum">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -303,7 +303,23 @@
               <string>Run per tunnel-cluster analysis</string>
              </property>
              <property name="text">
-              <string>Apply</string>
+              <string>1. Run</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_renderTunnelsSpectrum">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Run per tunnel-cluster analysis</string>
+             </property>
+             <property name="text">
+              <string>2. Render</string>
              </property>
             </widget>
            </item>
@@ -330,7 +346,7 @@
       </layout>
      </widget>
     </widget>
-    <widget class="QGroupBox" name="groupBox_3">
+    <widget class="QGroupBox" name="groupBox_previewTunnelSlider">
      <property name="geometry">
       <rect>
        <x>10</x>

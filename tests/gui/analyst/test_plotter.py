@@ -89,7 +89,7 @@ def analyst_plotter_context(caver_worker, test_data_dir) -> PlotterTestContext:
     snapshot_path = caver_worker.capture_gui_snapshot("analyst_plotter_ready.png")
     assert snapshot_path.is_file()
 
-    analysis_ui.pushButton_applyTunnelsSpectrumStatic.click()
+    analysis_ui.pushButton_runTunnelsSpectrum.click()
     caver_worker.process_events()
     assert plugin.analyst is not None
     assert plugin.analyst_plotter is not None
