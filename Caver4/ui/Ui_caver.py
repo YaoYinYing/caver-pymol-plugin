@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file '/Users/yyy/Documents/protein_design/caver-pymol-plugin/Caver4/ui/caver.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_CaverUI:
+class Ui_CaverUI(object):
     def setupUi(self, CaverUI):
         CaverUI.setObjectName("CaverUI")
         CaverUI.resize(540, 550)
@@ -271,9 +273,10 @@ class Ui_CaverUI:
         self.spinBox_MD_StateMax.setProperty("value", 0)
         self.spinBox_MD_StateMax.setObjectName("spinBox_MD_StateMax")
         self.horizontalLayout_24.addWidget(self.spinBox_MD_StateMax)
-        self.checkBox_reduceMD_Input = QtWidgets.QCheckBox(self.layoutWidget1)
-        self.checkBox_reduceMD_Input.setObjectName("checkBox_reduceMD_Input")
-        self.horizontalLayout_24.addWidget(self.checkBox_reduceMD_Input)
+        self.checkBox_pruneMD_Input = QtWidgets.QCheckBox(self.layoutWidget1)
+        self.checkBox_pruneMD_Input.setChecked(True)
+        self.checkBox_pruneMD_Input.setObjectName("checkBox_pruneMD_Input")
+        self.horizontalLayout_24.addWidget(self.checkBox_pruneMD_Input)
         self.horizontalLayout_8.addLayout(self.horizontalLayout_24)
         self.verticalLayoutWidget_5 = QtWidgets.QWidget(CaverUI)
         self.verticalLayoutWidget_5.setGeometry(QtCore.QRect(340, 400, 191, 121))
@@ -389,7 +392,7 @@ class Ui_CaverUI:
         self.tab_refine = QtWidgets.QWidget()
         self.tab_refine.setObjectName("tab_refine")
         self.verticalLayoutWidget_3 = QtWidgets.QWidget(self.tab_refine)
-        self.verticalLayoutWidget_3.setGeometry(QtCore.QRect(0, -1, 311, 81))
+        self.verticalLayoutWidget_3.setGeometry(QtCore.QRect(0, -1, 341, 81))
         self.verticalLayoutWidget_3.setObjectName("verticalLayoutWidget_3")
         self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_3)
         self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
@@ -504,11 +507,11 @@ class Ui_CaverUI:
 
         self.retranslateUi(CaverUI)
         self.tabWidget.setCurrentIndex(0)
-        self.checkBox_EnablePlayBack.toggled["bool"].connect(self.pushButton_RefreshRunID.setEnabled)  # type: ignore
-        self.checkBox_EnablePlayBack.toggled["bool"].connect(self.pushButton_LoadRunID.setEnabled)  # type: ignore
-        self.checkBox_MD.toggled["bool"].connect(self.spinBox_MD_StateMin.setEnabled)  # type: ignore
-        self.checkBox_MD.toggled["bool"].connect(self.spinBox_MD_StateMax.setEnabled)  # type: ignore
-        self.checkBox_EnablePlayBack.toggled["bool"].connect(self.checkBox_playback_reinit.setEnabled)  # type: ignore
+        self.checkBox_EnablePlayBack.toggled['bool'].connect(self.pushButton_RefreshRunID.setEnabled) # type: ignore
+        self.checkBox_EnablePlayBack.toggled['bool'].connect(self.pushButton_LoadRunID.setEnabled) # type: ignore
+        self.checkBox_MD.toggled['bool'].connect(self.spinBox_MD_StateMin.setEnabled) # type: ignore
+        self.checkBox_MD.toggled['bool'].connect(self.spinBox_MD_StateMax.setEnabled) # type: ignore
+        self.checkBox_EnablePlayBack.toggled['bool'].connect(self.checkBox_playback_reinit.setEnabled) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(CaverUI)
 
     def retranslateUi(self, CaverUI):
@@ -520,16 +523,12 @@ class Ui_CaverUI:
         self.pushButton_editConfig.setText(_translate("CaverUI", "Edit"))
         self.pushButton_loadConfig.setToolTip(_translate("CaverUI", "Load configuration from a TXT or JSON file."))
         self.pushButton_loadConfig.setText(_translate("CaverUI", "Load"))
-        self.pushButton_saveConfig.setToolTip(
-            _translate("CaverUI", "Save current configuration to a TXT or JSON file.")
-        )
+        self.pushButton_saveConfig.setToolTip(_translate("CaverUI", "Save current configuration to a TXT or JSON file."))
         self.pushButton_saveConfig.setText(_translate("CaverUI", "Save"))
         self.groupBox_2.setTitle(_translate("CaverUI", "Toggles"))
         self.label_8.setText(_translate("CaverUI", "Output to:"))
         self.lineEdit_outputDir.setToolTip(_translate("CaverUI", "Output directory for saving all results"))
-        self.lineEdit_outputDir.setPlaceholderText(
-            _translate("CaverUI", "Please set an output directory before using Caver.")
-        )
+        self.lineEdit_outputDir.setPlaceholderText(_translate("CaverUI", "Please set an output directory before using Caver."))
         self.pushButton_openOutputDir.setToolTip(_translate("CaverUI", "Pick an output directory."))
         self.pushButton_openOutputDir.setText(_translate("CaverUI", "..."))
         self.groupBox_3.setTitle(_translate("CaverUI", "Input Model"))
@@ -537,12 +536,7 @@ class Ui_CaverUI:
         self.pushButton_reloadInputModel.setToolTip(_translate("CaverUI", "Reload PyMOL model objects"))
         self.pushButton_reloadInputModel.setText(_translate("CaverUI", "Reload"))
         self.groupBox_5.setTitle(_translate("CaverUI", "Customized Residue Type"))
-        self.listView_residueType.setToolTip(
-            _translate(
-                "CaverUI",
-                "Residue names that takes into account. Protein residues is the default. Unselected residues will be ignored.",
-            )
-        )
+        self.listView_residueType.setToolTip(_translate("CaverUI", "Residue names that takes into account. Protein residues is the default. Unselected residues will be ignored."))
         self.pushButton_allAA.setToolTip(_translate("CaverUI", "Select all of them."))
         self.pushButton_allAA.setText(_translate("CaverUI", "All"))
         self.pushButton_noneAA.setToolTip(_translate("CaverUI", "Select non of them."))
@@ -555,19 +549,12 @@ class Ui_CaverUI:
         self.pushButton_ligandResn.setText(_translate("CaverUI", "Ligand"))
         self.groupBox_6.setToolTip(_translate("CaverUI", "Reload historical analysis results."))
         self.groupBox_6.setTitle(_translate("CaverUI", "Results Play Back"))
-        self.checkBox_EnablePlayBack.setToolTip(
-            _translate("CaverUI", "Enable result play backs for historical analyses.")
-        )
+        self.checkBox_EnablePlayBack.setToolTip(_translate("CaverUI", "Enable result play backs for historical analyses."))
         self.checkBox_EnablePlayBack.setText(_translate("CaverUI", "Enabled:"))
         self.comboBox_RunID.setToolTip(_translate("CaverUI", "Run ID that under the outputs."))
         self.pushButton_RefreshRunID.setToolTip(_translate("CaverUI", "Refresh the Run IDs"))
         self.pushButton_RefreshRunID.setText(_translate("CaverUI", "Refresh"))
-        self.checkBox_playback_reinit.setToolTip(
-            _translate(
-                "CaverUI",
-                "Reinitialize the session and load the complete results, including PDB structures and tunnels. This may discard any unsaved works.",
-            )
-        )
+        self.checkBox_playback_reinit.setToolTip(_translate("CaverUI", "Reinitialize the session and load the complete results, including PDB structures and tunnels. This may discard any unsaved works."))
         self.checkBox_playback_reinit.setText(_translate("CaverUI", "Reinitialize session"))
         self.pushButton_LoadRunID.setToolTip(_translate("CaverUI", "Load selected Run ID into PyMOL session."))
         self.pushButton_LoadRunID.setText(_translate("CaverUI", "Load"))
@@ -577,7 +564,8 @@ class Ui_CaverUI:
         self.spinBox_MD_StateMin.setToolTip(_translate("CaverUI", "Start state number"))
         self.label.setText(_translate("CaverUI", "-"))
         self.spinBox_MD_StateMax.setToolTip(_translate("CaverUI", "End state number."))
-        self.checkBox_reduceMD_Input.setText(_translate("CaverUI", "Reduce"))
+        self.checkBox_pruneMD_Input.setToolTip(_translate("CaverUI", "Delete <run-id>/input to save disk space."))
+        self.checkBox_pruneMD_Input.setText(_translate("CaverUI", "Prune"))
         self.pushButton_compute.setToolTip(_translate("CaverUI", "Run the analysis"))
         self.pushButton_compute.setText(_translate("CaverUI", "Run"))
         self.pushButton_analysis.setToolTip(_translate("CaverUI", "Open advanced result analysis window."))
@@ -590,15 +578,11 @@ class Ui_CaverUI:
         self.pushButton_cite.setText(_translate("CaverUI", "Cite"))
         self.pushButton_help.setToolTip(_translate("CaverUI", "Help from the official website"))
         self.pushButton_help.setText(_translate("CaverUI", "Help"))
-        self.tab_coordinates.setToolTip(
-            _translate("CaverUI", "Use PyMOL selection to create starting point coordinates.")
-        )
+        self.tab_coordinates.setToolTip(_translate("CaverUI", "Use PyMOL selection to create starting point coordinates."))
         self.label_9.setText(_translate("CaverUI", "Selection: "))
         self.pushButton_RefreshSelection.setToolTip(_translate("CaverUI", "Refresh the selection list"))
         self.pushButton_RefreshSelection.setText(_translate("CaverUI", "Refresh"))
-        self.pushButton_convertStartPointSele.setToolTip(
-            _translate("CaverUI", "Convert selection into xyz-coordinates.")
-        )
+        self.pushButton_convertStartPointSele.setToolTip(_translate("CaverUI", "Convert selection into xyz-coordinates."))
         self.pushButton_convertStartPointSele.setText(_translate("CaverUI", "Convert"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_coordinates), _translate("CaverUI", "Select"))
         self.tab_refine.setToolTip(_translate("CaverUI", "Refine coordinates from PyMOL selection."))
@@ -607,17 +591,10 @@ class Ui_CaverUI:
         self.label_22.setText(_translate("CaverUI", "y="))
         self.label_23.setText(_translate("CaverUI", ","))
         self.label_24.setText(_translate("CaverUI", "z="))
-        self.pushButton_clearStartPointSele.setToolTip(
-            _translate("CaverUI", "If you wish to use Custom input, clear the selections.")
-        )
+        self.pushButton_clearStartPointSele.setToolTip(_translate("CaverUI", "If you wish to use Custom input, clear the selections."))
         self.pushButton_clearStartPointSele.setText(_translate("CaverUI", " Clear"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_refine), _translate("CaverUI", "Refine"))
-        self.tab_atoms.setToolTip(
-            _translate(
-                "CaverUI",
-                "Input custom starting point settings. Atoms for atom ids, Residues for residue ids, coordinates for xyz coordinates. For Residues, please check the chain IDs of input model.",
-            )
-        )
+        self.tab_atoms.setToolTip(_translate("CaverUI", "Input custom starting point settings. Atoms for atom ids, Residues for residue ids, coordinates for xyz coordinates. For Residues, please check the chain IDs of input model."))
         self.radioButton_startAsCoords.setToolTip(_translate("CaverUI", "Corresponding to starting_point_coordinates"))
         self.radioButton_startAsCoords.setText(_translate("CaverUI", "Coordinates"))
         self.radioButton_startAsAtoms.setToolTip(_translate("CaverUI", "Corresponding to starting_point_atom"))

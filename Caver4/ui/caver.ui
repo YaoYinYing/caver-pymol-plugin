@@ -588,9 +588,15 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_reduceMD_Input">
+        <widget class="QCheckBox" name="checkBox_pruneMD_Input">
+         <property name="toolTip">
+          <string>Delete &lt;run-id&gt;/input to save disk space.</string>
+         </property>
          <property name="text">
-          <string>Reduce</string>
+          <string>Prune</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -829,7 +835,7 @@
       <rect>
        <x>0</x>
        <y>-1</y>
-       <width>311</width>
+       <width>341</width>
        <height>81</height>
       </rect>
      </property>

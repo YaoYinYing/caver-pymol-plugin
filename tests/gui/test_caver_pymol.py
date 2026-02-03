@@ -28,27 +28,27 @@ def test_static_analysis_workflow(caver_worker) -> None:
     assert static_scene.is_file(), "PyMOL scene for static run was not captured"
 
 
-# def test_dynamic_analysis_workflow(caver_worker) -> None:
-#     """
-#     Execute the dynamic MD workflow and ensure expected caches are generated.
-#     """
-#     run_dir = caver_worker.run_dynamic_analysis()
+def test_dynamic_analysis_workflow(caver_worker) -> None:
+    """
+    Execute the dynamic MD workflow and ensure expected caches are generated.
+    """
+    run_dir = caver_worker.run_dynamic_analysis()
 
-#     assert run_dir.exists(), "Dynamic analysis did not create an output directory"
-#     md_state_file = run_dir / "md_state_number.txt"
-#     assert md_state_file.is_file(), "MD state tracking file missing"
-#     contents = md_state_file.read_text().strip().splitlines()
-#     min_state, max_state = caver_worker.MD_STATE_RANGE
-#     assert (min_state, max_state) == (1, 5), "Dynamic tests should cover MD states 1-5"
-#     assert contents[0] == str(min_state) and contents[-1] == str(max_state)
+    assert run_dir.exists(), "Dynamic analysis did not create an output directory"
+    md_state_file = run_dir / "md_state_number.txt"
+    assert md_state_file.is_file(), "MD state tracking file missing"
+    contents = md_state_file.read_text().strip().splitlines()
+    min_state, max_state = caver_worker.MD_STATE_RANGE
+    assert (min_state, max_state) == (1, 5), "Dynamic tests should cover MD states 1-5"
+    assert contents[0] == str(min_state) and contents[-1] == str(max_state)
 
-#     input_pdbs = list(run_dir.joinpath("input").glob("*.pdb"))
-#     assert input_pdbs, "MD frames were not exported as PDBs"
+    input_pdbs = list(run_dir.joinpath("input").glob("*.pdb"))
+    assert input_pdbs, "MD frames were not exported as PDBs"
 
-#     assert caver_worker.plugin.ui.checkBox_MD.isChecked()
-#     assert caver_worker.plugin.config.get("starting_point_atom") == caver_worker.DYNAMIC_ATOMS
+    assert caver_worker.plugin.ui.checkBox_MD.isChecked()
+    assert caver_worker.plugin.config.get("starting_point_atom") == caver_worker.DYNAMIC_ATOMS
 
-#     dynamic_ui = caver_worker.snapshot_dir / "dynamic_analysis_ui.png"
-#     dynamic_scene = caver_worker.pymol_image_dir / "dynamic_analysis_scene.png"
-#     assert dynamic_ui.is_file(), "UI snapshot for MD run missing"
-#     assert dynamic_scene.is_file(), "PyMOL scene for MD run missing"
+    dynamic_ui = caver_worker.snapshot_dir / "dynamic_analysis_ui.png"
+    dynamic_scene = caver_worker.pymol_image_dir / "dynamic_analysis_scene.png"
+    assert dynamic_ui.is_file(), "UI snapshot for MD run missing"
+    assert dynamic_scene.is_file(), "PyMOL scene for MD run missing"

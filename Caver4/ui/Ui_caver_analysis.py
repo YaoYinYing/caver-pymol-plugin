@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file '/Users/yyy/Documents/protein_design/caver-pymol-plugin/Caver4/ui/caver_analysis.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_CaverAnalyst:
+class Ui_CaverAnalyst(object):
     def setupUi(self, CaverAnalyst):
         CaverAnalyst.setObjectName("CaverAnalyst")
         CaverAnalyst.resize(636, 350)
@@ -159,14 +161,22 @@ class Ui_CaverAnalyst:
         self.verticalLayout.addLayout(self.horizontalLayout_10)
         self.horizontalLayout_12 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_12.setObjectName("horizontalLayout_12")
-        self.pushButton_applyTunnelsSpectrumStatic = QtWidgets.QPushButton(self.layoutWidget)
+        self.pushButton_runTunnelsSpectrum = QtWidgets.QPushButton(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_applyTunnelsSpectrumStatic.sizePolicy().hasHeightForWidth())
-        self.pushButton_applyTunnelsSpectrumStatic.setSizePolicy(sizePolicy)
-        self.pushButton_applyTunnelsSpectrumStatic.setObjectName("pushButton_applyTunnelsSpectrumStatic")
-        self.horizontalLayout_12.addWidget(self.pushButton_applyTunnelsSpectrumStatic)
+        sizePolicy.setHeightForWidth(self.pushButton_runTunnelsSpectrum.sizePolicy().hasHeightForWidth())
+        self.pushButton_runTunnelsSpectrum.setSizePolicy(sizePolicy)
+        self.pushButton_runTunnelsSpectrum.setObjectName("pushButton_runTunnelsSpectrum")
+        self.horizontalLayout_12.addWidget(self.pushButton_runTunnelsSpectrum)
+        self.pushButton_renderTunnelsSpectrum = QtWidgets.QPushButton(self.layoutWidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_renderTunnelsSpectrum.sizePolicy().hasHeightForWidth())
+        self.pushButton_renderTunnelsSpectrum.setSizePolicy(sizePolicy)
+        self.pushButton_renderTunnelsSpectrum.setObjectName("pushButton_renderTunnelsSpectrum")
+        self.horizontalLayout_12.addWidget(self.pushButton_renderTunnelsSpectrum)
         self.pushButton_clearTunnelsSpectrumStatic = QtWidgets.QPushButton(self.layoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -177,10 +187,10 @@ class Ui_CaverAnalyst:
         self.horizontalLayout_12.addWidget(self.pushButton_clearTunnelsSpectrumStatic)
         self.verticalLayout.addLayout(self.horizontalLayout_12)
         self.horizontalLayout_15.addLayout(self.verticalLayout)
-        self.groupBox_3 = QtWidgets.QGroupBox(self.tabTimeline)
-        self.groupBox_3.setGeometry(QtCore.QRect(10, 160, 591, 131))
-        self.groupBox_3.setObjectName("groupBox_3")
-        self.layoutWidget1 = QtWidgets.QWidget(self.groupBox_3)
+        self.groupBox_previewTunnelSlider = QtWidgets.QGroupBox(self.tabTimeline)
+        self.groupBox_previewTunnelSlider.setGeometry(QtCore.QRect(10, 160, 591, 131))
+        self.groupBox_previewTunnelSlider.setObjectName("groupBox_previewTunnelSlider")
+        self.layoutWidget1 = QtWidgets.QWidget(self.groupBox_previewTunnelSlider)
         self.layoutWidget1.setGeometry(QtCore.QRect(10, 30, 575, 91))
         self.layoutWidget1.setObjectName("layoutWidget1")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.layoutWidget1)
@@ -490,11 +500,11 @@ class Ui_CaverAnalyst:
         self.lineEdit_XaxisLabel.setObjectName("lineEdit_XaxisLabel")
         self.gridLayout_3.addWidget(self.lineEdit_XaxisLabel, 2, 1, 1, 1)
         self.label_20 = QtWidgets.QLabel(self.layoutWidget_2)
-        self.label_20.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+        self.label_20.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.label_20.setObjectName("label_20")
         self.gridLayout_3.addWidget(self.label_20, 2, 0, 1, 1)
         self.label_19 = QtWidgets.QLabel(self.layoutWidget_2)
-        self.label_19.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+        self.label_19.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.label_19.setObjectName("label_19")
         self.gridLayout_3.addWidget(self.label_19, 1, 0, 1, 1)
         self.lineEdit_XaxisFormula = QtWidgets.QLineEdit(self.layoutWidget_2)
@@ -518,7 +528,7 @@ class Ui_CaverAnalyst:
         self.label_16.setObjectName("label_16")
         self.gridLayout_3.addWidget(self.label_16, 0, 1, 1, 1)
         self.label_21 = QtWidgets.QLabel(self.layoutWidget_2)
-        self.label_21.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+        self.label_21.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.label_21.setObjectName("label_21")
         self.gridLayout_3.addWidget(self.label_21, 3, 0, 1, 1)
         self.lineEdit_XaxisRange = QtWidgets.QLineEdit(self.layoutWidget_2)
@@ -590,19 +600,14 @@ class Ui_CaverAnalyst:
         self.label_5.setText(_translate("CaverAnalyst", "Repre.:"))
         self.label_7.setToolTip(_translate("CaverAnalyst", "What to run spectrum against "))
         self.label_7.setText(_translate("CaverAnalyst", "Spect.:"))
-        self.comboBox_spectrumBy.setToolTip(
-            _translate(
-                "CaverAnalyst",
-                "<html><head/><body><p>This input box gives 3 options to render the tunnels.</p><p><br/>1. use normal spectrum mode by setting to 'b' or 'vdw' to visualize the tunnel according to diameters</p><p>2. use an existing ramp object to run the coloring. e.g.: '<span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#4ec9b0;\">cmd</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">.</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#dcdcaa;\">create</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">(</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;\">'startpoint'</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;\">'sele'</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">);</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#4ec9b0;\">cmd</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">.</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#dcdcaa;\">ramp_new</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">(</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;\">'r'</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;\">'startpoint'</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">, [</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#b5cea8;\">0</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#b5cea8;\">10</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">], </span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;\">'rainbow'</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">)</span>'.</p><p>3. use a startpoint object as the proximity starting point. e.g.: '<span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#4ec9b0;\">cmd</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">.</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#dcdcaa;\">create</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">(</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;\">'startpoint'</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#ce9178;\">'sele'</span><span style=\" font-family:'Menlo','Monaco','Courier New','monospace'; font-size:12px; color:#d4d4d4;\">)</span>'</p></body></html>",
-            )
-        )
-        self.pushButton_applyTunnelsSpectrumStatic.setToolTip(
-            _translate("CaverAnalyst", "Run per tunnel-cluster analysis")
-        )
-        self.pushButton_applyTunnelsSpectrumStatic.setText(_translate("CaverAnalyst", "Apply"))
+        self.comboBox_spectrumBy.setToolTip(_translate("CaverAnalyst", "<html><head/><body><p>This input box gives 3 options to render the tunnels.</p><p><br/>1. use normal spectrum mode by setting to \'b\' or \'vdw\' to visualize the tunnel according to diameters</p><p>2. use an existing ramp object to run the coloring. e.g.: \'<span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#4ec9b0;\">cmd</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">.</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#dcdcaa;\">create</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">(</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#ce9178;\">\'startpoint\'</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#ce9178;\">\'sele\'</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">);</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#4ec9b0;\">cmd</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">.</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#dcdcaa;\">ramp_new</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">(</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#ce9178;\">\'r\'</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#ce9178;\">\'startpoint\'</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">, [</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#b5cea8;\">0</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#b5cea8;\">10</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">], </span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#ce9178;\">\'rainbow\'</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">)</span>\'.</p><p>3. use a startpoint object as the proximity starting point. e.g.: \'<span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#4ec9b0;\">cmd</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">.</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#dcdcaa;\">create</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">(</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#ce9178;\">\'startpoint\'</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">, </span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#ce9178;\">\'sele\'</span><span style=\" font-family:\'Menlo\',\'Monaco\',\'Courier New\',\'monospace\'; font-size:12px; color:#d4d4d4;\">)</span>\'</p></body></html>"))
+        self.pushButton_runTunnelsSpectrum.setToolTip(_translate("CaverAnalyst", "Run per tunnel-cluster analysis"))
+        self.pushButton_runTunnelsSpectrum.setText(_translate("CaverAnalyst", "1. Run"))
+        self.pushButton_renderTunnelsSpectrum.setToolTip(_translate("CaverAnalyst", "Run per tunnel-cluster analysis"))
+        self.pushButton_renderTunnelsSpectrum.setText(_translate("CaverAnalyst", "2. Render"))
         self.pushButton_clearTunnelsSpectrumStatic.setToolTip(_translate("CaverAnalyst", "Cleanup the session"))
         self.pushButton_clearTunnelsSpectrumStatic.setText(_translate("CaverAnalyst", "Clear"))
-        self.groupBox_3.setTitle(_translate("CaverAnalyst", "Preview"))
+        self.groupBox_previewTunnelSlider.setTitle(_translate("CaverAnalyst", "Preview"))
         self.pushButton_firstFrame.setToolTip(_translate("CaverAnalyst", "Jump to the first frame"))
         self.pushButton_firstFrame.setText(_translate("CaverAnalyst", "|<"))
         self.pushButton_previousFrame.setToolTip(_translate("CaverAnalyst", "Previous frame"))
@@ -621,9 +626,7 @@ class Ui_CaverAnalyst:
         self.pushButton_aboutThisFrame.setText(_translate("CaverAnalyst", "?"))
         self.pushButton_refreshTunnelPreview.setToolTip(_translate("CaverAnalyst", "Refresh from output directory."))
         self.pushButton_refreshTunnelPreview.setText(_translate("CaverAnalyst", "Refresh"))
-        self.tabWidget_analysis.setTabText(
-            self.tabWidget_analysis.indexOf(self.tabTimeline), _translate("CaverAnalyst", "Timeline")
-        )
+        self.tabWidget_analysis.setTabText(self.tabWidget_analysis.indexOf(self.tabTimeline), _translate("CaverAnalyst", "Timeline"))
         self.label_15.setText(_translate("CaverAnalyst", "Range:"))
         self.label_8.setText(_translate("CaverAnalyst", "-"))
         self.pushButton_resetPlotTunnelRange.setText(_translate("CaverAnalyst", "Reset"))
@@ -640,23 +643,13 @@ class Ui_CaverAnalyst:
         self.label_10.setText(_translate("CaverAnalyst", "DPI:"))
         self.checkBox_lockAspectRatio.setText(_translate("CaverAnalyst", "Lock aspect ratio"))
         self.label_17.setText(_translate("CaverAnalyst", "Y-axis"))
-        self.lineEdit_YaxisFormula.setToolTip(
-            _translate(
-                "CaverAnalyst",
-                "<html><head/><body><p>Formula to rescale the y-Axis.</p><p><br/></p><p>eg: '$t/10' to divide values to a constant of 10.</p><p><br/></p><p>Left empty to use the default</p></body></html>",
-            )
-        )
+        self.lineEdit_YaxisFormula.setToolTip(_translate("CaverAnalyst", "<html><head/><body><p>Formula to rescale the y-Axis.</p><p><br/></p><p>eg: \'$t/10\' to divide values to a constant of 10.</p><p><br/></p><p>Left empty to use the default</p></body></html>"))
         self.lineEdit_XaxisLabel.setToolTip(_translate("CaverAnalyst", "Label of x-axis"))
         self.lineEdit_XaxisLabel.setText(_translate("CaverAnalyst", "Time (ns)"))
         self.label_20.setText(_translate("CaverAnalyst", "Label:"))
         self.label_19.setToolTip(_translate("CaverAnalyst", "Formula to apply to the data"))
         self.label_19.setText(_translate("CaverAnalyst", "Formula:"))
-        self.lineEdit_XaxisFormula.setToolTip(
-            _translate(
-                "CaverAnalyst",
-                "<html><head/><body><p>Formula to rescale the x-Axis.</p><p><br/></p><p>eg: '$t/10' to divide values to a constant of 10.</p><p><br/></p><p>Left empty to use the default</p></body></html>",
-            )
-        )
+        self.lineEdit_XaxisFormula.setToolTip(_translate("CaverAnalyst", "<html><head/><body><p>Formula to rescale the x-Axis.</p><p><br/></p><p>eg: \'$t/10\' to divide values to a constant of 10.</p><p><br/></p><p>Left empty to use the default</p></body></html>"))
         self.lineEdit_YaxisLabel.setToolTip(_translate("CaverAnalyst", "Label of y-axis"))
         self.lineEdit_YaxisLabel.setText(_translate("CaverAnalyst", "Tunnel node"))
         self.label_16.setText(_translate("CaverAnalyst", "X-axis"))
@@ -665,6 +658,4 @@ class Ui_CaverAnalyst:
         self.lineEdit_YaxisRange.setToolTip(_translate("CaverAnalyst", "Label of x-axis"))
         self.pushButton_tunnelPlot.setToolTip(_translate("CaverAnalyst", "Plot and save figure"))
         self.pushButton_tunnelPlot.setText(_translate("CaverAnalyst", "Plot"))
-        self.tabWidget_analysis.setTabText(
-            self.tabWidget_analysis.indexOf(self.tabPlot), _translate("CaverAnalyst", "Plot")
-        )
+        self.tabWidget_analysis.setTabText(self.tabWidget_analysis.indexOf(self.tabPlot), _translate("CaverAnalyst", "Plot"))

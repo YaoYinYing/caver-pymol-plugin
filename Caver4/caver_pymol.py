@@ -38,7 +38,7 @@ ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('Caver')    
 
-VERSION = "4.1.1"
+VERSION = "4.1.2"
 
 website_url = "https://www.caver.cz/index.php?sid=123"
 
@@ -854,7 +854,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         cmd.do(runview)
         logging.info("Done.")
 
-        if get_widget_value(self.ui.checkBox_reduceMD_Input):
+        if get_widget_value(self.ui.checkBox_pruneMD_Input):
             logging.debug("Delete Input dir to save disk space.")
             shutil.rmtree(outdirInputs)
 

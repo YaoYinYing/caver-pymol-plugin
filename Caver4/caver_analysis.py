@@ -274,7 +274,7 @@ class CaverAnalyst:
         self,
         minimum: float,
         maximum: float,
-        palette: Optional[str] = "red_green",
+        palette: Optional[str] = None,
         show_as: str = "lines",
         expression: str = "vdw",
     ) -> None:
@@ -292,23 +292,31 @@ class CaverAnalyst:
         logging.info(f"Rendered tunnel {self.tunnels.name}")
 
 
+# TODO: separate analysis and rendering
+# run_analysis: triggerred by pushButton_runTunnelsSpectrum
+# render_analysis: triggerred by pushButton_renderTunnelsSpectrum
+# drop uses of pushButton_applyTunnelsSpectrumStatic
+# button enabled status update: if analyst obj is not ready, disable pushButton_renderTunnelsSpectrum and pushButton_clearTunnelsSpectrumStatic
+# if not rendered, disable groupBox_previewTunnelSlider
 def run_analysis(form: CaverAnalysisForm, run_id: Union[str, int], res_dir: str) -> CaverAnalyst:
     palette = get_widget_value(form.comboBox_spectrumPalette)
     run_id = int(run_id)
     tunnel_id = int(get_widget_value(form.comboBox_tunnel))
+    
+    analyst = CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
+    
+    return analyst
+
+def render_analysis(form: CaverAnalysisForm,analyst: CaverAnalyst):
     spectrum_min = get_widget_value(form.doubleSpinBox_spectrumMin)
     spectrum_max = get_widget_value(form.doubleSpinBox_spectrumMax)
 
     spectrum_expression = get_widget_value(form.comboBox_spectrumBy) or "vdw"
 
     repre = get_widget_value(form.comboBox_representation)
-
-    analyst = CaverAnalyst(res_dir=res_dir, run_id=run_id, tunnel_id=tunnel_id, palette=palette)
     analyst.render(
-        minimum=spectrum_min, maximum=spectrum_max, palette=palette, show_as=repre, expression=spectrum_expression
+        minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression
     )
-
-    return analyst
 
 
 class CaverAnalystPreviewer:
