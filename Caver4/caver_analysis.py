@@ -313,7 +313,9 @@ def render_analysis(form: CaverAnalysisForm, analyst: CaverAnalyst):
     spectrum_expression = get_widget_value(form.comboBox_spectrumBy) or "vdw"
 
     repre = get_widget_value(form.comboBox_representation)
-    analyst.render(minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression, palette=palette)
+    analyst.render(
+        minimum=spectrum_min, maximum=spectrum_max, show_as=repre, expression=spectrum_expression, palette=palette
+    )
 
 
 class CaverAnalystPreviewer:

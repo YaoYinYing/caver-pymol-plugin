@@ -862,7 +862,11 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         # otherwise, save the MD trajectory
         else:
-            self.prepare_md_pdb_traj(selected_model, outdirInputs)
+            with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
+                self.prepare_md_pdb_traj(selected_model, outdirInputs)
+            # trim the MD trajectory to save memory for caver
+            if self.ui.checkBox_trimMD_InputSession.isChecked():
+                cmd.reinitialize()
 
         # Get the path to the Caver JAR file
         caverjar = os.path.join(THIS_DIR, "caver.jar")
