@@ -331,10 +331,12 @@ class CaverPyMOL(QtWidgets.QWidget):
                 self.ui_analyst.pushButton_renderTunnelsSpectrum
             ):
                 try:
-                    render_analysis(
+                    run_worker_thread_with_progress(
+                        worker_function=render_analysis,
                         form=self.ui_analyst,
                         analyst=self.analyst,
                     )
+                    
                 except Exception as exc:
                     logging.error(f"Failed to render tunnel spectrum: {exc}")
                     notify_box("Failed to render tunnel spectrum.", RuntimeError, details=str(exc))
