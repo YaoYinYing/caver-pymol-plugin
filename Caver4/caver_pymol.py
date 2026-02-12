@@ -348,7 +348,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             _update_analysis_control_states()
 
             # restore view
-            cmd.set_view(view)
+            cmd.set_view(view, animate=1)
 
         def _run_analysis_preview():
             if not self.analyst:

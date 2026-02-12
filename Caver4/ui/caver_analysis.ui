@@ -608,6 +608,9 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QSpinBox" name="spinBox_tunnelPreviewer"/>
+         </item>
         </layout>
        </item>
       </layout>

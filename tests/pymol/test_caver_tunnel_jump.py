@@ -70,7 +70,7 @@ def test_caver_tunnel_jump_requires_previewer(caver_worker, notify_box_spy):
     plugin.analyst_previewer = None
 
     with pytest.raises(RuntimeError, match="Run tunnel preview before using caver_tunnel_jump."):
-        caver_worker.cmd.caver_tunnel_jump("2")
+        plugin._caver_tunnel_jump("2")
 
 
 def test_caver_tunnel_jump_moves_preview_slider(tunnel_jump_context):
@@ -84,12 +84,12 @@ def test_caver_tunnel_jump_moves_preview_slider(tunnel_jump_context):
         pytest.skip("Preview dataset only contains a single frame.")
     step = min(5, max_offset)
 
-    ctx.worker.cmd.caver_tunnel_jump(str(step))
+    ctx.worker.plugin._caver_tunnel_jump(str(step))
     ctx.worker.process_events()
     assert previewer._current_frame_id == start_frame + step
     assert slider.value() == previewer._current_frame_id
 
-    ctx.worker.cmd.caver_tunnel_jump(str(-step))
+    ctx.worker.plugin._caver_tunnel_jump(str(-step))
     ctx.worker.process_events()
     assert previewer._current_frame_id == start_frame
     assert slider.value() == start_frame

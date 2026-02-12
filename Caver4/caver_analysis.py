@@ -393,6 +393,10 @@ class CaverAnalystPreviewer:
         if not self._is_autoplay_running():
             self._update_button_status()
 
+    # TODO: a spinBox_tunnelPreviewer has been added next to the slider. 
+    # functions:
+    # 1. show which frame id is currently shown
+    # 2. allow user to jump to a specific frame id by setting the value of the spinBox
     def _update_index_to_slider(self):
 
         self.slider.setValue(self._current_frame_id)
