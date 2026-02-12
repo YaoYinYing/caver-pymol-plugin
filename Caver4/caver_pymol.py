@@ -38,7 +38,7 @@ ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('Caver')    
 
-VERSION = "4.1.2"
+VERSION = "4.1.3"
 
 website_url = "https://www.caver.cz/index.php?sid=123"
 
@@ -368,6 +368,8 @@ class CaverPyMOL(QtWidgets.QWidget):
             self.ui_analyst.pushButton_previousFrame.clicked.connect(self.analyst_previewer.backward)
             logging.debug("Analyst previewer initialized")
             _update_analysis_control_states()
+
+        
 
         def _cleanup_analysis_preview():
             logging.debug("Cleaning up analyst previewer")
