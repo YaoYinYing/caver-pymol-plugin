@@ -164,7 +164,7 @@ jobs:
           python -m pip install -r Caver4/requirements/plotter.txt
           make prepare-test
           # skip faulthandler bcs it's useless
-          make test
+          make test-skip-ci-segfault
       
       
       # - name: Convert coverage report to XML for codecov

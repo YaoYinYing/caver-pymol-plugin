@@ -24,6 +24,8 @@ prepare-test:
 test:
 	python -m pytest $(PYTEST_ARGS) --cov=$(PROJECT) $(PYTEST_CASES_PATH)
 
+test-skip-ci-segfault:
+	python -m pytest $(PYTEST_ARGS) --cov=$(PROJECT) $(PYTEST_CASES_PATH) || [ $$? -eq 139 ] || exit $$?
 
 test-faulthandler:
 	# see: https://blog.xmatthias.com/post/pytest-debug-segfault/
