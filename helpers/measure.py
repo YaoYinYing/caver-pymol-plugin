@@ -20,17 +20,18 @@ Github Copilot was prompted to generate all the contents below based on the code
 
 # Usage:
 1. run this script in pymol console: `run /path/to/measure.py`
-2. optionally set a start number : `start=10`
-3. call the extended command: `read_measurement`
+2. call the extended command: `read_measurement [start,[debug]]`
+"""
 
 # TODO:
-1. refactor the code to make it more readable and maintainable, simple and clean
-2. read non-distance measurements
-3. Tests and cases.
-"""
+# 1. refactor the code to make it more readable and maintainable, simple and clean
+# 2. read non-distance measurements
+# 3. Tests and cases.
+# 4. add regex measurement object name filter: `read_measurement  <filter-string>,[start,[debug]]`, default is '(all)'
+
 
 """
-# Code for Gromax indexing system
+# Code for Gromacs indexing system
 
   0 System              : 113812 atoms
   1 Protein             :  8773 atoms
