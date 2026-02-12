@@ -369,7 +369,18 @@ class CaverPyMOL(QtWidgets.QWidget):
             logging.debug("Analyst previewer initialized")
             _update_analysis_control_states()
 
-        # TODO: pymol command extend: caver_tunnel_jump <int> to operate analyst_previewer.jump. guard analyst not initialized error
+        # TODO: create test case under `tests/pymol/test_caver_tunnel_jump.py`
+        # use exist test worker and test data
+        def _caver_tunnel_jump(step="0"):
+            previewer = self.analyst_previewer
+            if not previewer:
+                notify_box("Run tunnel preview before using caver_tunnel_jump.", RuntimeError)
+                return
+            try:
+                previewer.jump(int(step))
+            except Exception as exc:
+                logging.error(f"Failed to jump tunnel frame: {exc}")
+                notify_box("Unable to jump tunnel frame.", RuntimeError, details=str(exc))
 
         def _cleanup_analysis_preview():
             logging.debug("Cleaning up analyst previewer")
@@ -602,6 +613,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         self.ui_analyst.pushButton_aboutThisFrame.clicked.connect(_about_this_frame)
 
         # register as a pymol command
+        cmd.extend("caver_tunnel_jump", _caver_tunnel_jump)
         cmd.extend("caver_set", self.caver_set)
 
         # autocompletion for key
