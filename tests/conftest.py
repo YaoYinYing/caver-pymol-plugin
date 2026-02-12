@@ -161,6 +161,7 @@ class CaverPluginWorker:
         Reset PyMOL, clear input widgets, and bring the plugin back to a neutral state.
         """
         self.cmd.reinitialize()
+        self.plugin.register_pymol_commands()
         self.plugin._clear_pymol_sel_and_coords()
         self._clear_custom_startpoint()
         self.plugin.ui.checkBox_MD.setChecked(False)
