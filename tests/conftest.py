@@ -161,6 +161,7 @@ class CaverPluginWorker:
         Reset PyMOL, clear input widgets, and bring the plugin back to a neutral state.
         """
         self.cmd.reinitialize()
+        self.plugin.register_pymol_commands()
         self.plugin._clear_pymol_sel_and_coords()
         self._clear_custom_startpoint()
         self.plugin.ui.checkBox_MD.setChecked(False)
@@ -266,6 +267,29 @@ class CaverPluginWorker:
         """
         self.cmd.reinitialize()
         self.process_events()
+
+    # At the end of tests/conftest.py
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_pymol():
+    """Ensure PyMOL is properly shut down to prevent segfaults on teardown."""
+    yield
+    
+    # Cleanup after all tests
+    try:
+        import pymol
+        pymol.finish()  # Proper PyMOL shutdown
+    except Exception:
+        pass
+    
+    try:
+        # Force PyQt cleanup
+        from PyQt5.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app:
+            app.quit()
+    except Exception:
+        pass
 
 
 @pytest.fixture

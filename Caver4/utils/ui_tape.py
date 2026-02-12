@@ -611,6 +611,7 @@ class WorkerThread(QtCore.QThread):
         self.args = args or ()
         self.kwargs = kwargs or {}
         self.results = None  # Define the results attribute
+        self.exception: BaseException | None = None
 
     def run(self):
         """
@@ -631,14 +632,22 @@ class WorkerThread(QtCore.QThread):
             otherwise False.
         """
         # Check if an interruption has been requested
-        if not self.isInterruptionRequested():
+        if self.isInterruptionRequested():
+            self.finished_signal.emit()
+            return
+
+        self.exception = None
+        try:
             # Execute the function with provided arguments and store the result
             self.results = [self.func(*self.args, **self.kwargs)]
 
             # Emit the result if it exists
             if self.results:
                 self.result_signal.emit(self.results)
-
+        except BaseException as exc:  # pragma: no cover - depends on worker behavior
+            self.exception = exc
+            logging.exception("WorkerThread task failed")
+        finally:
             # Emit the finished signal
             self.finished_signal.emit()
 
@@ -711,6 +720,8 @@ def run_worker_thread_with_progress(worker_function: Callable[..., Optional[R]],
 
         # Ensure Qt cleans up the native thread resources deterministically
         work_thread.wait()
+        if work_thread.exception:
+            raise work_thread.exception
         result = work_thread.handle_result()
         return result[0] if result else None
     finally:

@@ -10,7 +10,7 @@ from pymol.constants_palette import palette_dict
 
 from .caver_pymol import ROOT_LOGGER
 from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
-from .utils.ui_tape import QtCore, QtWidgets, get_widget_value, notify_box, set_widget_value
+from .utils.ui_tape import QtCore, QtWidgets, get_widget_value, notify_box, set_widget_value, refresh_window
 
 # pandas is not supposed to be installed with PyMOL
 
@@ -289,6 +289,8 @@ class CaverAnalyst:
                 palette=palette or self.palette,
                 expression=expression,
             )
+            refresh_window()
+
         logging.info(f"Rendered tunnel {self.tunnels.name}")
 
 
@@ -332,6 +334,7 @@ class CaverAnalystPreviewer:
         self.tunnel_name = analyst.tunnels.name
 
         self.slider = form.horizontalSlider
+        self.spinbox = form.spinBox_tunnelPreviewer
         self.autoplay_interval = float(get_widget_value(form.doubleSpinBox_autoPlayInterval))
 
         md_state_file = os.path.join(res_dir, str(self.run_id), "md_state_number.txt")
@@ -347,9 +350,13 @@ class CaverAnalystPreviewer:
 
     def init_slider_range(self):
         self.slider.setRange(self._min_frame_id, self._max_frame_id)
-        # only released signal is emitted when the slider is released,
-        # so we can use it to trigger the frame switch and skip the middle frames
+        self.slider.setTracking(False)
         self.slider.valueChanged.connect(self._switch_frame)
+        self.spinbox.blockSignals(True)
+        self.spinbox.setRange(self._min_frame_id, self._max_frame_id)
+        self.spinbox.setValue(self._current_frame_id)
+        self.spinbox.blockSignals(False)
+        self.spinbox.valueChanged.connect(self._spinbox_value_changed)
         self._update_button_status()
         # update the frame by the initial preview
         self._switch_frame()
@@ -383,6 +390,10 @@ class CaverAnalystPreviewer:
     def _switch_frame(self):
         # force to sync the slider index
         self._current_frame_id = get_widget_value(self.form.horizontalSlider)
+        if self.spinbox.value() != self._current_frame_id:
+            self.spinbox.blockSignals(True)
+            self.spinbox.setValue(self._current_frame_id)
+            self.spinbox.blockSignals(False)
         logging.debug(f"Switching frame to {self._current_frame_id}")
         cmd.frame(self._current_frame_id)
         # cmd.refresh()
@@ -397,6 +408,30 @@ class CaverAnalystPreviewer:
     def _update_index_to_slider(self):
 
         self.slider.setValue(self._current_frame_id)
+        if self.spinbox.value() != self._current_frame_id:
+            self.spinbox.blockSignals(True)
+            self.spinbox.setValue(self._current_frame_id)
+            self.spinbox.blockSignals(False)
+
+    def _spinbox_value_changed(self, value: int) -> None:
+        value = int(value)
+        if value == self.slider.value():
+            return
+        value = max(self._min_frame_id, min(self._max_frame_id, value))
+        self.slider.setValue(value)
+
+    def jump_to(self, frame_id: int) -> None:
+        frame_id = max(self._min_frame_id, min(self._max_frame_id, int(frame_id)))
+        if frame_id == self._current_frame_id:
+            return
+        self._current_frame_id = frame_id
+        self._update_index_to_slider()
+
+    def jump(self, steps: int) -> None:
+        steps = int(steps)
+        if not steps:
+            return
+        self.jump_to(self._current_frame_id + steps)
 
     def forward(self):
         self._current_frame_id += 1

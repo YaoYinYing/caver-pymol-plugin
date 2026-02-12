@@ -38,7 +38,7 @@ ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('Caver')    
 
-VERSION = "4.1.2"
+VERSION = "4.1.3"
 
 website_url = "https://www.caver.cz/index.php?sid=123"
 
@@ -327,6 +327,9 @@ class CaverPyMOL(QtWidgets.QWidget):
                 notify_box("Run tunnel analysis before rendering the spectrum.", Warning)
                 return
 
+            # store current view before rendering
+            view = cmd.get_view()
+
             with self.freeze_window([self.analysis_dialog]), hold_trigger_button(
                 self.ui_analyst.pushButton_renderTunnelsSpectrum
             ):
@@ -335,12 +338,16 @@ class CaverPyMOL(QtWidgets.QWidget):
                         form=self.ui_analyst,
                         analyst=self.analyst,
                     )
+
                 except Exception as exc:
                     logging.error(f"Failed to render tunnel spectrum: {exc}")
                     notify_box("Failed to render tunnel spectrum.", RuntimeError, details=str(exc))
                     return
             self._analysis_rendered = True
             _update_analysis_control_states()
+
+            # restore view
+            cmd.set_view(view, animate=1)
 
         def _run_analysis_preview():
             if not self.analyst:
@@ -597,26 +604,7 @@ class CaverPyMOL(QtWidgets.QWidget):
 
         self.ui_analyst.pushButton_aboutThisFrame.clicked.connect(_about_this_frame)
 
-        # register as a pymol command
-        cmd.extend("caver_set", self.caver_set)
-
-        # autocompletion for key
-        cmd.auto_arg[0]["caver_set"] = [
-            lambda: CaverShortcut(config=self.config, keywords=self.config.all_keys),
-            "Caver setting key",
-            ", ",
-        ]
-
-        # dynamic autocompletion for value (current)
-        cmd.auto_arg[1]["caver_set"] = [
-            lambda: Shortcut(
-                keywords=[
-                    self.config.get(self.config._complete_temp) if self.config.has(self.config._complete_temp) else " "
-                ]
-            ),
-            "Caver setting value",
-            "",
-        ]
+        self.register_pymol_commands()
 
         self.configin(CONFIG_TXT)
 
@@ -656,6 +644,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         if reinit_session:
             logging.warning(f"Reinitializing the session.")
             cmd.reinitialize()
+            self.register_pymol_commands()
             input_pdb = find_centrial_pdb(out_home=out_home, run_id=run_id)
             cmd.load(input_pdb)
 
@@ -664,6 +653,38 @@ class CaverPyMOL(QtWidgets.QWidget):
             runview = f"run {expected_view_file}"
             logging.debug(runview)
             cmd.do(runview)
+
+    def _caver_tunnel_jump(self, step: str = "0"):
+        previewer = self.analyst_previewer
+        if not previewer:
+            notify_box("Run tunnel preview before using caver_tunnel_jump.", RuntimeError)
+            return
+        try:
+            previewer.jump(int(step))
+        except Exception as exc:
+            logging.error(f"Failed to jump tunnel frame: {exc}")
+            notify_box("Unable to jump tunnel frame.", RuntimeError, details=str(exc))
+
+    def register_pymol_commands(self) -> None:
+        """
+        (Re)register custom PyMOL commands and autocompletions.
+        """
+        cmd.extend("caver_tunnel_jump", self._caver_tunnel_jump)
+        cmd.extend("caver_set", self.caver_set)
+        cmd.auto_arg[0]["caver_set"] = [
+            lambda: CaverShortcut(config=self.config, keywords=self.config.all_keys),
+            "Caver setting key",
+            ", ",
+        ]
+        cmd.auto_arg[1]["caver_set"] = [
+            lambda: Shortcut(
+                keywords=[
+                    self.config.get(self.config._complete_temp) if self.config.has(self.config._complete_temp) else " "
+                ]
+            ),
+            "Caver setting value",
+            "",
+        ]
 
     def _update_pymol_sel(self):
         selections: list[str] = cmd.get_names(type="selections")
@@ -867,6 +888,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             # trim the MD trajectory to save memory for caver
             if self.ui.checkBox_trimMD_InputSession.isChecked():
                 cmd.reinitialize()
+                self.register_pymol_commands()
 
         # Get the path to the Caver JAR file
         caverjar = os.path.join(THIS_DIR, "caver.jar")

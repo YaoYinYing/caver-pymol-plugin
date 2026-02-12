@@ -87,10 +87,14 @@ def test_previewer_navigation_and_slider(analyst_previewer_context):
     ui = ctx.analysis_ui
     previewer = ctx.previewer
     slider = ui.horizontalSlider
+    spinbox = ui.spinBox_tunnelPreviewer
 
     assert slider.minimum() == previewer._min_frame_id
     assert slider.maximum() == previewer._max_frame_id
+    assert spinbox.minimum() == previewer._min_frame_id
+    assert spinbox.maximum() == previewer._max_frame_id
     assert previewer._current_frame_id == previewer._min_frame_id
+    assert spinbox.value() == previewer._current_frame_id
     assert not ui.pushButton_firstFrame.isEnabled()
     assert not ui.pushButton_previousFrame.isEnabled()
     assert ui.pushButton_lastFrame.isEnabled()
@@ -116,12 +120,19 @@ def test_previewer_navigation_and_slider(analyst_previewer_context):
     ui.pushButton_previousFrame.click()
     ctx.worker.process_events()
     assert slider.value() == previewer._min_frame_id
+    assert spinbox.value() == previewer._current_frame_id
 
     mid_offset = min(10, previewer._max_frame_id - previewer._min_frame_id)
     mid_frame = previewer._min_frame_id + mid_offset
     slider.setValue(mid_frame)
     ctx.worker.process_events()
     assert previewer._current_frame_id == mid_frame
+    assert spinbox.value() == mid_frame
+
+    spinbox.setValue(previewer._max_frame_id)
+    ctx.worker.process_events()
+    assert slider.value() == previewer._max_frame_id
+    assert previewer._current_frame_id == previewer._max_frame_id
 
 
 def test_previewer_autoplay_about_and_reapply(analyst_previewer_context, notify_box_spy):
