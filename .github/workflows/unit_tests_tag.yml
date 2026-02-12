@@ -166,13 +166,6 @@ jobs:
           # skip faulthandler bcs it's useless
           make test
       
-      - name: Setup tmate session
-        # debug via ssh, only one session should be enabled
-        if: ${{ failure() && matrix.python-version == '3.11' && matrix.java == '21' }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
-        with:
-          detached: true
       
       # - name: Convert coverage report to XML for codecov
       #   run: |
