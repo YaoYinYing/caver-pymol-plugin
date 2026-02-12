@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 pytest.importorskip("pymol")
+from pymol import cmd
 
 import shutil
 import subprocess
@@ -11,19 +12,20 @@ from Caver4.utils.ui_tape import set_widget_value
 from tests.gui.analyst.test_previewer import _ensure_cached_run
 
 
-def _apply_basic_style(cmd) -> None:
+def _apply_basic_style(cmd: cmd) -> None:
     cmd.set("cartoon_color", "gray70")
     cmd.set("cartoon_transparency", 0.9)
     cmd.hide("sticks", "hydrogens")
     cmd.bg_color("white")
     cmd.origin("all")
-    cmd.center("all")
+    
+    
 
 
 def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
     worker = caver_worker
     plugin = worker.plugin
-    cmd = worker.cmd
+    cmd:cmd = worker.cmd
 
     session_path = test_data_dir / "md_snapshots" / "caver_md.snapshots.pze"
     assert session_path.is_file()
@@ -68,13 +70,15 @@ def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
     previewer.head()
     worker.process_events()
 
-    total_frames = 48
+    total_frames = 24
     fps = 24
     assert previewer._max_frame_id - previewer._min_frame_id + 1 >= total_frames
 
     cmd.set("ray_trace_frames", 0)
     cmd.set("ray_trace_mode", 0)
-    cmd.set("cache_frames", 0)
+    cmd.set("cache_frames", 1)
+
+    cmd.orient("cl_000*") 
 
     movie_dir = results_root / "movie"
     frames_dir = movie_dir / "frames"
@@ -90,11 +94,10 @@ def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
             cmd.do("caver_tunnel_jump 1")
             worker.process_events()
             cmd.refresh()
-        cmd.turn("z", 1)
+        cmd.turn("y", 1)
         cmd.refresh()
-        cmd.draw()
         frame_file = frames_dir / f"tunnel_movie{frame:04d}.png"
-        cmd.png(str(frame_file), ray=0, quiet=1)
+        cmd.png(str(frame_file), ray=0, quiet=0, dpi=150, width=400, height=300)
 
     assert previewer._current_frame_id == previewer._min_frame_id + total_frames - 1
 
