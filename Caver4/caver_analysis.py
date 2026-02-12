@@ -10,7 +10,7 @@ from pymol.constants_palette import palette_dict
 
 from .caver_pymol import ROOT_LOGGER
 from .ui.Ui_caver_analysis import Ui_CaverAnalyst as CaverAnalysisForm
-from .utils.ui_tape import QtCore, QtWidgets, get_widget_value, notify_box, set_widget_value
+from .utils.ui_tape import QtCore, QtWidgets, get_widget_value, notify_box, set_widget_value, refresh_window
 
 # pandas is not supposed to be installed with PyMOL
 
@@ -289,6 +289,8 @@ class CaverAnalyst:
                 palette=palette or self.palette,
                 expression=expression,
             )
+            refresh_window()
+
         logging.info(f"Rendered tunnel {self.tunnels.name}")
 
 
