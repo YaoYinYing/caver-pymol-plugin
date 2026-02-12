@@ -369,7 +369,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             logging.debug("Analyst previewer initialized")
             _update_analysis_control_states()
 
-        
+        # TODO: pymol command extend: caver_tunnel_jump <int> to operate analyst_previewer.jump. guard analyst not initialized error
 
         def _cleanup_analysis_preview():
             logging.debug("Cleaning up analyst previewer")

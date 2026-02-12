@@ -398,9 +398,18 @@ class CaverAnalystPreviewer:
         self.slider.setValue(self._current_frame_id)
 
 
-    # TODO: 
-    # jump_to: jump to a specific frame (frame id)
-    # jump: jump forward(positive) or backward(negative), zero to do nothing
+    def jump_to(self, frame_id: int) -> None:
+        frame_id = max(self._min_frame_id, min(self._max_frame_id, int(frame_id)))
+        if frame_id == self._current_frame_id:
+            return
+        self._current_frame_id = frame_id
+        self._update_index_to_slider()
+
+    def jump(self, steps: int) -> None:
+        steps = int(steps)
+        if not steps:
+            return
+        self.jump_to(self._current_frame_id + steps)
 
 
     def forward(self):
