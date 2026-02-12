@@ -10,23 +10,6 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, NoReturn, Optional, TypeVar, Union, overload
 
-# PyQt-based tests on Python <=3.11 can crash at interpreter shutdown when SIP
-# tries to delete already-finalized Qt objects. Disable that teardown step before
-# any widgets are created so CI does not segfault on exit.
-try:  # pragma: no cover - depends on PyQt runtime availability
-    import sip as _sip
-except ImportError:  # pragma: no cover
-    try:
-        from PyQt5 import sip as _sip  # type: ignore[attr-defined]
-    except ImportError:
-        _sip = None  # type: ignore[assignment]
-
-if _sip is not None:  # pragma: no branch
-    try:
-        _sip.setdestroyonexit(False)
-    except AttributeError:
-        pass
-
 from ..caver_pymol import ROOT_LOGGER
 
 # the only way to import Qt from PyMOL
