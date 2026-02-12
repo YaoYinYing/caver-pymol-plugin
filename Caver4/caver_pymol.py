@@ -334,8 +334,7 @@ class CaverPyMOL(QtWidgets.QWidget):
                 self.ui_analyst.pushButton_renderTunnelsSpectrum
             ):
                 try:
-                    run_worker_thread_with_progress(
-                        worker_function=render_analysis,
+                    render_analysis(
                         form=self.ui_analyst,
                         analyst=self.analyst,
                     )
