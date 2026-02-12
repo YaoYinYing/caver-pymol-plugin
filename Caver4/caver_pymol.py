@@ -369,8 +369,6 @@ class CaverPyMOL(QtWidgets.QWidget):
             logging.debug("Analyst previewer initialized")
             _update_analysis_control_states()
 
-        # TODO: create test case under `tests/pymol/test_caver_tunnel_jump.py`
-        # use exist test worker and test data
         def _caver_tunnel_jump(step="0"):
             previewer = self.analyst_previewer
             if not previewer:
