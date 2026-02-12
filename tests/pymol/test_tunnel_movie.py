@@ -6,13 +6,13 @@ pytest.importorskip("pymol")
 import shutil
 import subprocess
 
-from pymol import cmd
+
 
 from Caver4.utils.ui_tape import set_widget_value
 from tests.gui.analyst.test_previewer import _ensure_cached_run
 
 
-def _apply_basic_style(cmd: cmd) -> None:
+def _apply_basic_style(cmd) -> None:
     cmd.set("cartoon_color", "gray70")
     cmd.set("cartoon_transparency", 0.9)
     cmd.hide("sticks", "hydrogens")
@@ -23,7 +23,7 @@ def _apply_basic_style(cmd: cmd) -> None:
 def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
     worker = caver_worker
     plugin = worker.plugin
-    cmd: cmd = worker.cmd
+    cmd = worker.cmd
 
     session_path = test_data_dir / "md_snapshots" / "caver_md.snapshots.pze"
     assert session_path.is_file()
