@@ -332,6 +332,7 @@ class CaverAnalystPreviewer:
         self.tunnel_name = analyst.tunnels.name
 
         self.slider = form.horizontalSlider
+        self.spinbox = form.spinBox_tunnelPreviewer
         self.autoplay_interval = float(get_widget_value(form.doubleSpinBox_autoPlayInterval))
 
         md_state_file = os.path.join(res_dir, str(self.run_id), "md_state_number.txt")
@@ -349,6 +350,11 @@ class CaverAnalystPreviewer:
         self.slider.setRange(self._min_frame_id, self._max_frame_id)
         self.slider.setTracking(False)
         self.slider.valueChanged.connect(self._switch_frame)
+        self.spinbox.blockSignals(True)
+        self.spinbox.setRange(self._min_frame_id, self._max_frame_id)
+        self.spinbox.setValue(self._current_frame_id)
+        self.spinbox.blockSignals(False)
+        self.spinbox.valueChanged.connect(self._spinbox_value_changed)
         self._update_button_status()
         # update the frame by the initial preview
         self._switch_frame()
@@ -382,6 +388,10 @@ class CaverAnalystPreviewer:
     def _switch_frame(self):
         # force to sync the slider index
         self._current_frame_id = get_widget_value(self.form.horizontalSlider)
+        if self.spinbox.value() != self._current_frame_id:
+            self.spinbox.blockSignals(True)
+            self.spinbox.setValue(self._current_frame_id)
+            self.spinbox.blockSignals(False)
         logging.debug(f"Switching frame to {self._current_frame_id}")
         cmd.frame(self._current_frame_id)
         # cmd.refresh()
@@ -393,13 +403,20 @@ class CaverAnalystPreviewer:
         if not self._is_autoplay_running():
             self._update_button_status()
 
-    # TODO: a spinBox_tunnelPreviewer has been added next to the slider. 
-    # functions:
-    # 1. show which frame id is currently shown
-    # 2. allow user to jump to a specific frame id by setting the value of the spinBox
     def _update_index_to_slider(self):
 
         self.slider.setValue(self._current_frame_id)
+        if self.spinbox.value() != self._current_frame_id:
+            self.spinbox.blockSignals(True)
+            self.spinbox.setValue(self._current_frame_id)
+            self.spinbox.blockSignals(False)
+
+    def _spinbox_value_changed(self, value: int) -> None:
+        value = int(value)
+        if value == self.slider.value():
+            return
+        value = max(self._min_frame_id, min(self._max_frame_id, value))
+        self.slider.setValue(value)
 
 
     def jump_to(self, frame_id: int) -> None:
