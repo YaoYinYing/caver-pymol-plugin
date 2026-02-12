@@ -230,9 +230,7 @@ class CaverPluginWorker:
             self.set_custom_startpoint(scenario.start_mode, start_value)
         snapshot_prefix = scenario.snapshot_prefix
         self.capture_gui_snapshot(f"{snapshot_prefix}_ui.png")
-        self.process_events()
         self.capture_pymol_scene(f"{snapshot_prefix}_scene.png")
-        self.process_events()
         self.plugin.execute()
         self.process_events()
         return Path(self.plugin.out_dir)
