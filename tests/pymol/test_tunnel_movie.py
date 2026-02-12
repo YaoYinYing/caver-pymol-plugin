@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import pytest
-from pymol import cmd
 
 pytest.importorskip("pymol")
+
+import shutil
+import subprocess
 
 from Caver4.utils.ui_tape import set_widget_value
 from tests.gui.analyst.test_previewer import _ensure_cached_run
 
 
-def _apply_basic_style(cmd: cmd) -> None:
+def _apply_basic_style(cmd) -> None:
     cmd.set("cartoon_color", "gray70")
     cmd.set("cartoon_transparency", 0.9)
     cmd.hide("sticks", "hydrogens")
@@ -21,7 +23,7 @@ def _apply_basic_style(cmd: cmd) -> None:
 def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
     worker = caver_worker
     plugin = worker.plugin
-    cmd: cmd = worker.cmd
+    cmd = worker.cmd
 
     session_path = test_data_dir / "md_snapshots" / "caver_md.snapshots.pze"
     assert session_path.is_file()
@@ -67,34 +69,61 @@ def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
     worker.process_events()
 
     total_frames = 48
+    fps = 24
     assert previewer._max_frame_id - previewer._min_frame_id + 1 >= total_frames
 
-    cmd.mclear()
-    cmd.mset(f"1x{total_frames}")
-    cmd.mview("clear", -1)
-    cmd.set("movie_fps", 24)
     cmd.set("ray_trace_frames", 0)
     cmd.set("ray_trace_mode", 0)
+    cmd.set("cache_frames", 0)
+
+    movie_dir = results_root / "movie"
+    frames_dir = movie_dir / "frames"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    for leftover in frames_dir.glob("*.png"):
+        leftover.unlink()
+    movie_path = movie_dir / "tunnel_movie.mp4"
+    if movie_path.exists():
+        movie_path.unlink()
 
     for frame in range(1, total_frames + 1):
-        cmd.frame(frame)
         if frame > 1:
             cmd.do("caver_tunnel_jump 1")
             worker.process_events()
-        cmd.turn("y", 1)
-        cmd.mview("store", frame)
+            cmd.refresh()
+        cmd.turn("z", 1)
+        cmd.refresh()
+        cmd.draw()
+        frame_file = frames_dir / f"tunnel_movie{frame:04d}.png"
+        cmd.png(str(frame_file), ray=0, quiet=1)
 
     assert previewer._current_frame_id == previewer._min_frame_id + total_frames - 1
 
-    movie_dir = results_root / "movie"
-    movie_dir.mkdir(parents=True, exist_ok=True)
-    for leftover in movie_dir.glob("tunnel_movie*.png"):
-        leftover.unlink()
-
-    output_prefix = movie_dir / "tunnel_movie"
-    cmd.mpng(str(output_prefix), first=1, last=total_frames, quiet=1)
-
-    frames = sorted(movie_dir.glob("tunnel_movie*.png"))
+    frames = sorted(frames_dir.glob("tunnel_movie*.png"))
     assert len(frames) == total_frames
     assert frames[0].is_file()
     assert frames[-1].is_file()
+
+    ffmpeg_bin = shutil.which("ffmpeg")
+    if not ffmpeg_bin:
+        pytest.skip("ffmpeg is required to encode MP4 output")
+
+    subprocess.run(
+        [
+            ffmpeg_bin,
+            "-y",
+            "-framerate",
+            str(fps),
+            "-i",
+            str(frames_dir / "tunnel_movie%04d.png"),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(movie_path),
+        ],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    assert movie_path.is_file()
+    assert movie_path.stat().st_size > 0

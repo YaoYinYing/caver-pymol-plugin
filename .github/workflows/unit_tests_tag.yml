@@ -125,6 +125,11 @@ jobs:
         run: |
           make setup-display-gha
 
+      - name: Install ffmpeg
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
       - name: setup Qt headless Display on Windows
         if: startsWith(matrix.os, 'windows')
