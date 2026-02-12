@@ -1,4 +1,4 @@
-'''
+"""
 # Read Measurement from a PyMOL session and print Gromacs index input strings.
 
 **Author: Yinying Yao**
@@ -27,9 +27,9 @@ Github Copilot was prompted to generate all the contents below based on the code
 1. refactor the code to make it more readable and maintainable, simple and clean
 2. read non-distance measurements
 3. Tests and cases.
-'''
+"""
 
-'''
+"""
 # Code for Gromax indexing system
 
   0 System              : 113812 atoms
@@ -63,15 +63,17 @@ Github Copilot was prompted to generate all the contents below based on the code
  'ri': residue index
 
 
-'''
+"""
 
 
-from dataclasses import dataclass, field
-from typing import Any, List, Optional, Sequence, Iterable, Dict, Tuple
 import math
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
+
 from pymol import cmd
 
-'''
+"""
 A proper measure object looks like this:
 
 
@@ -120,15 +122,14 @@ m=[
     ''
 ] 
 
-'''
-
+"""
 
 
 @dataclass
 class MeasureInfo:
     offset: int
-    ids: List[int]
-    states: List[int]
+    ids: list[int]
+    states: list[int]
 
     @classmethod
     def from_pylist(cls, item: Sequence[Any]) -> "MeasureInfo":
@@ -137,21 +138,23 @@ class MeasureInfo:
         states = [int(x) for x in item[2]] if item[2] is not None else []
         return cls(offset=offset, ids=ids, states=states)
 
+
 # the following case only works w/ distances
-# 
+#
+
 
 @dataclass
 class DistSet:
     nindex: int
-    coord: Optional[List[float]] = None
+    coord: Optional[list[float]] = None
     labcoord: Optional[Any] = None
     nangleindex: int = 0
-    anglecoord: Optional[List[float]] = None
+    anglecoord: Optional[list[float]] = None
     ndihedralindex: int = 0
-    dihedralcoord: Optional[List[float]] = None
+    dihedralcoord: Optional[list[float]] = None
     setting: Optional[Any] = None
-    labpos: Optional[List[Any]] = None
-    measure_info: List[MeasureInfo] = field(default_factory=list)
+    labpos: Optional[list[Any]] = None
+    measure_info: list[MeasureInfo] = field(default_factory=list)
 
     @classmethod
     def from_pylist(cls, py: Sequence[Any]) -> "DistSet":
@@ -184,7 +187,7 @@ class DistSet:
             measure_info=measure_info_list,
         )
 
-    def get_vertex_coords_for_measure(self, mi: MeasureInfo) -> List[Tuple[float, float, float]]:
+    def get_vertex_coords_for_measure(self, mi: MeasureInfo) -> list[tuple[float, float, float]]:
         """
         Return list of (x,y,z) triples for a given MeasureInfo using measureType implied
         by ids length:
@@ -224,7 +227,8 @@ class AtomDescriptor:
     resn: Optional[str]
     name: Optional[str]
     unique_id: Optional[int]
-    coord: Optional[Tuple[float, float, float]]
+    coord: Optional[tuple[float, float, float]]
+
 
 # --- helper to build global atom list once ---
 def _build_scene_atom_list(cmd_module):
@@ -232,7 +236,7 @@ def _build_scene_atom_list(cmd_module):
     Return a list of AtomDescriptor for all atoms in the scene (all objects).
     This uses only reliable attributes from cmd.get_model() atom objects.
     """
-    atom_list: List[AtomDescriptor] = []
+    atom_list: list[AtomDescriptor] = []
     if cmd_module is None:
         return atom_list
 
@@ -281,22 +285,25 @@ def _build_scene_atom_list(cmd_module):
             resn = getattr(a, "resn", None)
             name = getattr(a, "name", None)
 
-            atom_list.append(AtomDescriptor(
-                obj=obj,
-                atom_index=atom_index,
-                chain=str(chain) if chain is not None else None,
-                segi=str(segi) if segi is not None else None,
-                resi=str(resi) if resi is not None else None,
-                resn=str(resn) if resn is not None else None,
-                name=str(name) if name is not None else None,
-                unique_id=unique_id,
-                coord=coord
-            ))
+            atom_list.append(
+                AtomDescriptor(
+                    obj=obj,
+                    atom_index=atom_index,
+                    chain=str(chain) if chain is not None else None,
+                    segi=str(segi) if segi is not None else None,
+                    resi=str(resi) if resi is not None else None,
+                    resn=str(resn) if resn is not None else None,
+                    name=str(name) if name is not None else None,
+                    unique_id=unique_id,
+                    coord=coord,
+                )
+            )
 
     return atom_list
 
+
 # --- nearest neighbor helper ---
-def _nearest_atom_by_coord(target: Tuple[float, float, float], atom_list: List[AtomDescriptor]):
+def _nearest_atom_by_coord(target: tuple[float, float, float], atom_list: list[AtomDescriptor]):
     best = None
     best_d2 = float("inf")
     tx, ty, tz = target
@@ -312,18 +319,18 @@ def _nearest_atom_by_coord(target: Tuple[float, float, float], atom_list: List[A
             best = (a, d2)
     return best  # (AtomDescriptor, d2) or None
 
+
 @dataclass
 class Measurement:
     name: str
     header: Optional[Any] = None
-    dsets: List[DistSet] = field(default_factory=list)
-    raw_obj_pylist: Optional[List[Any]] = None
+    dsets: list[DistSet] = field(default_factory=list)
+    raw_obj_pylist: Optional[list[Any]] = None
     extra: Optional[Any] = None
 
+    _atoms_cache: Optional[list[AtomDescriptor]] = None
 
-    _atoms_cache: Optional[List[AtomDescriptor]] = None
-
-    def _collect_unique_ids(self) -> List[int]:
+    def _collect_unique_ids(self) -> list[int]:
         unique_ids = []
         for ds in self.dsets:
             for mi in ds.measure_info:
@@ -338,7 +345,7 @@ class Measurement:
                 result.append(u)
         return result
 
-    def atoms(self, cmd_module=None, coord_tol=0.9) -> List[AtomDescriptor]:
+    def atoms(self, cmd_module=None, coord_tol=0.9) -> list[AtomDescriptor]:
         """
         Resolve measurement atoms to AtomDescriptor objects.
         - cmd_module: the pymol.cmd module (optional; uses global cmd)
@@ -355,12 +362,12 @@ class Measurement:
         scene_atoms = _build_scene_atom_list(cmd_module)
 
         # Build a map unique_id -> AtomDescriptor only when atom.unique_id is present
-        unique_map: Dict[int, AtomDescriptor] = {}
+        unique_map: dict[int, AtomDescriptor] = {}
         for a in scene_atoms:
             if a.unique_id is not None:
                 unique_map[a.unique_id] = a
 
-        resolved: List[AtomDescriptor] = []
+        resolved: list[AtomDescriptor] = []
         for uid in unique_ids:
             # prefer direct mapping (only uses a.unique_id, no ambiguous fallbacks)
             if uid in unique_map:
@@ -408,7 +415,7 @@ class Measurement:
                             resn=atom_descr.resn,
                             name=atom_descr.name,
                             unique_id=uid,
-                            coord=atom_descr.coord
+                            coord=atom_descr.coord,
                         )
                     resolved.append(atom_descr)
                     continue
@@ -458,7 +465,7 @@ class Measurement:
         return None
 
     @classmethod
-    def from_session_names(cls, names: Iterable[Sequence[Any]]) -> List["Measurement"]:
+    def from_session_names(cls, names: Iterable[Sequence[Any]]) -> list["Measurement"]:
         out = []
         for entry in names:
             try:
@@ -470,13 +477,13 @@ class Measurement:
                 out.append(m)
         return out
 
-    def _build_uniqueid_to_atom_map(self, cmd_module) -> Dict[int, AtomDescriptor]:
+    def _build_uniqueid_to_atom_map(self, cmd_module) -> dict[int, AtomDescriptor]:
         """
         Build mapping unique_id -> AtomDescriptor by iterating over all objects & atoms.
         Uses cmd.get_model(obj, state=-1) to collect object atoms.
         This depends on the PyMOL Atomic object exposing attributes that include 'unique_id' or similar.
         """
-        mapping: Dict[int, AtomDescriptor] = {}
+        mapping: dict[int, AtomDescriptor] = {}
         if cmd_module is None:
             return mapping
 
@@ -548,10 +555,12 @@ class Measurement:
         return mapping
 
     @staticmethod
-    def _distance_sq(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> float:
-        return (a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2
+    def _distance_sq(a: tuple[float, float, float], b: tuple[float, float, float]) -> float:
+        return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2
 
-    def _resolve_by_coords(self, uid: int, target_coord: Tuple[float, float, float], cmd_module) -> Optional[AtomDescriptor]:
+    def _resolve_by_coords(
+        self, uid: int, target_coord: tuple[float, float, float], cmd_module
+    ) -> Optional[AtomDescriptor]:
         """
         Fallback: find the nearest atom in the entire scene to target_coord.
         Returns AtomDescriptor or None.
@@ -625,10 +634,12 @@ class Measurement:
                 lines.append(f"  {mtype}: ids={mi.ids}, states={mi.states}, offset={mi.offset}")
         return "\n".join(lines)
 
-# 
 
-def read_measurement(start: str | int, debug: int=0) -> Measurement:
-    '''
+#
+
+
+def read_measurement(start: str | int, debug: int = 0) -> Measurement:
+    """
     This function reads the measurement from the PyMOL session and prints atoms as gromacs index strings.
 
     Parameters
@@ -636,7 +647,7 @@ def read_measurement(start: str | int, debug: int=0) -> Measurement:
         The starting atom index.
     debug : bool int, optional
         If non-zero, prints debug information. The default is 0.
-    
+
 
     ```
     9 & r 111 ; select the non-glycine residue sidechain group at 111
@@ -644,66 +655,62 @@ def read_measurement(start: str | int, debug: int=0) -> Measurement:
     8 & r 514 ; select the glycine residue backbone group at 514
     name 3 r514 ; rename it from 3 to r514
     ```
-    '''
-    DEBUG=bool(int(debug))
+    """
+    DEBUG = bool(int(debug))
 
-    start=int(start)
+    start = int(start)
     from pymol import cmd
 
-    atoms: dict[int, str]={}
+    atoms: dict[int, str] = {}
     pairs: dict = {}
 
-    
-    session=cmd.get_session()
-    hits = Measurement.from_session_names(session['names'])
+    session = cmd.get_session()
+    hits = Measurement.from_session_names(session["names"])
 
     if not hits:
-        raise ValueError(f"measurement not found in session {[m.name for m in hits]}",)
-
-
+        raise ValueError(
+            f"measurement not found in session {[m.name for m in hits]}",
+        )
 
     for hit in hits:
         if DEBUG:
-            print('-=' *30)
-            print(f'[DEBUG] {hit.summarize(cmd)}')
-        pair=[]
+            print("-=" * 30)
+            print(f"[DEBUG] {hit.summarize(cmd)}")
+        pair = []
         for a in hit.atoms(cmd):
-            # 
-            pair.append(f'r{a.resi}')
-            
-            if f'r{a.resi}' in atoms.values():
+            #
+            pair.append(f"r{a.resi}")
+
+            if f"r{a.resi}" in atoms.values():
                 if DEBUG:
-                    print(f'[DEBUG] skiping {a.resi} to avoid duplicates')
+                    print(f"[DEBUG] skiping {a.resi} to avoid duplicates")
                 continue
 
-            start+=1
+            start += 1
 
             print(f'{"8" if a.resn == "GLY" else "9"} & r {a.resi}')
-            print(f'name {start} r{a.resi}')
+            print(f"name {start} r{a.resi}")
 
-            atoms[start]=f'r{a.resi}'
+            atoms[start] = f"r{a.resi}"
 
-        pairs[hit.name]=pair
+        pairs[hit.name] = pair
         if DEBUG:
-            print(f'[DEBUG] {hit.name} {pair}')
-            print('-=' *30)
-            
-    
+            print(f"[DEBUG] {hit.name} {pair}")
+            print("-=" * 30)
+
     if DEBUG:
         print(pairs)
-        print('-=' *30)
+        print("-=" * 30)
     # re-organize the strings
-    names=[f"'{x}'" for x in pairs.keys()]
-    atom_a=[f"'{x[0]}'" for x in pairs.values()]
-    atom_b=[f"'{x[1]}'" for x in pairs.values()]
+    names = [f"'{x}'" for x in pairs.keys()]
+    atom_a = [f"'{x[0]}'" for x in pairs.values()]
+    atom_b = [f"'{x[1]}'" for x in pairs.values()]
 
     print(f'labels=({" ".join(names)})')
     print(f'grp_as=({" ".join(atom_a)})')
     print(f'grp_bs=({" ".join(atom_b)})')
 
-
     return hits
 
 
-cmd.extend('read_measurement', read_measurement)
-
+cmd.extend("read_measurement", read_measurement)

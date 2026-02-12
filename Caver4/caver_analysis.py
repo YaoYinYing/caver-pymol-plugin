@@ -418,7 +418,6 @@ class CaverAnalystPreviewer:
         value = max(self._min_frame_id, min(self._max_frame_id, value))
         self.slider.setValue(value)
 
-
     def jump_to(self, frame_id: int) -> None:
         frame_id = max(self._min_frame_id, min(self._max_frame_id, int(frame_id)))
         if frame_id == self._current_frame_id:
@@ -431,7 +430,6 @@ class CaverAnalystPreviewer:
         if not steps:
             return
         self.jump_to(self._current_frame_id + steps)
-
 
     def forward(self):
         self._current_frame_id += 1

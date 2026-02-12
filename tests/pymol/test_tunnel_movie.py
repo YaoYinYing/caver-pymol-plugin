@@ -3,10 +3,10 @@ from __future__ import annotations
 import pytest
 
 pytest.importorskip("pymol")
-from pymol import cmd
-
 import shutil
 import subprocess
+
+from pymol import cmd
 
 from Caver4.utils.ui_tape import set_widget_value
 from tests.gui.analyst.test_previewer import _ensure_cached_run
@@ -18,14 +18,12 @@ def _apply_basic_style(cmd: cmd) -> None:
     cmd.hide("sticks", "hydrogens")
     cmd.bg_color("white")
     cmd.origin("all")
-    
-    
 
 
 def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
     worker = caver_worker
     plugin = worker.plugin
-    cmd:cmd = worker.cmd
+    cmd: cmd = worker.cmd
 
     session_path = test_data_dir / "md_snapshots" / "caver_md.snapshots.pze"
     assert session_path.is_file()
@@ -78,7 +76,7 @@ def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
     cmd.set("ray_trace_mode", 0)
     cmd.set("cache_frames", 1)
 
-    cmd.orient("cl_000*") 
+    cmd.orient("cl_000*")
 
     movie_dir = results_root / "movie"
     frames_dir = movie_dir / "frames"
@@ -125,8 +123,7 @@ def test_tunnel_movie_generation(caver_worker, test_data_dir, results_root):
             str(movie_path),
         ],
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     assert movie_path.is_file()
     assert movie_path.stat().st_size > 0

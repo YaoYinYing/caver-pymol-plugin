@@ -326,9 +326,9 @@ class CaverPyMOL(QtWidgets.QWidget):
             if not self.analyst:
                 notify_box("Run tunnel analysis before rendering the spectrum.", Warning)
                 return
-            
+
             # store current view before rendering
-            view=cmd.get_view()
+            view = cmd.get_view()
 
             with self.freeze_window([self.analysis_dialog]), hold_trigger_button(
                 self.ui_analyst.pushButton_renderTunnelsSpectrum
@@ -339,7 +339,7 @@ class CaverPyMOL(QtWidgets.QWidget):
                         form=self.ui_analyst,
                         analyst=self.analyst,
                     )
-                    
+
                 except Exception as exc:
                     logging.error(f"Failed to render tunnel spectrum: {exc}")
                     notify_box("Failed to render tunnel spectrum.", RuntimeError, details=str(exc))
