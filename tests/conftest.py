@@ -270,21 +270,24 @@ class CaverPluginWorker:
 
     # At the end of tests/conftest.py
 
+
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_pymol():
     """Ensure PyMOL is properly shut down to prevent segfaults on teardown."""
     yield
-    
+
     # Cleanup after all tests
     try:
         import pymol
+
         pymol.finish()  # Proper PyMOL shutdown
     except Exception:
         pass
-    
+
     try:
         # Force PyQt cleanup
         from PyQt5.QtWidgets import QApplication
+
         app = QApplication.instance()
         if app:
             app.quit()

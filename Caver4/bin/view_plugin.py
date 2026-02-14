@@ -10,7 +10,7 @@ def parrent(dir):
 scripts = '$pymol_scripts' + '/'
 home = parrent(scripts) + '/'
 
-is_md_traj=os.path.isfile(os.path.join(home),'md_state_number.txt')
+is_md_traj=os.path.isfile(os.path.join(home,'md_state_number.txt'))
 
 
 def exists(name: str):

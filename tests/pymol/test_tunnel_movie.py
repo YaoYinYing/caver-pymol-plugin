@@ -6,8 +6,6 @@ pytest.importorskip("pymol")
 import shutil
 import subprocess
 
-
-
 from Caver4.utils.ui_tape import set_widget_value
 from tests.gui.analyst.test_previewer import _ensure_cached_run
 
