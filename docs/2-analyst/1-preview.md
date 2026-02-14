@@ -34,3 +34,20 @@
 
 1. Click `Refresh` to get previewer ready.
 2. Use play buttons (the first, the previous, auto-play, pause auto-play, the next, the last) as well as adjust auto-play interval to preview the time evolution of selected tunnel. Also, drag the slider or input frame id into the spinbox next to the slider will take similar effects. 
+3. To check the detail of a tunnel frame, click `?` to take a look.
+   
+
+### Ramp or spectrum
+
+- Spectrum: use any model properties (resi, b, vdw, etc.) to color
+- Ramp: use only distance proximals.
+  
+
+#### Quick example
+
+To render tunnel by the distance to some startpoint:
+1. Use `create startpoint, sele` to create an origin start point object
+2. Create an ramp object: `cmd.ramp_new('r', 'startpoint', [0, 30], 'rainbow')`
+3. Input `r` into the `Spect.` combobox.
+4. Click `2. Render to render`.
+5. Post adjustment: rerun `ramp_new` will automaticcally change the colors. no need to re-render.

@@ -374,19 +374,6 @@ class CaverPyMOL(QtWidgets.QWidget):
             logging.debug("Analyst previewer initialized")
             _update_analysis_control_states()
 
-            __doc_temp='''
-Jump to a certain frame.
-Molecule: %s
-Run ID: %s
-Tunnel: %s
-Number of Frames: %s
-'''
-            self._caver_tunnel_jump_to.__doc__=__doc_temp % (
-                get_widget_value(self.ui.comboBox_inputModel),
-                get_widget_value(self.ui.comboBox_RunID),
-                str(self.analyst_previewer.tunnel_name),
-                str(len(self.analyst_previewer.frame_ids))
-            )
 
         def _cleanup_analysis_preview():
             logging.debug("Cleaning up analyst previewer")
