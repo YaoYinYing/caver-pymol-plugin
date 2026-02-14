@@ -654,6 +654,22 @@ class CaverPyMOL(QtWidgets.QWidget):
             logging.debug(runview)
             cmd.do(runview)
 
+    def _caver_tunnel_jump_to(self, frame_id: str = "0", quiet: str = "0"):
+
+        quiet = int(quiet)
+        previewer = self.analyst_previewer
+        if not previewer:
+            if quiet:
+                notify_box("Run tunnel preview before using caver_tunnel_jump.", RuntimeError)
+            return
+        try:
+            previewer.jump_to(int(frame_id))
+        except Exception as exc:
+            logging.error(f"Failed to jump tunnel frame: {exc}")
+
+            if quiet:
+                notify_box("Unable to jump tunnel frame.", RuntimeError, details=str(exc))
+
     def _caver_tunnel_jump(self, step: str = "0"):
         previewer = self.analyst_previewer
         if not previewer:
@@ -669,6 +685,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         """
         (Re)register custom PyMOL commands and autocompletions.
         """
+        cmd.extend("caver_tunnel_jump_to", self._caver_tunnel_jump_to)
         cmd.extend("caver_tunnel_jump", self._caver_tunnel_jump)
         cmd.extend("caver_set", self.caver_set)
         cmd.auto_arg[0]["caver_set"] = [

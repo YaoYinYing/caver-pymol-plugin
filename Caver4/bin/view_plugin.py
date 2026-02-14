@@ -10,6 +10,8 @@ def parrent(dir):
 scripts = '$pymol_scripts' + '/'
 home = parrent(scripts) + '/'
 
+is_md_traj=os.path.isfile(os.path.join(home,'md_state_number.txt'))
+
 
 def exists(name: str):
     return name in cmd.get_names("all")
@@ -44,7 +46,7 @@ if os.path.exists(cluster_dir):
         load_safely(home + 'data/clusters_timeless/' + fn, name)
         cmd.alter(name, 'vdw=b')
         cmd.hide('everything', name)
-        cmd.show('spheres', name)
+        cmd.show('lines' if is_md_traj else 'spheres', name)
         cmd.color('caver' + str(color), name)
         if color < 1000:
             color += 1

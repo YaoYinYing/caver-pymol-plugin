@@ -23,7 +23,7 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12" # control
-          # - "3.13"
+          - "3.13"
           # - "3.14"
         pymol-tag:
           - 'latest pymol open source'
@@ -32,9 +32,9 @@ jobs:
         pymol-version:
           - "pymol-open-source"
 
-        java: [ '8', '11' , '21']
+        java: ['21']
 
-        # include:
+        include:
           # windows
           # - os: windows-latest
           #   python-version: "3.11"
@@ -65,34 +65,37 @@ jobs:
           #   pymol-version: "pymol-open-source"
           #   conda-channel: -c conda-forge
           
-          # # latest bundled pymol 
-          # - os: ubuntu-latest
-          #   python-version: "3.10"
-          #   pymol-tag: 'latest pymol bundle'
-          #   pymol-version: "pymol-bundle"
-          #   conda-channel: -c schrodinger -c conda-forge
+          # latest bundled pymol 
+          - os: ubuntu-latest
+            python-version: "3.10"
+            pymol-tag: 'latest pymol bundle'
+            pymol-version: "pymol-bundle"
+            conda-channel: -c schrodinger -c conda-forge
+            java: 21
 
-          # # bundled pymol, v2
-          # - os: ubuntu-latest
-          #   python-version: "3.11"
-          #   pymol-tag: 'legacy (v2) pymol bundle'
-          #   pymol-version: "pymol-bundle<3"
-          #   conda-channel: -c schrodinger -c conda-forge
-            
+          # bundled pymol, v2
+          - os: ubuntu-latest
+            python-version: "3.11"
+            pymol-tag: 'legacy (v2) pymol bundle'
+            pymol-version: "pymol-bundle<3"
+            conda-channel: -c schrodinger -c conda-forge
+            java: 21
           
-          # # pymol-open-source, v2 py310
-          # - os: ubuntu-latest
-          #   python-version: "3.10"
-          #   pymol-tag: 'legacy (v2) pymol open source'
-          #   pymol-version: "pymol-open-source<3"
-          #   conda-channel: -c conda-forge
+          # pymol-open-source, v2 py310
+          - os: ubuntu-latest
+            python-version: "3.10"
+            pymol-tag: 'legacy (v2) pymol open source'
+            pymol-version: "pymol-open-source<3"
+            conda-channel: -c conda-forge
+            java: 21
 
-          # # pymol-open-source, v2 py311
-          # - os: ubuntu-latest
-          #   python-version: "3.11"
-          #   pymol-tag: 'legacy (v2) pymol open source'
-          #   pymol-version: "pymol-open-source<3"
-          #   conda-channel: -c conda-forge
+          # pymol-open-source, v2 py311
+          - os: ubuntu-latest
+            python-version: "3.11"
+            pymol-tag: 'legacy (v2) pymol open source'
+            pymol-version: "pymol-open-source<3"
+            conda-channel: -c conda-forge
+            java: 21
             
 
 

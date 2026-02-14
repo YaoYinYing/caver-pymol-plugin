@@ -12,6 +12,9 @@ Original Website: <https://www.caver.cz>
 - Flexibler starting point and residue inclusions
 - Results playback
 - Extended PyMOL commandline prompt `caver_set`
+- Extended PyMOL commandline prompt `caver_tunnel_jump` and `caver_tunnel_jump_to`
+- Caver Tunnel Analyst: analyst, visualize, plot (requires `matplotlib`)
+- Tunnel Movie
 
 ## Image Preview
 ![](https://github-image-cache.yaoyy.moe/2026/01/106a16b82340e1a4581b2eff7839fdf1.png)
