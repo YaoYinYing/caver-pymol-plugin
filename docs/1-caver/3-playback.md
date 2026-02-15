@@ -15,6 +15,6 @@ Having the original structure loaded makes it easier to inspect tunnels, but pla
 1. Check **Results playback**.
 2. Click **Refresh** to list all run IDs stored in the output directory.
 3. Select the run that matches your structure/trajectory.
-4. Click **Load** to open the Analyst window.
+4. Click **Load** to load historic run result.
 
 Static runs load tunnel surfaces as spheres; dynamic runs import lines along the trajectory states.
