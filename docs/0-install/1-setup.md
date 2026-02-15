@@ -35,4 +35,4 @@ Activate the environment whenever you run PyMOL: `conda activate Caver`.
 
 ## Upgrade to a new release
 
-Open the plugin window and click **Update** to download and install the most recent release directly from PyMOL.
+Open the plugin window and click **Upgrade** to check new release and lead user to GitHub release page to download and install the most recent release directly from PyMOL.
