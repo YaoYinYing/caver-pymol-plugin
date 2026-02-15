@@ -27,7 +27,7 @@ The COM (center of mass) coordinates of a selection will be converted to `starti
 
 ### Starting point groups
 
-All value list must written as space-separated format. e.g: `111 222 333 444 555` or `1.1 2.2 3.3`
+All value list must written as space-separated format. e.g: `111 222 333 444 555` or `A:11 B:22` or `1.1 2.2 3.3`
 
 
 #### Atoms

@@ -31,23 +31,36 @@ cp ${traj_dir}/${variant_name}/md_0_100.gro ${output_dir}/${variant_name}.gro
 
 ## Tunnel Starting point groups
 
-Although the static selection-convert and customized xyz-coordinates is convinient, 
+Although the static selection-convert and customized xyz-coordinates is convinient, for dynamic simulation, the real starting point may fluctuate, causing the failure on detecting tunnel in some situation.
+
+All value list must written as space-separated format. e.g: `111 222 333 444 555` or `A:11 B:22` or `1.1 2.2 3.3`
 
 #### Atoms
 
+refer to `starting_point_atom`. e.g: `111 222 333 444 555`
+
 #### Residues
 
-
-#### Coordinates
-
+refer to `starting_point_residue` e.g: `A:11 B:22`
 
 ## Residue Type to take into account
 
+Caver requires customized residue type to get included/excluded from tunnel calculations.
+
+This plugin gives use free options. When a new model is detected, all residue names available will be listed, including the 20 canonical amino acids and possible ligands (water, ion, glycan, small molecule, etc). 
+
+Normally, one can click `Protein` to check all protein code. However this may contains some exceptions, such as non canonical protein codes (`HIE`, `HID`, for example). Also, one can optionally check some ligand residue names if the analysis required (`HEM`, `FAD`, for example).
 
 ## MD state range
+
+Input the start and end frame id (state number in PyMOL). 
 
 
 ## Speedup
 
+Check `Trim` if you need to clean up PyMOL session to leave more memory to caver
+
 
 ## Cleanup
+
+Check `Prune` if you need to clean up `<run-id>/input` directory to save disk space. The input will not be used again.
