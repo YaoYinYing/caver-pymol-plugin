@@ -17,9 +17,16 @@ Original Website: <https://www.caver.cz>
 - Tunnel Movie
 
 ## Image Preview
-![](https://github-image-cache.yaoyy.moe/2026/01/106a16b82340e1a4581b2eff7839fdf1.png)
+
+![](https://github-image-cache.yaoyy.moe/2026/02/da13013716666134c9963de705f59eb1.png)
 (A). Refactored pluggin interface. (B). Configuration window. (C). Starting point selection and refines. (D). Starting point from residues, atons or coordinates. (E). Tunnel MD analysis. (F, G). `caver_set` auto-completion for (E) options and (G) values.
 
+![](https://github-image-cache.yaoyy.moe/2026/02/4c7c05ea846b7df446300a2904c2cf93.png)
+(A) Analyst window for per-tunnel analysis. (B). Tunnels rendered as lines. (C). Timeline view of tunnel evolution. (D). Per-frame view of tunnel. (E). Tunnel plot settings. (F). Publication-quality tunnel Plot.
+
+## Movie Preview
+
+![](https://github-image-cache.yaoyy.moe/2026/02/5d7683460ae932e9ee695072eac24f87.gif)
 
 ## Contributors:
 * Human Computer Interaction Laboratory Faculty of Informatics, Masaryk University
@@ -33,6 +40,8 @@ Original Website: <https://www.caver.cz>
 * OpenJDK
 
 ## Installation instructions
+
+See the [installation instruction](docs/0-install/1-setup.md) for more detailed information.
 
 1. Install OpenJDK
   - For macOS:  run `brew install openjdk` in terminal, then add it to PATH according to the instructions output with HomeBrew.
