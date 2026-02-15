@@ -1,57 +1,39 @@
-# Static Analysis of tunnels using Caver
+# Static analysis with Caver
 
+Use this guide when you only need tunnel profiles for a single structure (PDB/CIF). The workflow is linear: set an output directory, choose the model, define the starting point, and launch the calculation.
 
+## 1. Pick the output directory
 
-## Output directory
+All results live in the output directory. Set it first so every subsequent step saves into the same run folder.
 
-Output directory is essential to any part of Caver analysis.
+## 2. Load the structure
 
-## Load structure
+Load the structure inside PyMOL and open the Caver plugin. The structure you want to analyse must be selected in **Input model**.
 
-Load a normal structure model into PyMOL session and launch Caver Plugin. Ensure the correct model is selected in `Input Model`
+## 3. Define the tunnel starting point
 
-## Tunnel starting point
+Two inputs are available:
 
-The Caver PyMOL plugin provides two ways to input the starting point.
+1. **Select ▸ Refine** – convert a PyMOL selection into XYZ coordinates (center of mass). This is the most reproducible option for static structures.
+2. **Custom** – type atom IDs, residue IDs, or XYZ values manually if you need complete control.
 
-1. (Tab `Select` and `Refine`) Convert and  refine xyz coords from a PyMOL selection object
-2. (Tab `Custom`) Direct input as atom ids/residue ids/xyz coordinates
+Selection-derived coordinates override manual entries. Click **Clear** on the **Refine** tab to zero out XYZ values before entering custom coordinates.
 
-It's recommend to use selection-coordinates for static structure analysis.
+### Input formats
 
-The priority of selection-convert is higher than direct inputs. To apply customized overriding, use `Clear` button at `Refine` tab to set all of xyz coordinates to `0`.
+Lists are space-separated. Examples: `111 222 333`, `A:11 B:22`, or `1.2 2.4 3.6`.
 
-### XYZ coordinates From Selection
+- **Atoms** – populates `starting_point_atom`.
+- **Residues** – populates `starting_point_residue`.
+- **Coordinates** – populates `starting_point_coordinates`.
 
-The COM (center of mass) coordinates of a selection will be converted to `starting_point_coordinates` options.
+## 4. Choose residue types to include
 
-### Starting point groups
+Caver needs to know which residue types participate in tunnel calculations. When you load a model the plugin lists every residue code it finds: standard amino acids plus ligands (waters, ions, cofactors, glycans, small molecules, etc.).
 
-All value list must written as space-separated format. e.g: `111 222 333 444 555` or `A:11 B:22` or `1.1 2.2 3.3`
+- Click **Protein** to select canonical residues, then add any uncommon ones (`HIE`, `HID`, …) manually.
+- Include ligands that should form part of the tunnel wall (`HEM`, `FAD`, …) if needed.
 
+## 5. Run Caver
 
-#### Atoms
-
-refer to `starting_point_atom`.
-
-#### Residues
-
-refer to `starting_point_residue`
-
-
-#### Coordinates
-
-refer to `starting_point_coordinates`
-
-
-## Residue Type to take into account
-
-Caver requires customized residue type to get included/excluded from tunnel calculations.
-
-This plugin gives use free options. When a new model is detected, all residue names available will be listed, including the 20 canonical amino acids and possible ligands (water, ion, glycan, small molecule, etc). 
-
-Normally, one can click `Protein` to check all protein code. However this may contains some exceptions, such as non canonical protein codes (`HIE`, `HID`, for example). Also, one can optionally check some ligand residue names if the analysis required (`HEM`, `FAD`, for example).
-
-## Run Caver
-
-After all is set, click `Run` to process the task. The window will be disabled for a while during the processing, and the result shall be loaded into PyMOL also.
+Click **Run** and wait for PyMOL to re-enable the window. The plugin automatically loads the generated tunnels back into the session for inspection or playback.

@@ -1,66 +1,56 @@
-# Dynamic Analysis of tunnels using Caver
+# Dynamic analysis with Caver
 
-## Output directory
+Dynamic (trajectory) runs follow the same structure as static ones but require extra preparation to keep PyMOL fast and memory-safe.
 
-Output directory is essential to any part of Caver analysis.
+## 1. Choose the output directory
 
-## Prepare reduced trajectory file
+Every run writes into `output/<run-id>`. Set this field before loading data so the plugin can discover results later for playback, plotting, or movies.
 
-Caver analysis is a kin visualization tasks in protein structure. Thus, a proper trajectory file that has PME  (center) as well as rot+trans (fit) removed is necessary.
+## 2. Prepare a reduced trajectory
 
-As large md data may crash PyMOL, a long md simulation trajectory must be reduced before get loaded.
+PyMOL renders best with pre-centered, fitted, and decimated trajectories. Remove global rotation/translation and keep only the atoms needed for the analysis. Reduce very long MD simulations to a manageable frame count before loading them.
 
-### Gromacs
+### Example (GROMACS)
 
-For example, this command takes one frame per 200 ps from the fitted trajectory, and produce a 500-frame version.
+The snippet below extracts one frame every 200 ps from a fitted trajectory and copies the matching structure file:
 
 ```bash
-echo "Protein_HEM_LIG"  | gmx trjconv -s ${traj_dir}/${variant_name}/md_0_100.tpr -f md_0_100_fit.xtc -o ${output_dir}/${variant_name}_md_fit_stride.xtc -dt 200 -n ../index.ndx  # 200 ps per frame
+echo "Protein_HEM_LIG" | gmx trjconv \
+  -s ${traj_dir}/${variant_name}/md_0_100.tpr \
+  -f md_0_100_fit.xtc \
+  -o ${output_dir}/${variant_name}_md_fit_stride.xtc \
+  -dt 200 -n ../index.ndx
 
-# also copy the structure
 cp ${traj_dir}/${variant_name}/md_0_100.gro ${output_dir}/${variant_name}.gro
 ```
 
-## Load structure
+## 3. Load the structure and trajectory
 
-1. Launch PyMOL and load the static structure:  `cmd.load(f'{variant}.gro',discrete=1)`
-2. Remove unnecessary atoms (SOL, ions): `cmd.remove('r. SOL+NA+CL')`
-3. Load stride trajectory: `cmd.load_traj(f'{variant}_md_fit_stride.xtc',)`
-4. Center the protein: `cmd.center(polymer.protein)`
-5. Alter chain ids for downstream analyses: `cmd.alter('polymer.protein', "chain='A'");cmd.alter('r. HEM', "chain='B'");cmd.alter('r. LIG', "chain='C'")`
+Inside PyMOL:
 
-## Tunnel Starting point groups
+1. `cmd.load(f"{variant}.gro", discrete=1)`
+2. Remove solvent/ions you do not need: `cmd.remove('r. SOL+NA+CL')`
+3. `cmd.load_traj(f"{variant}_md_fit_stride.xtc")`
+4. Center the protein: `cmd.center('polymer.protein')`
+5. Normalize chain IDs if desired: `cmd.alter('polymer.protein', "chain='A'")`, `cmd.alter('r. HEM', "chain='B'")`, etc.
 
-Although the static selection-convert and customized xyz-coordinates is convinient, for dynamic simulation, the real starting point may fluctuate, causing the failure on detecting tunnel in some situation.
+## 4. Define starting-point groups
 
-All value list must written as space-separated format. e.g: `111 222 333 444 555` or `A:11 B:22` or `1.1 2.2 3.3`
+Frame-by-frame fluctuations make automatic selection conversion less reliable than in static runs. Provide redundant inputs (atoms plus residues) whenever possible. Use space-separated lists such as `111 222 333` or `A:11 A:22`.
 
-#### Atoms
+- `starting_point_atom` – e.g., `111 222 333 444 555`
+- `starting_point_residue` – e.g., `A:11 B:22`
+- `starting_point_coordinates` – absolute XYZ values if you have a reference point
 
-refer to `starting_point_atom`. e.g: `111 222 333 444 555`
+## 5. Pick residue types to include
 
-#### Residues
+Same rules as the static workflow: click **Protein** to grab canonical residues, then add non-standard codes (`HIE`, `HID`, …) or ligands (`HEM`, `FAD`, …) that form tunnel walls.
 
-refer to `starting_point_residue` e.g: `A:11 B:22`
+## 6. Set the MD state range
 
-## Residue Type to take into account
+Provide the starting and ending PyMOL state numbers you want Caver to process. Limiting the range speeds up runs and helps when you only need part of the trajectory.
 
-Caver requires customized residue type to get included/excluded from tunnel calculations.
+## 7. Optional speed/cleanup toggles
 
-This plugin gives use free options. When a new model is detected, all residue names available will be listed, including the 20 canonical amino acids and possible ligands (water, ion, glycan, small molecule, etc). 
-
-Normally, one can click `Protein` to check all protein code. However this may contains some exceptions, such as non canonical protein codes (`HIE`, `HID`, for example). Also, one can optionally check some ligand residue names if the analysis required (`HEM`, `FAD`, for example).
-
-## MD state range
-
-Input the start and end frame id (state number in PyMOL). 
-
-
-## Speedup
-
-Check `Trim` if you need to clean up PyMOL session to leave more memory to caver
-
-
-## Cleanup
-
-Check `Prune` if you need to clean up `<run-id>/input` directory to save disk space. The input will not be used again.
+- **Trim** – removes temporary PyMOL objects before launching Caver to free memory.
+- **Prune** – deletes `<run-id>/input` after the run finishes to save disk space (the raw inputs are not reused once processing completes).

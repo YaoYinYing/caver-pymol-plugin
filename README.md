@@ -34,6 +34,8 @@ Original Website: <https://www.caver.cz>
 
 ## Installation instructions
 
+See the [installation instruction](docs/0-install/1-setup.md) for more detailed information.
+
 1. Install OpenJDK
   - For macOS:  run `brew install openjdk` in terminal, then add it to PATH according to the instructions output with HomeBrew.
 2. Download [plugin](https://github.com/YaoYinYing/caver-pymol-plugin/archive/refs/heads/master.zip)

@@ -1,32 +1,38 @@
 # Installation
 
-## For the very first time
+Follow this guide the first time you set up the Caver PyMOL plugin or when you need to rebuild the environment from scratch.
+
+## Prerequisites
 
 ### JDK
 
-- macOS:  run `brew install openjdk` in terminal, then add it to PATH according to the instructions output with HomeBrew.
-- Windows:
-- Linux: according to the distributions and package management tool
+Caver is a Java application, so install a recent OpenJDK (17 or later works well).
 
-### PyMOL
+- **macOS** – `brew install openjdk` and follow Homebrew's post-install message to add it to `PATH`.
+- **Windows** – install an OpenJDK distribution such as Temurin or Zulu and add `java` to the `PATH` environment variable.
+- **Linux** – use your distribution package manager (`apt install openjdk-17-jre`, `dnf install java-17-openjdk`, etc.).
 
-A proper installation of PyMOL is required, whether from incensive or open-sourced.
+### PyMOL environment
 
-Conda installation is personally recommended.
+Install PyMOL with Qt and matplotlib so the plugin UI renders correctly. Conda keeps the dependency chain simple:
 
-`conda install -c conda-forge 'pymol-open-source' pyqt=5 matplotlib -n Caver -y`
-or 
-`conda install -c schrodinger -c conda-forge 'pymol-bundle' pyqt=5 matplotlib -n Caver -y`
+```bash
+conda create -n Caver -y
+conda install -n Caver -c conda-forge 'pymol-open-source' pyqt=5 matplotlib
+# or, for the Schrödinger build
+conda install -n Caver -c schrodinger -c conda-forge 'pymol-bundle' pyqt=5 matplotlib
+```
 
-### Caver
+Activate the environment whenever you run PyMOL: `conda activate Caver`.
 
-1. Download [plugin](https://github.com/YaoYinYing/caver-pymol-plugin/archive/refs/heads/master.zip)
-2. Start PyMOL: `conda activate Caver; pymol`
-3. Open Plugin manager (Plugin -> Plugin manager)
-4. Install plugin (Install new plugin -> Choose file... and select downloaded zip file)
-5. Restart PyMOL
+## Install the plugin
 
+1. Download the latest [Caver PyMOL plugin](https://github.com/YaoYinYing/caver-pymol-plugin/archive/refs/heads/master.zip).
+2. Start PyMOL inside the `Caver` conda environment.
+3. Open **Plugin ▸ Plugin Manager**.
+4. Choose **Install New Plugin ▸ Choose File…** and select the downloaded ZIP file.
+5. Restart PyMOL so the plugin menu entries load.
 
 ## Upgrade to a new release
 
-In Caver PyMOL plugin, you can use `Update` button to check the release
+Open the plugin window and click **Update** to download and install the most recent release directly from PyMOL.

@@ -1,77 +1,36 @@
-# Rendering tunnel animations into a movie
+# Render tunnel animations
 
+This walkthrough assumes you already processed a dynamic run and know the run/tunnel IDs you want to animate.
 
-## Note
+## Prepare the tunnel objects
 
-This doc assumes you have already load an MD trajectory into PyMOL and get a MD trajectory analysis processed.
+Follow the usual Analyst workflow:
 
-Also, this doc assumes you have already known the run id and tunnel id you wish to process in this tutorial.
+1. Set the **Output directory**, enable **Results playback**, click **Refresh**, and choose the run ID.
+2. Click **Analysis** instead of **Load**.
+3. In Analyst ▸ **Timeline setup**, pick your palette, click **Refresh**, select the tunnel, and configure diameter range/representation/spectrum.
+4. Click **1. Run** then **2. Render** to build the tunnel objects.
+5. Open the **Preview** group and click **Refresh** so you can scrub through the trajectory.
 
-## UI Operations
+## Build the movie timeline
 
-### Tunnel Runner
-
-1. Ensure the `output directory` is set.
-2. Enable `results playback` and click `Refresh` to discover results that already processed. It does not matter whether the input model is correct or not. Tunnel Analyst and Previewer will not use it.
-3. Pick the correct run id that **matches** the model and trajectory.
-4. Click `Analysis` to open Analyst window.
-
-### Tunnel MD Analyst
-
-1. The Analyst window has to tabs. For tunnel preview and timeline tasks, use `Timeline` tab.
-2. Navigate to the `Timeline setup` group. 
-3. Select color palette you want to use.
-4. Click `Refresh` to read the results under run-id directory.
-5. Pick the desired tunnel id that you wish to visualize.
-6. Setup tunnel color range. For water channel, `[1.5, 2]` is okay. For ligand channel, it depends on what the diameter you need to adjust to.
-7. Pick a representation method. I personally use mesh.
-8. Pick what way the spectrum will run against. `b` or `vdw` is sufficient for normal way to show the diameters and bottlenecks.
-9. Click `1. Run` to load the tunnel. This steps takes no effects on GUI or PyMOL.
-10. Click `2. Render` to render the tunnel one-after-another. This step takes a while, which depends on the frame number of trajectory. Now the Previewer is activated.
-11. Now navigate to the `Preview` group.
-
-
-### Tunnel MD Previewer
-
-1. Click `Refresh` to get previewer ready.
-2. Use play buttons (the first, the previous, auto-play, pause auto-play, the next, the last) as well as adjust auto-play interval to preview the time evolution of selected tunnel. Also, drag the slider or input frame id into the spinbox next to the slider will take similar effects. 
-
-## Quick example for moview scripting
+Use PyMOL's movie commands to keyframe the rendered tunnel. The script below synchronizes the movie with tunnel frames:
 
 ```python
-# tell PyMOL command line prompts to inter a python script
 python
-
-# set the total frame numbers
-num_of_frames=500
-
-# create the moview w/ the frame number
+num_of_frames = 500
 cmd.mset(f'1 x{num_of_frames}')
-
-# loop these frames and set key frames
-for frame_id in range(1,1+num_of_frames):
-  # set the state as the frame
-  cmd.mset(frame_id, frame_id)
-  # in the frame, jump to the tunnel frame
-  cmd.mdo(frame_id,f'caver_tunnel_jump_to {frame_id}; ')
-
-  # optionaly, to apply any after-jump operations, for example turn camera view, remember 
-  # that after state switch, the view will **always** get reset to the initial, that's 
-  # why you should use `turn y <frame_id>` instead of `turn y, 1`.
-  
-  # cmd.mdo(frame_id,f'caver_tunnel_jump_to {frame_id}; turn y, {frame_id}; ')
-
-  # store it
-  cmd.mview('store')
-
-# that is it!
-
-# tell PyMOL command line prompts to exit a python script
+for frame_id in range(1, num_of_frames + 1):
+    cmd.mset(frame_id, frame_id)  # sync PyMOL state
+    cmd.mdo(frame_id, f'caver_tunnel_jump_to {frame_id}; ')
+    # Example camera adjustment:
+    # cmd.mdo(frame_id, f'caver_tunnel_jump_to {frame_id}; turn y, {frame_id}; ')
+    cmd.mview('store')
 python end
 ```
 
-Now the movie sequence is ready to be rendered.
+Adjust `num_of_frames` to match your trajectory length. If you rotate/translate the view, always apply the operation inside `mdo` so the transformation is tied to the frame.
 
-## Dump the movie
+## Render the movie
 
-Render the movie like what you have done to the official movie tutorials.
+Use standard PyMOL rendering commands (`mpng`, `movie.produce`, etc.) to export the animation once the timeline looks correct.
