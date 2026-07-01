@@ -25,7 +25,7 @@ test:
 	python -m pytest $(PYTEST_ARGS) --cov=$(PROJECT) $(PYTEST_CASES_PATH)
 
 test-skip-ci-segfault:
-	python -m pytest $(PYTEST_ARGS) --cov=$(PROJECT) $(PYTEST_CASES_PATH) || [ $$? -eq 139 ] || exit $$?
+	python -m pytest $(PYTEST_ARGS) --cov=$(PROJECT) $(PYTEST_CASES_PATH); ret=$$?; [ $$ret -eq 0 ] || [ $$ret -eq 138 ] || [ $$ret -eq 139 ] || exit $$ret
 
 test-faulthandler:
 	# see: https://blog.xmatthias.com/post/pytest-debug-segfault/

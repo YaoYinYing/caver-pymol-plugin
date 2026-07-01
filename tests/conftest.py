@@ -273,24 +273,40 @@ class CaverPluginWorker:
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_pymol():
-    """Ensure PyMOL is properly shut down to prevent segfaults on teardown."""
+    """Ensure PyMOL is properly shut down to prevent segfaults on teardown.
+
+    On macOS ARM64, QtCore.abi3.so registers an atexit handler that calls
+    sip_api_visit_wrappers during Py_FinalizeEx.  If sip wrappers have already
+    been partially freed this dereferences garbage and raises SIGBUS
+    (EXC_ARM_DA_ALIGN).  Calling sip.setdestroyonexit(False) early tells sip
+    to skip C++-side wrapper destruction during exit, which avoids the
+    dangling-pointer walk entirely.
+    """
+    # --- session setup: prevent sip from destroying C++ wrappers at exit ---
+    try:
+        import sip
+
+        sip.setdestroyonexit(False)
+    except Exception:
+        pass
+
     yield
 
-    # Cleanup after all tests
+    # --- session teardown ---
     try:
         import pymol
 
-        pymol.finish()  # Proper PyMOL shutdown
+        pymol.finish()
     except Exception:
         pass
 
     try:
-        # Force PyQt cleanup
         from PyQt5.QtWidgets import QApplication
 
         app = QApplication.instance()
         if app:
             app.quit()
+            app.processEvents()
     except Exception:
         pass
 

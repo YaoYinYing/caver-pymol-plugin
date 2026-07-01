@@ -940,7 +940,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             def update_tunnel_progress():
                 if total_tasks == 0:
                     return
-                completed = count_matching_files(tunnels_dir, ".pdb.obj")
+                completed = count_matching_files(tunnels_dir, ".obj")
                 progress_bar.setValue(min(completed, total_tasks))
 
             ret = run_worker_thread_with_progress(
