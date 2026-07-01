@@ -26,7 +26,7 @@ Original Website: <https://www.caver.cz>
 
 ## Movie Preview
 
-![](https://github-image-cache.yaoyy.moe/2026/02/9d845a727b8897b049d9ea54ab7b0762.gif)
+<video src="https://github-image-cache.yaoyy.moe/2026/07/586703ac849be463682aa4456a9d6725.mp4" controls muted loop width="100%"></video>
 
 ## Contributors:
 * Human Computer Interaction Laboratory Faculty of Informatics, Masaryk University
