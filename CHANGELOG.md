@@ -22,12 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output format (#28).
 
 - **Dependency refresh.** Replaced the 4 old `lib/` JARs (`AverageLinkClustering`,
-  `kd`, `ml`, `vecmath`) with 14 standalone JARs including the full AW Voronoi
-  stack (`awvoronoi-1.0.2`, `awvoronoi-diagram-1.0.1`, `awvoronoi-run-1.0.0`),
-  Delaunay triangulation (`caver-delaunay-factory-1.0.3`, `caver-qhull-3.0_beta4`,
-  `delaunay-cell-discovery-1.0.0`), PDBx/mmCIF schema parsers
-  (`schema-pdbx-4.1.0`, `schema-atoms-1.1.0`), and JAXB runtime
-  (`jaxb2-basics-runtime-0.6.4`) (#28).
+  `kd`, `ml`, `vecmath`) with 9 lean standalone JARs: AW Voronoi core
+  (`awvoronoi-1.0.2`, `awvoronoi-diagram-1.0.1`), Delaunay triangulation
+  (`caver-delaunay-factory-1.0.3`, `caver-qhull-3.0_beta4`,
+  `delaunay-cell-discovery-1.0.0`), alternative search (`AllPaths.jar`),
+  clustering (`AverageLinkClustering.jar`), KD-tree (`kd.jar`), and vector
+  math (`vecmath.jar`). 5 distribution-only JARs removed as dead weight:
+  `awvoronoi-run-1.0.0` (standalone CLI), `schema-pdbx-4.1.0` (2.2 MB PDBx/mmCIF),
+  `schema-atoms-1.1.0`, `jaxb2-basics-runtime-0.6.4`, and
+  `org-openide-util-lookup-8.3.1` (#28).
 
 ### Fixed
 - **Apple Silicon Qt bus error.** Fixed a `SIGBUS` (`EXC_ARM_DA_ALIGN`) crash on
