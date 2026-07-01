@@ -1,5 +1,6 @@
 import importlib.util
 import logging
+import os
 import subprocess
 import sys
 import types
@@ -139,7 +140,7 @@ def test_run_caver_uses_constructed_command(monkeypatch, tmp_path):
         pyjava.java_bin,
         f"-Xmx{pyjava.memory_heap_level}m",
         "-cp",
-        f"{str(paths['jar_path'])}:{str(paths['caver_folder'] / 'lib')}/*",
+        os.pathsep.join([str(paths['jar_path']), str(paths['caver_folder'] / 'lib') + os.sep + '*']),
         "caver.ui.Launcher",
         "-home",
         str(paths["caver_folder"]),

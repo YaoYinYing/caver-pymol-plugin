@@ -41,7 +41,7 @@ class PyJava:
             self.java_bin,
             f"-Xmx{self.memory_heap_level}m",
             "-cp",
-            f"{caverjar}:{os.path.join(caverfolder, 'lib')}/*",
+            os.pathsep.join([caverjar, os.path.join(caverfolder, 'lib') + os.sep + '*']),
             "caver.ui.Launcher",
             "-home",
             caverfolder,

@@ -5,6 +5,22 @@ All notable changes to the caver-pymol-plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.1] — 2026-07-01
+
+### Fixed
+- Restore `org-openide-util-lookup-8.3.1.jar` — required at runtime by
+  `delaunay-cell-discovery` via ServiceLoader (`Lookup.getDefault()`).
+  Removed in 4.2.0 by mistake after static import analysis missed the
+  runtime class loading path (#29).
+- Use `os.pathsep` for Java classpath separator instead of hard-coded `:`
+  for Windows compatibility (#29).
+
+### CI
+- Add Windows (`windows-latest`) and macOS (`macos-15`) test jobs to the
+  Bare Tests matrix (#29).
+- Temporarily drop `pymol-bundle` (latest) job due to missing
+  `libCatch2.so` shared library in the Schrodinger conda channel (#29).
+
 ## [4.2.0] — 2026-07-01
 
 ### Changed
