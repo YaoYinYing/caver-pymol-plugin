@@ -47,10 +47,10 @@ def _install_run_command_stub(monkeypatch, success_heaps, final_returncode=0):
     real_run_command = caver_java.run_command
 
     def fake_run_command(cmd, verbose=False, env=None):
-        if "-version" in cmd:
+        if "-version" in cmd and not any(t.startswith("-Xmx") for t in cmd):
             return real_run_command(cmd, verbose=verbose, env=env)
 
-        if "do_nothing" in cmd:
+        if "-version" in cmd and any(t.startswith("-Xmx") for t in cmd):
             for token in cmd:
                 if token.startswith("-Xmx") and token.endswith("m"):
                     heap_value = int(token[4:-1])
@@ -139,9 +139,8 @@ def test_run_caver_uses_constructed_command(monkeypatch, tmp_path):
         pyjava.java_bin,
         f"-Xmx{pyjava.memory_heap_level}m",
         "-cp",
-        str(paths["caver_folder"] / "lib"),
-        "-jar",
-        str(paths["jar_path"]),
+        f"{str(paths['jar_path'])}:{str(paths['caver_folder'] / 'lib')}/*",
+        "caver.ui.Launcher",
         "-home",
         str(paths["caver_folder"]),
         "-pdb",

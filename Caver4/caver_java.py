@@ -41,9 +41,8 @@ class PyJava:
             self.java_bin,
             f"-Xmx{self.memory_heap_level}m",
             "-cp",
-            os.path.join(caverfolder, "lib"),
-            "-jar",
-            caverjar,
+            f"{caverjar}:{os.path.join(caverfolder, 'lib')}/*",
+            "caver.ui.Launcher",
             "-home",
             caverfolder,
             "-pdb",
@@ -96,7 +95,7 @@ class PyJava:
         self.memory_heap_level = memory_allocate_options[0]
         for heap_level in memory_allocate_options:
             if int(heap_level) <= customized_memory_heap:
-                cmd = [self.java_bin, f"-Xmx{heap_level}m", "-jar", self.jar, "do_nothing"]
+                cmd = [self.java_bin, f"-Xmx{heap_level}m", "-version"]
                 heap_level_test = run_command(cmd)
 
                 if heap_level_test.returncode == 0:
