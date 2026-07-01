@@ -8,12 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.2.1] — 2026-07-01
 
 ### Fixed
-- Restore `org-openide-util-lookup-8.3.1.jar` — required at runtime by
-  `delaunay-cell-discovery` via ServiceLoader (`Lookup.getDefault()`).
-  Removed in 4.2.0 by mistake after static import analysis missed the
-  runtime class loading path (#29).
+- **Use original 2016 CAVER binary.** The recompiled `caver.jar` targeted
+  Java 24 bytecode (major version 68), incompatible with CI's Java 21
+  runtime. Replaced with the original 2016 binary (Java 6 bytecode,
+  major version 50) which runs on any Java ≥ 6. All 14 original
+  distribution libs restored to match (#29).
 - Use `os.pathsep` for Java classpath separator instead of hard-coded `:`
   for Windows compatibility (#29).
+- Fix `UnboundLocalError` when caver subprocess fails inside `freeze_window`
+  context manager — initialize `ret = None` before the `with` block (#29).
 
 ### CI
 - Add Windows (`windows-latest`) and macOS (`macos-15`) test jobs to the
