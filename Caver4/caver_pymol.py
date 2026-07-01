@@ -921,6 +921,7 @@ class CaverPyMOL(QtWidgets.QWidget):
         except RuntimeError as e:
             notify_box(str(e), RuntimeError)
 
+        ret = None
         with hold_trigger_button(self.ui.pushButton_compute), self.freeze_window():
             progress_bar = self.ui.progressBar
 
@@ -951,7 +952,7 @@ class CaverPyMOL(QtWidgets.QWidget):
             progress_bar.setValue(progress_bar.maximum())
 
         # Check for out of memory errors in Caver's output
-        if "OutOfMemory" in ret.stdout or "OutOfMemory" in ret.stderr:
+        if ret is not None and ("OutOfMemory" in ret.stdout or "OutOfMemory" in ret.stderr):
             notify_box(
                 "Insufficient memory.",
                 details=f"Available memory ({pj.memory_heap_level} MB) is not sufficient to analyze this structure. "
