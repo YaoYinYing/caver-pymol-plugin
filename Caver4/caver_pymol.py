@@ -38,7 +38,7 @@ ROOT_LOGGER= pylogging.getLogger('Caver')
 
 logging= ROOT_LOGGER.getChild('Caver')    
 
-VERSION = "4.1.3"
+VERSION = "4.2.0"
 
 website_url = "https://www.caver.cz/index.php?sid=123"
 
