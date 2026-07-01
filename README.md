@@ -26,7 +26,7 @@ Original Website: <https://www.caver.cz>
 
 ## Movie Preview
 
-<video src="https://github-image-cache.yaoyy.moe/2026/07/586703ac849be463682aa4456a9d6725.mp4" controls muted loop width="100%"></video>
+[▶ Tunnel Movie Preview](https://github-image-cache.yaoyy.moe/2026/07/586703ac849be463682aa4456a9d6725.mp4)
 
 ## Contributors:
 * Human Computer Interaction Laboratory Faculty of Informatics, Masaryk University
