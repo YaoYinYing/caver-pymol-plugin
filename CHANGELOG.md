@@ -5,6 +5,25 @@ All notable changes to the caver-pymol-plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.1] — 2026-07-01
+
+### Fixed
+- **Use original 2016 CAVER binary.** The recompiled `caver.jar` targeted
+  Java 24 bytecode (major version 68), incompatible with CI's Java 21
+  runtime. Replaced with the original 2016 binary (Java 6 bytecode,
+  major version 50) which runs on any Java ≥ 6. All 14 original
+  distribution libs restored to match (#29).
+- Use `os.pathsep` for Java classpath separator instead of hard-coded `:`
+  for Windows compatibility (#29).
+- Fix `UnboundLocalError` when caver subprocess fails inside `freeze_window`
+  context manager — initialize `ret = None` before the `with` block (#29).
+
+### CI
+- Add Windows (`windows-latest`) and macOS (`macos-15`) test jobs to the
+  Bare Tests matrix (#29).
+- Temporarily drop `pymol-bundle` (latest) job due to missing
+  `libCatch2.so` shared library in the Schrodinger conda channel (#29).
+
 ## [4.2.0] — 2026-07-01
 
 ### Changed

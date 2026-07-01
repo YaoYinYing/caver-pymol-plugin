@@ -9,7 +9,7 @@ on:
   release:
     types: [created]
 
-env: 
+env:
   conda_env: CaverNG
 
 jobs:
@@ -17,9 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: 
+        os:
           - ubuntu-latest
-        python-version: 
+        python-version:
           - "3.10"
           - "3.11"
           - "3.12" # control
@@ -35,43 +35,29 @@ jobs:
         java: ['21']
 
         include:
-          # windows
-          # - os: windows-latest
-          #   python-version: "3.11"
-          #   pymol-tag: 'latest pymol open source'
-          #   conda-channel: -c conda-forge
-          #   pymol-version: "pymol-open-source"
+          # windows, latest pymol open source and py311
+          - os: windows-latest
+            python-version: "3.11"
+            pymol-tag: 'latest pymol open source'
+            conda-channel: -c conda-forge
+            pymol-version: "pymol-open-source"
+            java: 21
 
           # macos latest, latest pymol open source and py312
-          # - os: macos-15
-          #   python-version: "3.12"
-          #   pymol-tag: 'latest pymol open source'
-          #   pymol-version: "pymol-open-source"
-          #   conda-channel: -c conda-forge
-
-          # # macos tahoe, latest pymol open source and py312
-          # - os: macos-26
-          #   python-version: "3.12"
-          #   pymol-tag: 'latest pymol open source'
-          #   pymol-version: "pymol-open-source"
-          #   conda-channel: -c conda-forge
-
-
-          # # ubuntu arm 
-          # not available for private repos
-          # - os: ubuntu-24.04-arm
-          #   python-version: "3.12"
-          #   pymol-tag: 'latest pymol open source'
-          #   pymol-version: "pymol-open-source"
-          #   conda-channel: -c conda-forge
-          
-          # latest bundled pymol 
-          - os: ubuntu-latest
-            python-version: "3.10"
-            pymol-tag: 'latest pymol bundle'
-            pymol-version: "pymol-bundle"
-            conda-channel: -c schrodinger -c conda-forge
+          - os: macos-15
+            python-version: "3.12"
+            pymol-tag: 'latest pymol open source'
+            pymol-version: "pymol-open-source"
+            conda-channel: -c conda-forge
             java: 21
+
+          # # latest bundled pymol — temporarily dropped (missing libCatch2.so dep)
+          # - os: ubuntu-latest
+          #   python-version: "3.10"
+          #   pymol-tag: 'latest pymol bundle'
+          #   pymol-version: "pymol-bundle"
+          #   conda-channel: -c schrodinger -c conda-forge
+          #   java: 21
 
           # bundled pymol, v2
           - os: ubuntu-latest
@@ -80,7 +66,7 @@ jobs:
             pymol-version: "pymol-bundle<3"
             conda-channel: -c schrodinger -c conda-forge
             java: 21
-          
+
           # pymol-open-source, v2 py310
           - os: ubuntu-latest
             python-version: "3.10"
@@ -96,12 +82,12 @@ jobs:
             pymol-version: "pymol-open-source<3"
             conda-channel: -c conda-forge
             java: 21
-            
+
 
 
 
     runs-on: ${{ matrix.os }}
-    # set time limits according to the runner os. 
+    # set time limits according to the runner os.
     # if the runner os is windows, set it to 60,
     # otherwise, set it to 35
     timeout-minutes: ${{ matrix.os == 'windows-latest' && 60 || 35 }}
@@ -137,8 +123,8 @@ jobs:
       - name: setup Qt headless Display on Windows
         if: startsWith(matrix.os, 'windows')
         uses: pyvista/setup-headless-display-action@v2
-      
-      - name: Setup Conda on ${{ matrix.os }} 
+
+      - name: Setup Conda on ${{ matrix.os }}
         uses: conda-incubator/setup-miniconda@v3
         with:
             auto-update-conda: false
@@ -152,7 +138,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: ${{ matrix.java }}
-      
+
       - name: Setup PyMOL - (${{ matrix.pymol-tag }})-(${{ matrix.os }}-py${{ matrix.python-version }})
         run: |
           conda install ${{ matrix.conda-channel}} '${{ matrix.pymol-version}}' pyqt=5 -n ${{ env.conda_env }} -y
@@ -160,16 +146,16 @@ jobs:
           conda list
           which python
           which python3
-    
 
-      - name: Full Unit Test on Ubuntu
+
+      - name: Full Unit Test on ${{ matrix.os }}
         run: |
           python -m pip install -r Caver4/requirements/plotter.txt
           make prepare-test
           # skip faulthandler bcs it's useless
           make test-skip-ci-segfault
-      
-      
+
+
       # - name: Convert coverage report to XML for codecov
       #   run: |
       #     coverage xml
@@ -181,7 +167,7 @@ jobs:
       #     env_vars: OS,PYTHON
       #     fail_ci_if_error: false
       #   env:
-      #     CODECOV_TOKEN: 
+      #     CODECOV_TOKEN:
 
       # - name: Clean up
       #   run: |
