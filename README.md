@@ -37,7 +37,7 @@ Original Website: <https://www.caver.cz>
 
 ## Requirements
 * PyMOL  >=  2.5
-* OpenJDK
+* OpenJDK 8 or later (JDK 17+ recommended)
 
 ## Installation instructions
 
